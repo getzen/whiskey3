@@ -2,8 +2,6 @@ use macroquad::color::BLACK;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::shapes::draw_rectangle_lines;
-use macroquad::shapes::draw_rectangle_lines_ex;
-use macroquad::shapes::DrawRectangleParams;
 
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
@@ -35,6 +33,7 @@ impl ButtonText {
         size: Vec2,
     ) -> Self {
         let mut text = Texter::new(text, font_size, font_name, true, true).await;
+        text.transform.position = pos;
 
         Self {
             id,
@@ -81,7 +80,7 @@ impl ButtonText {
         event
     }
 
-    pub fn draw(&mut self, parent_trans: Option<Transform>) {
+    pub fn draw(&mut self) {
         if self.state == ButtonState::Hidden {
             return;
         }
@@ -96,17 +95,12 @@ impl ButtonText {
             return;
         }
 
-        let (parent_pos, _parent_rot) = match parent_trans {
-            Some(trans) => (trans.position, trans.rotation),
-            None => (Vec2::ZERO, 0.0),
-        };
-
-        let pos = self.transform.centered_position(self.size) + parent_pos;
+        let pos = self.transform.centered_position(self.size);
 
         draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color.unwrap());
 
         // Text is already centered vert and horiz.
         self.text.color = color.unwrap();
-        self.text.draw(parent_trans);
+        self.text.draw();
     }
 }

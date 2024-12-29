@@ -276,7 +276,7 @@ impl View {
             view.draw();
         }
 
-        self.message.draw(None);
+        self.message.draw();
         self.score_table.draw();
         self.play_button.draw();
         self.bid_panel.draw();
@@ -319,36 +319,6 @@ impl View {
                 view.set_select_state(SelectState::Selected);
             }
         }
-
-        // for play in &self.playable_card_ids {
-        //     let mut component_matches = 0;
-        //     let mut matches_needed = 1;
-
-        //     if self.selected_ids.contains(&play.id) {
-        //         component_matches += 1;
-        //     }
-        //     if let Some(captured) = &play.captured {
-        //         matches_needed += captured.len();
-        //         for cap_id in captured {
-        //             if self.selected_ids.contains(cap_id) {
-        //                 component_matches += 1;
-        //             }
-        //         }
-        //     }
-
-        //     if component_matches == matches_needed && matches_needed == self.selected_ids.len() {
-        //         println!("play found!");
-        //         self.sender
-        //             .send(PlayerAction::PlayCard(play.clone()))
-        //             .expect("Send error.");
-
-        //         for id in &self.hand_table_ids {
-        //             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == *id) {
-        //                 view.set_select_state(SelectState::OutOfScope);
-        //             }
-        //         }
-        //         break;
-        //     }
-        // }
+        
     }
 }

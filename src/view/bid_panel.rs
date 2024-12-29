@@ -11,7 +11,7 @@ pub struct BidPanel {
     size: Vec2,
     transform: Transform,
     bid_button: ButtonText,
-    // pass_button: ButtonText,
+    pass_button: ButtonText,
     // plus_button: ButtonText,
     // minus_button: ButtonText,
     // bid_text: Texter,
@@ -21,8 +21,18 @@ impl BidPanel {
     pub async fn new(position: Vec2) -> Self {
         let bid_button = ButtonText::new(
             0,
-            vec2(0.0, 0.0),
+            position + vec2(0.0, 0.0),
             "Bid",
+            18,
+            Some("Menlo-Bold.ttf"),
+            vec2(80.0, 40.0),
+        )
+        .await;
+
+        let pass_button = ButtonText::new(
+            0,
+            position + vec2(100.0, 0.0),
+            "Pass",
             18,
             Some("Menlo-Bold.ttf"),
             vec2(80.0, 40.0),
@@ -34,6 +44,7 @@ impl BidPanel {
             size: vec2(250.0, 100.0),
             transform: Transform::new(position, 0.0),
             bid_button,
+            pass_button,
         }
     }
 
@@ -42,7 +53,8 @@ impl BidPanel {
             return None;
         }
 
-        self.bid_button.process_events(mouse_pos);
+        let event = self.bid_button.process_events(mouse_pos);
+        self.pass_button.process_events(mouse_pos);
 
         None
     }
@@ -60,6 +72,7 @@ impl BidPanel {
 
         draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, GREEN);
 
-        self.bid_button.draw(Some(self.transform));
+        self.bid_button.draw();
+        self.pass_button.draw();
     }
 }

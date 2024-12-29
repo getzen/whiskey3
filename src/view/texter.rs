@@ -53,17 +53,12 @@ impl Texter {
         (dimensions.width, dimensions.height, dimensions.offset_y)
     }
 
-    pub fn draw(&mut self, parent_trans: Option<Transform>) {
+    pub fn draw(&mut self) {
         if !self.visible {
             return;
         }
 
-        let (parent_pos, _parent_rot) = match parent_trans {
-            Some(trans) => (trans.position, trans.rotation),
-            None => (Vec2::ZERO, 0.0),
-        };
-
-        let mut pos = self.transform.position + parent_pos;
+        let mut pos = self.transform.position;
 
         // Is this function slow?
         let (width, _height, offset_y) = self.draw_size();
