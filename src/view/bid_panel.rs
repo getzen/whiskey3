@@ -1,0 +1,60 @@
+use macroquad::{color::{BLACK, GRAY, WHITE}, math::{vec2, Vec2}, shapes::{draw_rectangle, draw_rectangle_lines}};
+
+use super::{button_text::ButtonText, eventer::EventerEvent, texter::Texter, transform::Transform};
+
+pub struct BidPanel {
+    pub visible: bool,
+    size: Vec2,
+    transform: Transform,
+    bid_button: ButtonText,
+    // pass_button: ButtonText,
+    // plus_button: ButtonText,
+    // minus_button: ButtonText,
+    // bid_text: Texter,
+}
+
+impl BidPanel {
+    pub async fn new(position: Vec2) -> Self {
+        let mut bid_button = ButtonText::new(0, vec2(50.0, 50.0), "Bid", 18, Some("Menlo-Bold.ttf"), vec2(80.0, 40.0)).await;
+        //bid_button.transform.parent_position = position;
+        //bid_button.text.transform.parent_position = position;
+
+        Self {
+            visible: true,
+            size: vec2(250.0, 100.0),
+            transform: Transform::new(position, 0.0),
+            bid_button, 
+
+        }
+    }
+
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<EventerEvent> {
+        if !self.visible {
+            return None;
+        }
+
+        self.bid_button.process_events(mouse_pos);
+
+        
+        None
+    }
+
+    pub fn draw(&mut self) {
+        if !self.visible { return }
+
+        let (mut pos, _rot) = self.transform.combined_pos_rot();
+        pos.x -= self.size.x / 2.0;
+        pos.y -= self.size.y / 2.0;
+
+        //draw_rectangle(pos.x, pos.y, self.size.x, self.size.y, );
+
+        draw_rectangle_lines(
+            pos.x, 
+            pos.y, 
+            self.size.x, self.size.y, 
+            4.0,
+            WHITE);
+
+        self.bid_button.draw(None);
+    }
+}
