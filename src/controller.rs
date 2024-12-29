@@ -100,8 +100,9 @@ impl Controller {
                 break;
             }
 
-            // Update and draw the view.
             if let Some(view) = &mut self.view {
+                // The events processed here may cause the view to send PlayerActions,
+                // which are handled in check_player_actions().
                 view.process_events();
                 view.update(time_delta);
                 view.draw().await;
@@ -114,6 +115,11 @@ impl Controller {
         let received = self.receiver.try_recv();
         if received.is_ok() {
             match received.unwrap() {
+                PlayerAction::Bid(bid) => {
+                    println!("Place bid!");
+                },
+                PlayerAction::IncBid => todo!(),
+                PlayerAction::DecBid => todo!(),
                 PlayerAction::PlayCard(card_id) => {
                     println!("PlayCard id: {}", card_id);
                     // Pass it to the StateMgr for handling.
@@ -122,6 +128,7 @@ impl Controller {
                         .push_back(State::MakingPlay(card_id));
                 }
                 PlayerAction::ShouldExit => return false,
+                
             }
         }
         return false;

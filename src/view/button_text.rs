@@ -54,30 +54,36 @@ impl ButtonText {
             .contains_point(point, &self.transform, self.size, true)
     }
 
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<EventerEvent> {
+    /// Check if event occurred, handle internally, and return true if clicked.
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
         if self.state == ButtonState::Disabled || self.state == ButtonState::Hidden {
-            return None;
+            return false;
         }
         let event = self
             .eventer
             .process_events(mouse_pos, &self.transform, self.size, true);
+        
         if event.is_none() {
-            return event;
+            return false;
         }
 
-        // self.state = match self.contains_point(mouse_pos) {
-        //     true =>  ButtonState::Highlighted,
-        //     false => ButtonState::Normal,
-        // };
-
         // Handle possible state change before returning event.
-        self.state = match event.as_ref().unwrap() {
-            EventerEvent::MouseEntered => ButtonState::Highlighted,
-            EventerEvent::LeftMousePressed => ButtonState::Normal,
-            EventerEvent::LeftMouseReleased => ButtonState::Highlighted,
-            _ => ButtonState::Normal,
-        };
-        event
+        match event.as_ref().unwrap() {
+            EventerEvent::MouseEntered => {
+                self.state = ButtonState::Highlighted;
+            }
+            EventerEvent::LeftMousePressed => {
+                self.state = ButtonState::Normal;
+            }
+            EventerEvent::LeftMouseReleased => {
+                self.state = ButtonState::Highlighted;
+                return true;
+            }
+            _ => {
+                self.state = ButtonState::Normal;
+            }
+        }
+        false
     }
 
     pub fn draw(&mut self) {

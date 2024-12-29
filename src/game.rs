@@ -4,6 +4,9 @@ use crate::{
 };
 
 pub enum PlayerAction {
+    Bid(Bid),
+    IncBid,
+    DecBid,
     PlayCard(u8),
     ShouldExit,
 }

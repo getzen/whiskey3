@@ -4,7 +4,7 @@ use macroquad::prelude::*;
 
 use crate::{
     card::{Card, SelectState},
-    game::{self, Game, PlayerAction},
+    game::{self, Bid, Game, PlayerAction},
     state_mgr::State,
     view::{button_state::ButtonState, card_view::CardView},
 };
@@ -19,6 +19,7 @@ use super::{
     texter::Texter,
     view_geom::{self, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS},
 };
+
 
 pub struct View {
     card_views: Vec<CardView>,
@@ -50,7 +51,7 @@ impl View {
             message,
             score_table: ScoreTable::new(SCORE_TABLE_POS).await,
             play_button: ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5),
-            bid_panel: BidPanel::new(vec2(400.0, 400.0)).await,
+            bid_panel: BidPanel::new(65, 120, vec2(400.0, 400.0)).await,
             sender,
             playable_card_ids: Vec::new(),
             hand_table_ids: HashSet::new(),
@@ -108,27 +109,24 @@ impl View {
         let mouse_pos: Vec2 = mouse_position().into();
 
         // Buttons
-        if let Some(event) = self.play_button.process_events(&mouse_pos) {
-            match event {
-                EventerEvent::LeftMouseReleased => {
-                    println!("button: {}", self.play_button.id);
-                    self.play_button.state = ButtonState::Hidden;
-                }
-                _ => {}
-            }
-            // The button contained the mouse_pos, so return.
+        if self.play_button.process_events(&mouse_pos) {
+            println!("play clicked");
+            self.play_button.state = ButtonState::Hidden;
             return;
         }
 
-        if let Some(event) = self.bid_panel.process_events(&mouse_pos) {
-            match event {
-                EventerEvent::LeftMouseReleased => {
-                    println!("bid pressed: {}", self.play_button.id);
-                    //self.play_button.state = ButtonState::Hidden;
-                }
-                _ => {}
+        if let Some(action) = self.bid_panel.process_events(&mouse_pos) {
+            // Some actions are handled internally.
+            match &action {
+                PlayerAction::Bid(bid) => {
+                    println!("bid: {:?}", bid);
+                    // hide bid panel
+                },
+                PlayerAction::IncBid => todo!(),
+                PlayerAction::DecBid => todo!(),
+                _ => {}, // not produced by the bid panel
             }
-            // The button contained the mouse_pos, so return.
+            self.sender.send(action).expect("Message send error.");
             return;
         }
 

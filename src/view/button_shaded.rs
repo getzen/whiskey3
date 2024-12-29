@@ -42,25 +42,33 @@ impl ButtonShaded {
             .contains_point(point, &self.transform, size, centered)
     }
 
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<EventerEvent> {
+    /// Check if event occurred, handle internally, and return true if clicked.
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
         if self.state == ButtonState::Disabled || self.state == ButtonState::Hidden {
-            return None;
+            return false;
         }
         let size = self.image.draw_size();
         let centered = self.image.centered;
         let event = self
             .eventer
             .process_events(mouse_pos, &self.transform, size, centered);
+
         if event.is_none() {
-            return event;
+            return false;
         }
 
         // Handle possible state change before returning event.
-        self.state = match event.as_ref().unwrap() {
-            EventerEvent::LeftMousePressed => ButtonState::Highlighted,
-            _ => ButtonState::Normal,
+        match event.as_ref().unwrap() {
+            EventerEvent::LeftMousePressed => {
+                self.state = ButtonState::Highlighted;
+            },
+            EventerEvent::LeftMouseReleased => {
+                self.state = ButtonState::Normal;
+                return true;
+            }
+            _ => self.state = ButtonState::Normal,
         };
-        event
+        false
     }
 
     pub fn draw(&mut self) {

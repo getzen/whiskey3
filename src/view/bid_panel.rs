@@ -4,21 +4,28 @@ use macroquad::{
     shapes::{draw_rectangle, draw_rectangle_lines},
 };
 
+use crate::game::{Bid, PlayerAction};
+
 use super::{button_text::ButtonText, eventer::EventerEvent, texter::Texter, transform::Transform};
 
 pub struct BidPanel {
+    pub min_bid: u8,
+    max_bid: u8,
+    current_bid: u8,
+    bid_increment: u8,
+
     pub visible: bool,
     size: Vec2,
     transform: Transform,
     bid_button: ButtonText,
     pass_button: ButtonText,
-    // plus_button: ButtonText,
+    plus_button: ButtonText,
     // minus_button: ButtonText,
-    // bid_text: Texter,
+    bid_text: Texter,
 }
 
 impl BidPanel {
-    pub async fn new(position: Vec2) -> Self {
+    pub async fn new(min_bid: u8, max_bid: u8, position: Vec2) -> Self {
         let bid_button = ButtonText::new(
             0,
             position + vec2(0.0, 0.0),
@@ -39,22 +46,55 @@ impl BidPanel {
         )
         .await;
 
+        let plus_button = ButtonText::new(
+            0,
+            position + vec2(-70.0, -10.0),
+            "+",
+            18,
+            Some("Menlo-Bold.ttf"),
+            vec2(20.0, 20.0),
+        )
+        .await;
+
+        let mut bid_text = Texter::new("---", 18, Some("Menlo-Bold.ttf"), true, true).await;
+        bid_text.transform.position = position + vec2(-100.0, 0.0);
+        bid_text.color = WHITE;
+
         Self {
+            min_bid,
+            max_bid,
+            current_bid: min_bid,
+            bid_increment: 5,
             visible: true,
             size: vec2(250.0, 100.0),
             transform: Transform::new(position, 0.0),
             bid_button,
             pass_button,
+            plus_button,
+            bid_text,
         }
     }
 
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<EventerEvent> {
+    pub fn update_bid_amount(&mut self, new_amount: u8) {
+        self.bid_text.text = format!("{}", new_amount);
+    }
+
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<PlayerAction> {
         if !self.visible {
             return None;
         }
 
-        let event = self.bid_button.process_events(mouse_pos);
-        self.pass_button.process_events(mouse_pos);
+        if self.bid_button.process_events(mouse_pos) {
+            return Some(PlayerAction::Bid(Bid::Bid(self.current_bid)));
+        }
+
+        if self.pass_button.process_events(mouse_pos) {
+            return Some(PlayerAction::Bid(Bid::Pass));
+        }
+
+        if self.plus_button.process_events(mouse_pos) {
+            self.current_bid = self.max_bid.min(self.current_bid + self.bid_increment);
+        }
 
         None
     }
@@ -74,5 +114,7 @@ impl BidPanel {
 
         self.bid_button.draw();
         self.pass_button.draw();
+        self.bid_text.draw();
+        self.plus_button.draw();
     }
 }
