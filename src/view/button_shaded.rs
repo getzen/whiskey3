@@ -8,7 +8,6 @@ use crate::view::eventer::EventerEvent;
 use crate::view::imager::Imager;
 use crate::view::transform::Transform;
 
-
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
     pub id: u8,

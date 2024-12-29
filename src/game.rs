@@ -9,7 +9,7 @@ pub enum PlayerAction {
 }
 
 /// Card ranks to include in the game.
-pub const CARD_RANKS: [u8; 9] = [5,7,8,9,10,11,12,13,14];
+pub const CARD_RANKS: [u8; 9] = [5, 7, 8, 9, 10, 11, 12, 13, 14];
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
 /// Initial hand size.

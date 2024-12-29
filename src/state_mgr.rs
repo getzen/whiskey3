@@ -93,9 +93,7 @@ impl StateMgr {
 
             State::WaitingForBid => {}
 
-            State::MakingBid(bid) => {
-
-            }
+            State::MakingBid(bid) => {}
 
             State::PreparingForNewTurn => {
                 self.view_queue.extend([ViewUpdate::Taken]);

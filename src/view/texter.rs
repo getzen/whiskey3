@@ -53,12 +53,18 @@ impl Texter {
         (dimensions.width, dimensions.height, dimensions.offset_y)
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, parent_trans: Option<Transform>) {
         if !self.visible {
             return;
         }
 
-        let (mut pos, _rot) = self.transform.combined_pos_rot();
+        let (parent_pos, _parent_rot) = match parent_trans {
+            Some(trans) => (trans.position, trans.rotation),
+            None => (Vec2::ZERO, 0.0),
+        };
+
+        let mut pos = self.transform.position + parent_pos;
+
         // Is this function slow?
         let (width, _height, offset_y) = self.draw_size();
 
@@ -82,7 +88,7 @@ impl Texter {
             font_size: self.font_size,
             font_scale: self.font_scale,
             font_scale_aspect: 1.0,
-            rotation: 0.0,
+            rotation: self.transform.rotation,
             color: self.color,
         };
         draw_text_ex(&self.text, pos.x, pos.y, params);

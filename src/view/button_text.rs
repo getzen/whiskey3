@@ -26,9 +26,15 @@ pub struct ButtonText {
 }
 
 impl ButtonText {
-    pub async fn new(id: u8, pos: Vec2, text: &str, font_size: u16, font_name: Option<&str>, size: Vec2) -> Self {
+    pub async fn new(
+        id: u8,
+        pos: Vec2,
+        text: &str,
+        font_size: u16,
+        font_name: Option<&str>,
+        size: Vec2,
+    ) -> Self {
         let mut text = Texter::new(text, font_size, font_name, true, true).await;
-        text.transform.parent_position = pos;
 
         Self {
             id,
@@ -75,7 +81,7 @@ impl ButtonText {
         event
     }
 
-    pub fn draw(&mut self, parent_pos: Option<Vec2>) {
+    pub fn draw(&mut self, parent_trans: Option<Transform>) {
         if self.state == ButtonState::Hidden {
             return;
         }
@@ -86,19 +92,21 @@ impl ButtonText {
             _ => None,
         };
 
-        if color.is_none() { return }
+        if color.is_none() {
+            return;
+        }
 
-        let mut pos = self.transform.centered_position(self.size);
-        pos += parent_pos.unwrap_or_default();
+        let (parent_pos, _parent_rot) = match parent_trans {
+            Some(trans) => (trans.position, trans.rotation),
+            None => (Vec2::ZERO, 0.0),
+        };
 
-        draw_rectangle_lines(
-            pos.x, 
-            pos.y, 
-            self.size.x, self.size.y, 
-            4.0,
-            color.unwrap());
-        
+        let pos = self.transform.centered_position(self.size) + parent_pos;
+
+        draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color.unwrap());
+
+        // Text is already centered vert and horiz.
         self.text.color = color.unwrap();
-        self.text.draw();
+        self.text.draw(parent_trans);
     }
 }

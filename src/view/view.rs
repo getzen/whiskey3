@@ -10,7 +10,14 @@ use crate::{
 };
 
 use super::{
-    bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS}
+    bid_panel::BidPanel,
+    button_shaded::ButtonShaded,
+    button_text::ButtonText,
+    eventer::EventerEvent,
+    score_table::ScoreTable,
+    sprite::Sprite,
+    texter::Texter,
+    view_geom::{self, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS},
 };
 
 pub struct View {
@@ -255,6 +262,13 @@ impl View {
 
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
+        
+
+        let gl = unsafe { get_internal_gl().quad_gl };
+        let matrix = glam::Mat4::from_translation(vec3(100.0, 0.0, 0.0));
+        gl.push_model_matrix(matrix);
+        gl.pop_model_matrix();
+
 
         self.turn_marker.draw();
 
@@ -262,7 +276,7 @@ impl View {
             view.draw();
         }
 
-        self.message.draw();
+        self.message.draw(None);
         self.score_table.draw();
         self.play_button.draw();
         self.bid_panel.draw();

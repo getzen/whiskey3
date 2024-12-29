@@ -80,9 +80,9 @@ impl ScoreTable {
     }
 
     pub fn draw(&mut self) {
-        self.heading.draw();
-        self.score.draw();
-        self.bid.draw();
-        self.hand.draw();
+        self.heading.draw(None);
+        self.score.draw(None);
+        self.bid.draw(None);
+        self.hand.draw(None);
     }
 }
