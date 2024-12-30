@@ -51,7 +51,7 @@ impl View {
             message,
             score_table: ScoreTable::new(SCORE_TABLE_POS).await,
             play_button: ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5),
-            bid_panel: BidPanel::new(65, 120, vec2(400.0, 400.0)).await,
+            bid_panel: BidPanel::new(65, 120, vec2(400.0, 550.0)).await,
             sender,
             playable_card_ids: Vec::new(),
             hand_table_ids: HashSet::new(),

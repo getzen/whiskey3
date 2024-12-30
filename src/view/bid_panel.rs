@@ -20,7 +20,7 @@ pub struct BidPanel {
     bid_button: ButtonText,
     pass_button: ButtonText,
     plus_button: ButtonText,
-    // minus_button: ButtonText,
+    minus_button: ButtonText,
     bid_text: Texter,
 }
 
@@ -48,8 +48,18 @@ impl BidPanel {
 
         let plus_button = ButtonText::new(
             0,
-            position + vec2(-70.0, -10.0),
+            position + vec2(-65.0, -12.0),
             "+",
+            18,
+            Some("Menlo-Bold.ttf"),
+            vec2(20.0, 20.0),
+        )
+        .await;
+
+        let minus_button = ButtonText::new(
+            0,
+            position + vec2(-65.0, 12.0),
+            "-",
             18,
             Some("Menlo-Bold.ttf"),
             vec2(20.0, 20.0),
@@ -71,11 +81,13 @@ impl BidPanel {
             bid_button,
             pass_button,
             plus_button,
+            minus_button,
             bid_text,
         }
     }
 
     pub fn update_bid_amount(&mut self, new_amount: u8) {
+        self.current_bid = new_amount;
         self.bid_text.text = format!("{}", new_amount);
     }
 
@@ -93,7 +105,13 @@ impl BidPanel {
         }
 
         if self.plus_button.process_events(mouse_pos) {
-            self.current_bid = self.max_bid.min(self.current_bid + self.bid_increment);
+            let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
+            self.update_bid_amount(new_amount);
+        }
+
+        if self.minus_button.process_events(mouse_pos) {
+            let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
+            self.update_bid_amount(new_amount);
         }
 
         None
@@ -116,5 +134,6 @@ impl BidPanel {
         self.pass_button.draw();
         self.bid_text.draw();
         self.plus_button.draw();
+        self.minus_button.draw();
     }
 }
