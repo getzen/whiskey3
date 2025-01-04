@@ -36,7 +36,7 @@ impl Texter {
             centered_horiz,
             centered_vert,
             text: text.to_string(),
-            color: BLACK,
+            color: WHITE,
             font,
             font_size,
             font_scale: 1.0,

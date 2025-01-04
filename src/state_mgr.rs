@@ -11,6 +11,9 @@ pub enum State {
     GettingBid,
     WaitingForBid,
     MakingBid(Bid),
+    CompletingBidding,
+    MovingNestToMaker,
+    WaitingForDiscards,
     GettingPlay,
     WaitingForPlay,
     MakingPlay(u8),
@@ -23,11 +26,14 @@ pub enum ViewUpdate {
     Info(State),
     Deck,
     Nest,
+    Bids,
+    BidPanel,
     Taken,
     Hand(usize),
 }
 
 pub enum ControllerMsg {
+    GetBid,
     GetPlay,
 }
 
@@ -66,7 +72,7 @@ impl StateMgr {
                 let mut deal_actions = Vec::new();
                 for _ in 0..HAND_SIZE * PLAYERS {
                     deal_actions.push(State::Dealing);
-                    deal_actions.push(State::Delaying { time: 0.2 });
+                    deal_actions.push(State::Delaying { time: 0.1 });
                 }
                 deal_actions.push(State::DealingToNest);
                 self.state_queue.extend(deal_actions);
@@ -89,11 +95,44 @@ impl StateMgr {
 
             State::GettingBid => {
                 println!("GettingBid");
+                self.view_queue
+                    .extend([ViewUpdate::Info(State::GettingBid)]);
+                self.controller_msg = Some(ControllerMsg::GetBid);
+                self.state_queue
+                    .extend([State::Delaying { time: 1.5 }, State::WaitingForBid]);
             }
 
-            State::WaitingForBid => {}
+            State::WaitingForBid => {
+                println!("Waiting for bid");
+            }
 
-            State::MakingBid(bid) => {}
+            State::MakingBid(bid) => {
+                game.make_bid(bid.clone());
+                self.view_queue.extend([
+                    ViewUpdate::Bids, ViewUpdate::BidPanel
+                ]);
+                self.state_queue.push_back(State::CompletingBidding);
+            }
+
+            State::CompletingBidding => {
+                if game.bidding_completed() {
+                    println!("bidding completed");
+                    self.view_queue.extend([ViewUpdate::Info(State::CompletingBidding)]);
+                    self.state_queue.extend([State::Delaying { time: 2.0 }, State::MovingNestToMaker]);
+                } else {
+                    self.state_queue.push_back(State::GettingBid);
+                }
+            }
+
+            State::MovingNestToMaker => {
+                game.move_nest_cards_to_maker();
+                let maker = game.maker.unwrap();
+                self.view_queue.push_back(ViewUpdate::Hand(maker));
+            }
+
+            State::WaitingForDiscards => {
+                println!("WaitingForDiscards");
+            }
 
             State::PreparingForNewTurn => {
                 self.view_queue.extend([ViewUpdate::Taken]);

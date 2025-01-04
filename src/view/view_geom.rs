@@ -6,11 +6,12 @@ pub const SCREEN: Vec2 = vec2(800., 800.);
 pub const CENTER: Vec2 = vec2(SCREEN.x * 0.5, SCREEN.y * 0.5);
 
 pub const DECK_POS: Vec2 = vec2(SCREEN.x - 80.0, SCREEN.y - 100.0);
-pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 200.0);
+pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y - 0.0);
 pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 235.0, 30.0);
 pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
+pub const BID_PANEL_POS: Vec2 = vec2(400.0, 580.0);
 
-pub const CARD_SPEED: f32 = 600.0;
+pub const CARD_SPEED: f32 = 800.0;
 pub const CARD_SPEED_TAKE: f32 = 300.0;
 pub const ROT_SPEED: f32 = 10.0;
 
@@ -38,6 +39,14 @@ pub fn turn_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     }
 }
 
+pub fn bid_marker_geom(player: usize, player_count: usize) -> ViewGeom {
+    let rad = player_radians_from_center(player, player_count);
+    ViewGeom {
+        pos: position_from(CENTER, rad, 210.0),
+        ..Default::default()
+    }
+}
+
 pub fn deck_geom(index: usize) -> ViewGeom {
     ViewGeom {
         pos: DECK_POS + index as f32 + 2.0,
@@ -46,11 +55,23 @@ pub fn deck_geom(index: usize) -> ViewGeom {
     }
 }
 
-pub fn nest_geom(index: usize) -> ViewGeom {
-    let start_pos = vec2(CENTER.x - 100.0, CENTER.y);
-    let x_spacing = 50.0;
+pub fn nest_geom(
+    index: usize,
+    count: usize,
+) -> ViewGeom {
+    let max_width = 300.;
+    let max_spacing: f32 = 80.;
+
+    let computed_width = max_width / count as f32;
+    let x_spacing = max_spacing.min(computed_width);
+
+    let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
+    x_offset += index as f32 * x_spacing;
+    let pos = CENTER + vec2(x_offset, 0.0);
+
     ViewGeom {
-        pos: vec2(start_pos.x + x_spacing * index as f32, start_pos.y),
+        pos,
+        rot: 0.0,
         z: index,
         ..Default::default()
     }
@@ -98,8 +119,8 @@ pub fn hand_card_geom(
     let distance_from_center = 330.0;
 
     let max_width = match is_bot {
-        true => 230.,
-        false => 360.,
+        true => 350.,
+        false => 500.,
     };
     let max_spacing: f32 = 100.;
 

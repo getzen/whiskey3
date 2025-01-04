@@ -4,15 +4,15 @@ use macroquad::{
     shapes::{draw_rectangle, draw_rectangle_lines},
 };
 
-use crate::game::{Bid, PlayerAction};
+use crate::{card::Points, game::{Bid, PlayerAction}};
 
 use super::{button_text::ButtonText, eventer::EventerEvent, texter::Texter, transform::Transform};
 
 pub struct BidPanel {
-    pub min_bid: u8,
-    max_bid: u8,
-    current_bid: u8,
-    bid_increment: u8,
+    pub min_bid: Points,
+    max_bid: Points,
+    current_bid: Points,
+    bid_increment: Points,
 
     pub visible: bool,
     size: Vec2,
@@ -25,10 +25,10 @@ pub struct BidPanel {
 }
 
 impl BidPanel {
-    pub async fn new(min_bid: u8, max_bid: u8, position: Vec2) -> Self {
+    pub async fn new(min_bid: Points, max_bid: Points, position: Vec2) -> Self {
         let bid_button = ButtonText::new(
             0,
-            position + vec2(0.0, 0.0),
+            position + vec2(-5.0, 0.0),
             "Bid",
             18,
             Some("Menlo-Bold.ttf"),
@@ -48,7 +48,7 @@ impl BidPanel {
 
         let plus_button = ButtonText::new(
             0,
-            position + vec2(-65.0, -12.0),
+            position + vec2(-70.0, -12.0),
             "+",
             18,
             Some("Menlo-Bold.ttf"),
@@ -58,7 +58,7 @@ impl BidPanel {
 
         let minus_button = ButtonText::new(
             0,
-            position + vec2(-65.0, 12.0),
+            position + vec2(-70.0, 12.0),
             "-",
             18,
             Some("Menlo-Bold.ttf"),
@@ -66,8 +66,9 @@ impl BidPanel {
         )
         .await;
 
-        let mut bid_text = Texter::new("---", 18, Some("Menlo-Bold.ttf"), true, true).await;
-        bid_text.transform.position = position + vec2(-100.0, 0.0);
+        let min_text = min_bid.to_string();
+        let mut bid_text = Texter::new(&min_text, 18, Some("Menlo-Bold.ttf"), true, true).await;
+        bid_text.transform.position = position + vec2(-105.0, 0.0);
         bid_text.color = WHITE;
 
         Self {
@@ -75,7 +76,7 @@ impl BidPanel {
             max_bid,
             current_bid: min_bid,
             bid_increment: 5,
-            visible: true,
+            visible: false,
             size: vec2(250.0, 100.0),
             transform: Transform::new(position, 0.0),
             bid_button,
@@ -86,7 +87,7 @@ impl BidPanel {
         }
     }
 
-    pub fn update_bid_amount(&mut self, new_amount: u8) {
+    pub fn update_bid_amount(&mut self, new_amount: Points) {
         self.current_bid = new_amount;
         self.bid_text.text = format!("{}", new_amount);
     }
@@ -127,8 +128,7 @@ impl BidPanel {
         pos.y -= self.size.y / 2.0;
 
         //draw_rectangle(pos.x, pos.y, self.size.x, self.size.y, );
-
-        draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, GREEN);
+        //draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, GREEN);
 
         self.bid_button.draw();
         self.pass_button.draw();

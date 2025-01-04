@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use crate::game::{Game, PlayerAction, PLAYERS};
+use crate::{card::{CardSuit, Points}, game::{Bid, Game, PlayerAction, PLAYERS}};
 
 #[derive(Clone)]
 pub struct BotMonte {}
@@ -8,6 +8,31 @@ pub struct BotMonte {}
 impl BotMonte {
     pub fn new() -> Self {
         Self {}
+    }
+
+    pub fn get_bid(&self, game: &Game, min: Points, max: Points, sender: Sender<PlayerAction>) {
+        let mut bid = Bid::Pass;
+        let mut bid_pts = 40;
+        let cards = game.active_hand();
+        for card in cards {
+            if card.suit == CardSuit::Joker {
+                bid_pts += 15;
+            }
+            match card.rank {
+                14 => bid_pts += 15,
+                13 => bid_pts += 5,
+                10 => bid_pts += 10,
+                _ => {},
+            }
+        }
+
+        if bid_pts > min {
+            bid_pts = min + 5;
+            bid_pts = bid_pts.min(max);
+            bid = Bid::Bid(bid_pts);
+        }
+
+        sender.send(PlayerAction::Bid(bid)).expect("send error");
     }
 
     // Use a MonteCarlo simulation to pick the best card.

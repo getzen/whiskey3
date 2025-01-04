@@ -11,25 +11,30 @@ pub enum PlayerAction {
     ShouldExit,
 }
 
-/// Card ranks to include in the game.
-pub const CARD_RANKS: [u8; 9] = [5, 7, 8, 9, 10, 11, 12, 13, 14];
+/// Card ranks to include in the game. // TO-DO: include card points.
+pub const CARD_RANKS: [u8; 10] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+/// Specific cards to add.
+pub const ADD_CARDS: [(u8, CardSuit); 2] = [(4, CardSuit::Diamond), (4, CardSuit::Heart)];
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
 /// Initial hand size.
-pub const HAND_SIZE: usize = 9;
+pub const HAND_SIZE: usize = 10;
 // Initial number of cards dealt to the table.
-pub const NEST_SIZE: usize = 1;
+pub const NEST_SIZE: usize = 3;
 // Number of nest card to deal face up.
-pub const NEST_CARDS_UP: u8 = 0;
+pub const NEST_CARDS_UP: u8 = 1;
 pub const JOKER_RANK: u8 = 15;
-pub const JOKER_PTS: u16 = 0;
+pub const JOKER_PTS: Points = 0;
+
+pub const MIN_BID: Points = 60;
+pub const MAX_MID: Points = 120;
 
 pub const POINTS_TO_WIN: Points = 200;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Bid {
     Pass,
-    Bid(u8),
+    Bid(Points),
 }
 
 #[derive(Clone)]
@@ -48,14 +53,19 @@ pub struct Game {
     /// The active player.
     pub active: usize,
     nest_face_up_count: u8,
+
     /// The high bidder.
     pub maker: Option<usize>,
     pub high_bid: Option<Bid>,
+    
     /// The hand's trump suit.
     pub trump_suit: Option<CardSuit>,
     /// The current trick
     pub trick: Trick,
     pub tricks_played: u8,
+
+    pub hand_cards_to_deal: u8,
+    pub nest_cards_to_deal: u8,
 }
 
 impl Game {
@@ -83,6 +93,9 @@ impl Game {
             trump_suit: None,
             trick: Trick::new(PLAYERS),
             tricks_played: 0,
+
+            hand_cards_to_deal: 0,
+            nest_cards_to_deal: 0,
         }
     }
 
@@ -94,8 +107,16 @@ impl Game {
         (player + 1) % 2
     }
 
-    pub fn bot_active(&self) -> bool {
+    pub fn bot_is_active(&self) -> bool {
         self.bot_players[self.active]
+    }
+
+    pub fn active_hand(&self) -> &[Card] {
+        &self.hands[self.active]
+    }
+
+    pub fn active_hand_mut(&mut self) -> &mut Vec<Card> {
+        &mut self.hands[self.active]
     }
 
     #[allow(dead_code)]
@@ -162,6 +183,12 @@ impl Game {
                 }
             }
         }
+
+        // Add specific cards.
+        for (rank, suit) in ADD_CARDS {
+            self.create_card(id, suit, rank, 0);
+            id += 1;
+        }
         println!("cards created: {}", self.deck.len());
     }
 
@@ -188,13 +215,16 @@ impl Game {
         self.high_bid = None;
         self.bids.fill(None);
         self.tricks_played = 0;
+
+        self.hand_cards_to_deal = (HAND_SIZE * PLAYERS) as u8;
+        self.nest_cards_to_deal = NEST_SIZE as u8;
     }
 
     pub fn deal_card_to_hand(&mut self) {
         let mut card = self.deck.pop().unwrap();
         card.face_up = !self.bot_players[self.active];
-        self.hands[self.active].push(card);
-        if !self.bot_active() {
+        self.active_hand_mut().push(card);
+        if !self.bot_is_active() {
             self.sort_hand(self.active);
         }
         self.next_player();
@@ -211,6 +241,20 @@ impl Game {
 
     pub fn sort_hand(&mut self, p: usize) {
         self.hands[p].sort();
+    }
+
+    pub fn min_bid(&self) -> Points {
+        match &self.high_bid {
+            Some(bid) => match bid {
+                Bid::Pass => todo!(),
+                Bid::Bid(b) => b + 5,
+            }
+            None => MIN_BID,
+        }
+    }
+
+    pub fn max_bid(&self) -> Points {
+        MAX_MID
     }
 
     pub fn make_bid(&mut self, bid: Bid) {
@@ -255,9 +299,17 @@ impl Game {
         bids == 1 && (bids + passes) == PLAYERS
     }
 
-    pub fn move_nest_cards_to_bid_winner(&mut self) {
+    pub fn move_nest_cards_to_maker(&mut self) {
         let maker = self.maker.unwrap();
-        self.hands[maker].append(&mut self.nest);
+        let is_human = !self.bot_players[maker];
+        while !self.nest.is_empty() {
+            if let Some(mut card) = self.nest.pop() {
+                if is_human {
+                    card.face_up = true;
+                }
+                self.hands[maker].push(card);
+            }
+        }
         self.sort_hand(maker);
     }
 
@@ -286,7 +338,7 @@ impl Game {
 
     fn has_card_in_lead_suit(&self) -> bool {
         if let Some(lead_suit) = &self.trick.lead_card_suit {
-            let hand = &self.hands[self.active];
+            let hand = self.active_hand();
             for card in hand {
                 if card.suit == *lead_suit {
                     return true;
@@ -300,7 +352,7 @@ impl Game {
         let mut eligible_ids = Vec::new();
         let has_card_in_lead_suit = self.has_card_in_lead_suit();
 
-        for card in &self.hands[self.active] {
+        for card in self.active_hand() {
             let mut eligible = false;
 
             // Is this the first card to play or there are no matching cards in hand?
@@ -326,7 +378,7 @@ impl Game {
 
     pub fn play_card_id(&mut self, card_id: u8) {
         let mut index = 0;
-        let hand = &mut self.hands[self.active];
+        let hand = self.active_hand_mut();
         for (idx, card) in hand.iter().enumerate() {
             if card.id == card_id {
                 index = idx;

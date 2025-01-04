@@ -59,6 +59,12 @@ impl Controller {
                         ViewUpdate::Nest => {
                             view.update_nest(&self.game);
                         }
+                        ViewUpdate::Bids => {
+                            view.update_bids(&self.game);
+                        }
+                        ViewUpdate::BidPanel => {
+                            view.end_human_bid(&self.game);
+                        }
                         ViewUpdate::Taken => {
                             view.update_taken(&self.game);
                         }
@@ -73,9 +79,29 @@ impl Controller {
             // Check for ControllerMsg
             if let Some(message) = self.state_mgr.controller_msg.take() {
                 match message {
+                    ControllerMsg::GetBid => {
+                        if self.game.bot_is_active() {
+                            let game_clone = self.game.clone();
+                            let sender = self.sender.clone();
+                            let min_bid = self.game.min_bid();
+                            let max_bid = self.game.max_bid();
+
+                            if cfg!(target_family = "wasm") {
+                                let bot = BotMonte::new();
+                                bot.get_bid(&game_clone, min_bid, max_bid, sender);
+                            } else {
+                                std::thread::spawn(move || {
+                                    let bot = BotMonte::new();
+                                    bot.get_bid(&game_clone, min_bid, max_bid, sender);
+                                });
+                            }
+                        } else if let Some(view) = &mut self.view {
+                            view.get_human_bid(&mut self.game);
+                        }
+                    }
                     ControllerMsg::GetPlay => {
                         println!("GetPlay");
-                        if self.game.bot_active() {
+                        if self.game.bot_is_active() {
                             let game_clone = self.game.clone();
                             let sender = self.sender.clone();
 
@@ -103,7 +129,7 @@ impl Controller {
             if let Some(view) = &mut self.view {
                 // The events processed here may cause the view to send PlayerActions,
                 // which are handled in check_player_actions().
-                view.process_events();
+                view.check_events();
                 view.update(time_delta);
                 view.draw().await;
             }
@@ -116,7 +142,11 @@ impl Controller {
         if received.is_ok() {
             match received.unwrap() {
                 PlayerAction::Bid(bid) => {
-                    println!("Place bid!");
+                    println!("Place bid: {:?}", bid);
+                    // Pass it to the StateMgr for handling.
+                    self.state_mgr
+                        .state_queue
+                        .push_back(State::MakingBid(bid));
                 },
                 PlayerAction::IncBid => todo!(),
                 PlayerAction::DecBid => todo!(),

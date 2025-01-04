@@ -3,6 +3,8 @@ use macroquad::prelude::*;
 mod bot_monte;
 mod card;
 mod controller;
+mod controller2;
+use controller2::Controller2;
 use controller::Controller;
 mod game;
 mod state_mgr;
@@ -25,6 +27,9 @@ async fn main() {
     // Set up backtracing for debugging.
     std::env::set_var("RUST_BACKTRACE", "1");
 
-    let mut controller = Controller::new().await;
+    // let mut controller = Controller::new().await;
+    // controller.go().await;
+
+    let mut controller = Controller2::new().await;
     controller.go().await;
 }

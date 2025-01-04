@@ -4,20 +4,13 @@ use macroquad::prelude::*;
 
 use crate::{
     card::{Card, SelectState},
-    game::{self, Bid, Game, PlayerAction},
+    game::{self, Bid, Game, PlayerAction, MIN_BID, NEST_SIZE, PLAYERS},
     state_mgr::State,
     view::{button_state::ButtonState, card_view::CardView},
 };
 
 use super::{
-    bid_panel::BidPanel,
-    button_shaded::ButtonShaded,
-    button_text::ButtonText,
-    eventer::EventerEvent,
-    score_table::ScoreTable,
-    sprite::Sprite,
-    texter::Texter,
-    view_geom::{self, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS},
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS}
 };
 
 
@@ -27,6 +20,7 @@ pub struct View {
     message: Texter,
     score_table: ScoreTable,
     play_button: ButtonShaded,
+    bid_markers: Vec<BidMarker>,
     bid_panel: BidPanel,
     sender: Sender<PlayerAction>,
     // For human card play:
@@ -39,19 +33,30 @@ pub struct View {
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
         let turn_tex = load_texture("src/assets/circle.png").await.unwrap();
+
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
+        let mut play_button = ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5);
+        play_button.state = ButtonState::Hidden;
 
         let mut message = Texter::new("message", 16, Some("Menlo-Bold.ttf"), false, false).await;
         message.transform.position = MESSAGE_POS;
         message.centered_horiz = true;
+
+        let mut bid_markers = Vec::new();
+        for p in 0..PLAYERS {
+            let geom = bid_marker_geom(p, PLAYERS);
+            let marker = BidMarker::new(geom.pos).await;
+            bid_markers.push(marker);
+        }
 
         Self {
             card_views: Vec::new(),
             turn_marker: Sprite::new(turn_tex, 0.4),
             message,
             score_table: ScoreTable::new(SCORE_TABLE_POS).await,
-            play_button: ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5),
-            bid_panel: BidPanel::new(65, 120, vec2(400.0, 550.0)).await,
+            play_button,
+            bid_markers,
+            bid_panel: BidPanel::new(65, 120, BID_PANEL_POS).await,
             sender,
             playable_card_ids: Vec::new(),
             hand_table_ids: HashSet::new(),
@@ -98,12 +103,10 @@ impl View {
             .sort_by(|a, b| a.card_image.z_order.cmp(&b.card_image.z_order));
     }
 
-    pub fn process_events(&mut self) {
+    pub fn check_events(&mut self) {
         // Key presses
         if is_key_released(KeyCode::Escape) {
-            self.sender
-                .send(PlayerAction::ShouldExit)
-                .expect("Message send error.");
+            self.sender.send(PlayerAction::ShouldExit).expect("Send error");
         }
 
         let mouse_pos: Vec2 = mouse_position().into();
@@ -126,7 +129,7 @@ impl View {
                 PlayerAction::DecBid => todo!(),
                 _ => {}, // not produced by the bid panel
             }
-            self.sender.send(action).expect("Message send error.");
+            self.sender.send(action).expect("Send error");
             return;
         }
 
@@ -182,8 +185,13 @@ impl View {
             //     State::Dealing { to_deal } => todo!(),
             //     State::DealingToTable { to_deal } => todo!(),
             //     State::PreparingForNewTurn => todo!(),
+            State::GettingBid => {
+            }
+            State::CompletingBidding => {
+                self.message.text = format!("Player {} wins the bidding.", game.maker.unwrap());
+            }
             State::GettingPlay => {
-                if game.bot_active() {
+                if game.bot_is_active() {
                     self.message.text = "Bot Thinking".to_owned();
                 } else {
                     self.message.text = "Your Turn".to_owned();
@@ -215,7 +223,7 @@ impl View {
     pub fn update_nest(&mut self, game: &Game) {
         for (idx, card) in game.nest.iter().enumerate() {
             if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::nest_geom(idx);
+                let geom = view_geom::nest_geom(idx, NEST_SIZE);
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
@@ -223,6 +231,12 @@ impl View {
             }
         }
         self.z_order_needs_update = true;
+    }
+
+    pub fn update_bids(&mut self, game: &Game) {
+        for (idx, opt_bid) in game.bids.iter().enumerate() {
+            self.bid_markers[idx].update_with_bid(opt_bid.clone());
+        }
     }
 
     pub fn update_taken(&mut self, game: &Game) {
@@ -269,6 +283,9 @@ impl View {
 
 
         self.turn_marker.draw();
+        for marker in &mut self.bid_markers {
+            marker.draw();
+        }
 
         for view in &mut self.card_views {
             view.draw();
@@ -281,6 +298,34 @@ impl View {
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
         next_frame().await;
+    }
+
+    pub fn get_human_bid(&mut self, game: &Game) {
+        // Hide bid marker for human.
+        self.bid_markers[game.active].visible = false;
+
+        match &game.high_bid {
+            Some(bid) => {
+                match bid {
+                    Bid::Pass => todo!(),
+                    Bid::Bid(b) => {
+                        self.bid_panel.min_bid = b + 5;
+                        self.bid_panel.update_bid_amount(b + 5);
+                    }
+                }
+            },
+            None => {
+                self.bid_panel.min_bid = MIN_BID;
+                self.bid_panel.update_bid_amount(MIN_BID);
+            },
+        }
+        println!("getting human bid");
+        self.bid_panel.visible = true;
+    }
+
+    pub fn end_human_bid(&mut self, game: &Game) {
+        self.bid_panel.visible = false;
+        self.bid_markers[game.active].visible = true;
     }
 
     pub fn get_human_play(&mut self, game: &mut Game) {
