@@ -16,7 +16,7 @@ impl ScoreTable {
         let font_size = 14;
         let y_spacing = 18.0;
         let mut heading = Texter::new(
-            "           We   They",
+            "         We   They",
             14,
             Some("Menlo-Bold.ttf"),
             false,
@@ -53,7 +53,7 @@ impl ScoreTable {
         bid: &Option<Bid>,
         hand: &[Points; 2],
     ) {
-        self.score.text = format!("Score     {:>2}    {:>2}", scores[0], scores[1]);
+        self.score.text = format!("Score   {:>2}    {:>2}", scores[0], scores[1]);
 
         let mut bid0 = "-".to_string();
         let mut bid1 = "-".to_string();
@@ -74,9 +74,9 @@ impl ScoreTable {
             }
             _ => {}
         }
-        self.bid.text = format!("Bid        {}     {}", bid0, bid1);
+        self.bid.text = format!("Bid      {}     {}", bid0, bid1);
 
-        self.hand.text = format!("Hand      {:>2}    {:>2}", hand[0], hand[1]);
+        self.hand.text = format!("Hand    {:>2}    {:>2}", hand[0], hand[1]);
     }
 
     pub fn draw(&mut self) {

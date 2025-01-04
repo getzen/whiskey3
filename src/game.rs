@@ -3,10 +3,12 @@ use crate::{
     trick::Trick,
 };
 
+#[derive(Clone)]
 pub enum PlayerAction {
     Bid(Bid),
     IncBid,
     DecBid,
+    Discard(u8),
     PlayCard(u8),
     ShouldExit,
 }
@@ -304,22 +306,25 @@ impl Game {
         let is_human = !self.bot_players[maker];
         while !self.nest.is_empty() {
             if let Some(mut card) = self.nest.pop() {
-                if is_human {
-                    card.face_up = true;
-                }
+                card.face_up = is_human;
                 self.hands[maker].push(card);
             }
+        }
+        for card in &mut self.hands[maker] {
+            card.select_state = SelectState::Eligible;
         }
         self.sort_hand(maker);
     }
 
-    pub fn discard_to_nest(&mut self, ids: Vec<u8>) {
+    pub fn discard_to_nest(&mut self, id: u8) {
         let maker = self.maker.unwrap();
-        for id in ids {
-            let idx = self.hands[maker].iter().position(|c| c.id == id);
-            let card = self.hands[maker].remove(idx.unwrap());
-            self.nest.push(card);
-        }
+        // println!("maker is {}, id is {}", maker, id);
+        // for card in &self.hands[maker] {
+        //     print!("{}, ", card.id);
+        // }
+        let idx = self.hands[maker].iter().position(|c| c.id == id);
+        let card = self.hands[maker].remove(idx.unwrap());
+        self.nest.push(card);
     }
 
     pub fn undiscard_from_nest(&mut self, id: u8) {

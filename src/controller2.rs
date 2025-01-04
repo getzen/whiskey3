@@ -19,7 +19,7 @@ pub enum GameAction { // move this to Game
     MoveNestToMaker,
     GetDiscards,
     WaitForDiscards,
-    Discard(Vec<u8>),
+    Discard(u8),
     EndDiscarding,
     WaitForTrump,
     SelectTrump(CardSuit),
@@ -83,6 +83,9 @@ impl Controller2 {
                     PlayerAction::Bid(bid) => {
                         self.game_action = Some(GameAction::MakeBid(bid));
                     },
+                    PlayerAction::Discard(id) => {
+                        self.game_action = Some(GameAction::Discard(id));
+                    }
                     PlayerAction::PlayCard(card_id) => {
                         self.game_action = Some(GameAction::PlayCard(card_id));
                     },
@@ -118,13 +121,15 @@ impl Controller2 {
                                 self.view.create_card_view(card).await;
                             }
                             self.view.update_deck(&self.game);
+                            self.view.update_message("Welcome to Whiskey");
+
                             self.game_action = Some(GameAction::ResetForNewHand);
-                            
                         },
                         GameAction::ResetForNewHand => {
                             self.game.reset_for_new_hand();
-                            //self.view.update_info(game, state);
+                            self.view.update_info(&self.game);
                             self.view.update_deck(&self.game);
+                            self.view.update_message("");
                             self.game_action = Some(GameAction::DealToHands);
                         },
                         GameAction::DealToHands => {
@@ -149,30 +154,60 @@ impl Controller2 {
                             }
                         },
                         GameAction::GetBid => {
+                            self.view.update_info(&self.game);
+                            self.view.update_bids(&self.game);
+
                             if self.game.bot_is_active() {
                                 self.spawn_bid_bot();
                             } else {
+                                self.view.update_message("Your bid");
                                 self.view.get_human_bid(&mut self.game);
                             }
+                            self.delay_before_game_action = 1.0;
                             self.game_action = Some(GameAction::WaitForBid);
                         },
-                        GameAction::WaitForBid => {}, // JUST MAKE ACTION "NONE"?
+                        GameAction::WaitForBid => self.game_action = None,
                         GameAction::MakeBid(bid) => {
+                            println!("MakeBid!");
                             self.game.make_bid(bid.clone());
 
-                            // view...
+                            self.view.update_info(&self.game);
+                            self.view.update_message("");
+                            self.view.update_bids(&self.game);
+                            self.view.end_human_bid(&self.game);
 
                             if self.game.bidding_completed() {
+                                self.delay_before_game_action = 2.0;
                                 self.game_action = Some(GameAction::EndBidding);
                             } else {
                                 self.game_action = Some(GameAction::GetBid);
                             }
                         },
-                        GameAction::EndBidding => todo!(),
-                        GameAction::MoveNestToMaker => todo!(),
-                        GameAction::GetDiscards => todo!(),
-                        GameAction::WaitForDiscards => todo!(),
-                        GameAction::Discard(vec) => todo!(),
+                        GameAction::EndBidding => {
+                            self.view.hide_bids_except_maker(&self.game);
+                            self.game_action = Some(GameAction::MoveNestToMaker);
+                        },
+                        GameAction::MoveNestToMaker => {
+                            self.game.move_nest_cards_to_maker();
+                            let maker = self.game.maker.unwrap();
+                            self.view.update_hand(&self.game, maker);
+                            self.view.set_discardable_hand_cards(&self.game);
+                            self.game_action = Some(GameAction::GetDiscards);
+                        },
+                        GameAction::GetDiscards => {
+                            self.view.update_message("Discard 3 cards.");
+                            self.game_action = Some(GameAction::WaitForDiscards);
+                        },
+                        GameAction::WaitForDiscards => self.game_action = None,
+                        GameAction::Discard(id) => {
+                            self.game.discard_to_nest(*id);
+
+                            let maker = self.game.maker.unwrap();
+                            self.view.update_hand(&self.game, maker);
+                            self.view.update_nest(&self.game);
+
+                            self.game_action = Some(GameAction::WaitForDiscards);
+                        },
                         GameAction::EndDiscarding => todo!(),
                         GameAction::WaitForTrump => todo!(),
                         GameAction::SelectTrump(_) => todo!(),
@@ -237,17 +272,18 @@ impl Controller2 {
 
 
     // Return true to exit app.
-    fn check_player_actions(&mut self) -> bool {
-        let received = self.receiver.try_recv();
-        if received.is_ok() {
-            match received.unwrap() {
-                PlayerAction::Bid(bid) => todo!(),
-                PlayerAction::IncBid => todo!(),
-                PlayerAction::DecBid => todo!(),
-                PlayerAction::PlayCard(_) => todo!(),
-                PlayerAction::ShouldExit => todo!(),
-            }
-        }
-        return false;
-    }
+    // fn check_player_actions(&mut self) -> bool {
+    //     let received = self.receiver.try_recv();
+    //     if received.is_ok() {
+    //         match received.unwrap() {
+    //             PlayerAction::Bid(bid) => todo!(),
+    //             PlayerAction::IncBid => todo!(),
+    //             PlayerAction::DecBid => todo!(),
+    //             PlayerAction::Discard(id) => GameAction::Discard(id),
+    //             PlayerAction::PlayCard(_) => todo!(),
+    //             PlayerAction::ShouldExit => todo!(),
+    //         }
+    //     }
+    //     return false;
+    // }
 }

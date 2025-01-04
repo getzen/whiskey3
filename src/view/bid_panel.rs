@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 use macroquad::{
     color::{BLACK, GRAY, GREEN, WHITE},
     math::{vec2, Vec2},
@@ -22,10 +24,11 @@ pub struct BidPanel {
     plus_button: ButtonText,
     minus_button: ButtonText,
     bid_text: Texter,
+    sender: Sender<PlayerAction>,
 }
 
 impl BidPanel {
-    pub async fn new(min_bid: Points, max_bid: Points, position: Vec2) -> Self {
+    pub async fn new(min_bid: Points, max_bid: Points, position: Vec2, sender: Sender<PlayerAction>) -> Self {
         let bid_button = ButtonText::new(
             0,
             position + vec2(-5.0, 0.0),
@@ -84,6 +87,7 @@ impl BidPanel {
             plus_button,
             minus_button,
             bid_text,
+            sender,
         }
     }
 
@@ -92,30 +96,33 @@ impl BidPanel {
         self.bid_text.text = format!("{}", new_amount);
     }
 
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<PlayerAction> {
+    /// Returns true if event found.
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
         if !self.visible {
-            return None;
+            return false;
         }
 
         if self.bid_button.process_events(mouse_pos) {
-            return Some(PlayerAction::Bid(Bid::Bid(self.current_bid)));
+            self.sender.send(PlayerAction::Bid(Bid::Bid(self.current_bid))).expect("Send error");
+            return true;
         }
 
         if self.pass_button.process_events(mouse_pos) {
-            return Some(PlayerAction::Bid(Bid::Pass));
+            self.sender.send(PlayerAction::Bid(Bid::Pass)).expect("Send error");
+            return true;
         }
 
         if self.plus_button.process_events(mouse_pos) {
             let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
             self.update_bid_amount(new_amount);
+            return true;
         }
 
         if self.minus_button.process_events(mouse_pos) {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);
         }
-
-        None
+        true
     }
 
     pub fn draw(&mut self) {

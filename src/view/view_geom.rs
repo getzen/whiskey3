@@ -6,11 +6,12 @@ pub const SCREEN: Vec2 = vec2(800., 800.);
 pub const CENTER: Vec2 = vec2(SCREEN.x * 0.5, SCREEN.y * 0.5);
 
 pub const DECK_POS: Vec2 = vec2(SCREEN.x - 80.0, SCREEN.y - 100.0);
-pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y - 0.0);
-pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 235.0, 30.0);
+pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 90.0);
+pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 175.0, 30.0);
 pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
 pub const BID_PANEL_POS: Vec2 = vec2(400.0, 580.0);
 
+pub const TURN_MARKER_SPEED: f32 = 600.0;
 pub const CARD_SPEED: f32 = 800.0;
 pub const CARD_SPEED_TAKE: f32 = 300.0;
 pub const ROT_SPEED: f32 = 10.0;
@@ -42,7 +43,7 @@ pub fn turn_marker_geom(player: usize, player_count: usize) -> ViewGeom {
 pub fn bid_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     let rad = player_radians_from_center(player, player_count);
     ViewGeom {
-        pos: position_from(CENTER, rad, 210.0),
+        pos: position_from(CENTER, rad, 180.0),
         ..Default::default()
     }
 }
@@ -119,7 +120,7 @@ pub fn hand_card_geom(
     let distance_from_center = 330.0;
 
     let max_width = match is_bot {
-        true => 350.,
+        true => 340.,
         false => 500.,
     };
     let max_spacing: f32 = 100.;

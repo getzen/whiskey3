@@ -1,8 +1,11 @@
+use std::sync::mpsc::Sender;
+
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 
 use crate::card::SelectState;
+use crate::game::PlayerAction;
 use crate::view::eventer::Eventer;
 use crate::view::eventer::EventerEvent;
 use crate::view::imager::Imager;
@@ -28,10 +31,12 @@ pub struct CardView {
     pub angle_anim: Option<RotationAnimator>,
 
     pub select_state: SelectState,
+    sender: Sender<PlayerAction>,
+    pub player_action: Option<PlayerAction>,
 }
 
 impl CardView {
-    pub fn new(id: u8, face: Texture2D, back: Texture2D) -> Self {
+    pub fn new(id: u8, face: Texture2D, back: Texture2D, sender: Sender<PlayerAction>) -> Self {
         Self {
             id,
             transform: Transform::new(Vec2::ZERO, 0.0),
@@ -44,6 +49,8 @@ impl CardView {
             trans_anim: None,
             angle_anim: None,
             select_state: SelectState::OutOfScope,
+            sender,
+            player_action: None,
         }
     }
 
@@ -104,11 +111,24 @@ impl CardView {
             .contains_point(point, &self.transform, size, centered)
     }
 
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> Option<EventerEvent> {
+    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
         let size = self.card_image.draw_size();
         let centered = self.card_image.centered;
-        self.eventer
-            .process_events(mouse_pos, &self.transform, size, centered)
+
+        match self.eventer.process_events(mouse_pos, &self.transform, size, centered) {
+            Some(event) => match event {
+                EventerEvent::LeftMouseReleased => {
+                    if self.select_state == SelectState::Eligible {
+                        if let Some(action) = &self.player_action {
+                            self.sender.send(action.clone()).expect("Send error");
+                        }
+                    }
+                    true
+                },
+                _ => true,
+            },
+            None => false,
+        }
     }
 
     pub fn draw(&mut self) {

@@ -2,10 +2,10 @@ use macroquad::prelude::*;
 
 mod bot_monte;
 mod card;
-mod controller;
+//mod controller;
 mod controller2;
 use controller2::Controller2;
-use controller::Controller;
+//use controller::Controller;
 mod game;
 mod state_mgr;
 mod trick;

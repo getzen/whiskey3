@@ -10,7 +10,7 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS}
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, card_view, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED}
 };
 
 
@@ -33,12 +33,14 @@ pub struct View {
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
         let turn_tex = load_texture("src/assets/circle.png").await.unwrap();
+        let mut turn_marker = Sprite::new(turn_tex, 0.4);
+        turn_marker.visible = false;
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
         let mut play_button = ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5);
         play_button.state = ButtonState::Hidden;
 
-        let mut message = Texter::new("message", 16, Some("Menlo-Bold.ttf"), false, false).await;
+        let mut message = Texter::new("Welcome to Whiskey", 16, Some("Menlo-Bold.ttf"), false, false).await;
         message.transform.position = MESSAGE_POS;
         message.centered_horiz = true;
 
@@ -51,12 +53,12 @@ impl View {
 
         Self {
             card_views: Vec::new(),
-            turn_marker: Sprite::new(turn_tex, 0.4),
+            turn_marker,
             message,
             score_table: ScoreTable::new(SCORE_TABLE_POS).await,
             play_button,
             bid_markers,
-            bid_panel: BidPanel::new(65, 120, BID_PANEL_POS).await,
+            bid_panel: BidPanel::new(65, 120, BID_PANEL_POS, sender.clone()).await,
             sender,
             playable_card_ids: Vec::new(),
             hand_table_ids: HashSet::new(),
@@ -74,7 +76,7 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut view = CardView::new(card.id, face, back.clone());
+        let mut view = CardView::new(card.id, face, back.clone(), self.sender.clone());
         view.transform.position = view_geom::DECK_POS;
         self.card_views.push(view);
     }
@@ -113,48 +115,19 @@ impl View {
 
         // Buttons
         if self.play_button.process_events(&mouse_pos) {
-            println!("play clicked");
             self.play_button.state = ButtonState::Hidden;
             return;
         }
 
-        if let Some(action) = self.bid_panel.process_events(&mouse_pos) {
-            // Some actions are handled internally.
-            match &action {
-                PlayerAction::Bid(bid) => {
-                    println!("bid: {:?}", bid);
-                    // hide bid panel
-                },
-                PlayerAction::IncBid => todo!(),
-                PlayerAction::DecBid => todo!(),
-                _ => {}, // not produced by the bid panel
-            }
-            self.sender.send(action).expect("Send error");
+        if self.bid_panel.process_events(&mouse_pos) {
             return;
         }
 
         // Cards
-        let mut card_id_clicked = None;
-
-        for view in self.card_views.iter_mut().rev() {
-            if let Some(event) = view.process_events(&mouse_pos) {
-                match event {
-                    EventerEvent::LeftMouseReleased => {
-                        let state = view.select_state.clone();
-                        match state {
-                            SelectState::Eligible | SelectState::Selected => {
-                                card_id_clicked = Some(view.id);
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-                break; // We are over a card, so we're done regardless.
+        for card_view in self.card_views.iter_mut().rev() {
+            if card_view.process_events(&mouse_pos) {
+                return;
             }
-        }
-        if let Some(id) = card_id_clicked {
-            self.process_card_click_id(id);
         }
     }
 
@@ -169,42 +142,17 @@ impl View {
         self.turn_marker.update(time_delta);
     }
 
-    pub fn update_info(&mut self, game: &mut Game, state: &State) {
+    pub fn update_info(&mut self, game: &Game) {
         self.score_table
             .update(&game.scores, &game.maker, &game.high_bid, &[0, 0]);
 
-        self.turn_marker.imager.visible = true;
+        self.turn_marker.visible = true;
         let geom = view_geom::turn_marker_geom(game.active, game::PLAYERS);
-        self.turn_marker.move_to(geom.pos, 300.0);
+        self.turn_marker.move_to(geom.pos, TURN_MARKER_SPEED);
+    }
 
-        // Message / buttons
-        match state {
-            State::Init => {
-                self.message.text = "Welcome to Whiskey".to_owned();
-            }
-            //     State::Dealing { to_deal } => todo!(),
-            //     State::DealingToTable { to_deal } => todo!(),
-            //     State::PreparingForNewTurn => todo!(),
-            State::GettingBid => {
-            }
-            State::CompletingBidding => {
-                self.message.text = format!("Player {} wins the bidding.", game.maker.unwrap());
-            }
-            State::GettingPlay => {
-                if game.bot_is_active() {
-                    self.message.text = "Bot Thinking".to_owned();
-                } else {
-                    self.message.text = "Your Turn".to_owned();
-                }
-            }
-            //     State::WaitingForPlay => todo!(),
-            //     State::MakingPlay(card_play) => todo!(),
-            //     State::CompletingPlay => todo!(),
-            State::CompletingGame(we, they) => {
-                self.message.text = format!("Hand Over. We: {}, They: {}", we, they);
-            }
-            _ => {}
-        }
+    pub fn update_message(&mut self, test: &str) {
+        self.message.text = test.to_string();
     }
 
     pub fn update_deck(&mut self, game: &Game) {
@@ -223,7 +171,7 @@ impl View {
     pub fn update_nest(&mut self, game: &Game) {
         for (idx, card) in game.nest.iter().enumerate() {
             if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::nest_geom(idx, NEST_SIZE);
+                let geom = view_geom::nest_geom(idx, game.nest.len());
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
@@ -234,8 +182,18 @@ impl View {
     }
 
     pub fn update_bids(&mut self, game: &Game) {
-        for (idx, opt_bid) in game.bids.iter().enumerate() {
-            self.bid_markers[idx].update_with_bid(opt_bid.clone());
+        for (p, opt_bid) in game.bids.iter().enumerate() {
+            self.bid_markers[p].visible = true;
+            self.bid_markers[p].update_with_bid(opt_bid.clone());
+        }
+    }
+
+    pub fn hide_bids_except_maker(&mut self, game: &Game) {
+        for p in 0..game::PLAYERS {
+            if game.maker.unwrap() == p {
+                continue;
+            }
+            self.bid_markers[p].visible = false;
         }
     }
 
@@ -270,6 +228,19 @@ impl View {
             }
         }
         self.z_order_needs_update = true;
+    }
+
+    pub fn set_discardable_hand_cards(&mut self, game: &Game) {
+        let maker = game.maker.unwrap();
+        let hand = &game.hands[maker];
+        for card in hand {
+            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
+                if card.select_state == SelectState::Eligible {
+                    view.set_select_state(card.select_state.clone());
+                    view.player_action = Some(PlayerAction::Discard(card.id));
+                }
+            }
+        }
     }
 
     pub async fn draw(&mut self) {
@@ -348,20 +319,5 @@ impl View {
         }
 
         self.selected_ids.clear();
-    }
-
-    fn process_card_click_id(&mut self, id: u8) {
-        if self.selected_ids.contains(&id) {
-            self.selected_ids.remove(&id);
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == id) {
-                view.set_select_state(SelectState::Eligible);
-            }
-        } else {
-            self.selected_ids.insert(id);
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == id) {
-                view.set_select_state(SelectState::Selected);
-            }
-        }
-        
     }
 }

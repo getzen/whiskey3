@@ -9,7 +9,7 @@ pub enum CardSuit {
     Joker,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SelectState {
     Selected,
     Eligible,   // Eligible to be selected. Responds to clicks.

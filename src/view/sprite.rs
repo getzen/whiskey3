@@ -7,6 +7,7 @@ use crate::view::transform::Transform;
 use super::animators::{RotationAnimator, TranslationAnimator};
 
 pub struct Sprite {
+    pub visible: bool,
     pub transform: Transform,
     pub imager: Imager,
     pub trans_anim: Option<TranslationAnimator>,
@@ -16,6 +17,7 @@ pub struct Sprite {
 impl Sprite {
     pub fn new(texture: Texture2D, tex_size_multiplier: f32) -> Self {
         Self {
+            visible: true,
             transform: Transform::new(Vec2::ZERO, 0.0),
             imager: Imager::new(texture, tex_size_multiplier, true),
             trans_anim: None,
@@ -56,6 +58,7 @@ impl Sprite {
     }
 
     pub fn draw(&mut self) {
+        if !self.visible { return }
         self.imager.draw(&self.transform, None);
     }
 }
