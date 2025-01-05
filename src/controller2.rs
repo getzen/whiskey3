@@ -200,7 +200,12 @@ impl Controller2 {
                         },
                         GameAction::WaitForDiscards => self.game_action = None,
                         GameAction::Discard(id) => {
-                            self.game.discard_to_nest(*id);
+                            self.game.exchange_with_nest(*id);
+
+                            // Enable a Done button if nest is full.
+                            if self.game.nest_is_full() {
+                                println!("Done!");
+                            }
 
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
@@ -208,7 +213,11 @@ impl Controller2 {
 
                             self.game_action = Some(GameAction::WaitForDiscards);
                         },
-                        GameAction::EndDiscarding => todo!(),
+                        GameAction::EndDiscarding => {
+                            let maker = self.game.maker.unwrap();
+                            self.view.reset_eligibility(&self.game.hands[maker]);
+                            self.view.reset_eligibility(&self.game.nest);
+                        },
                         GameAction::WaitForTrump => todo!(),
                         GameAction::SelectTrump(_) => todo!(),
                         GameAction::GetCardPlay => todo!(),

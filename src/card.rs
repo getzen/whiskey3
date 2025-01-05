@@ -9,13 +9,13 @@ pub enum CardSuit {
     Joker,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum SelectState {
-    Selected,
-    Eligible,   // Eligible to be selected. Responds to clicks.
-    Ineligible, // Not eligible given the game state. Dimmed. Unresponsive.
-    OutOfScope, // Cards that can't possibly be eligible. Not dimmed, but unresponsive.
-}
+// #[derive(Clone, Debug, PartialEq)]
+// pub enum SelectState {
+//     Selected,
+//     Eligible,   // Eligible to be selected. Responds to clicks.
+//     Ineligible, // Not eligible given the game state. Dimmed. Unresponsive.
+//     OutOfScope, // Cards that can't possibly be eligible. Not dimmed, but unresponsive.
+// }
 
 pub type Rank = u8;
 pub type Points = u16;
@@ -27,7 +27,7 @@ pub struct Card {
     pub rank: Rank,
     pub points: Points,
     pub face_up: bool,
-    pub select_state: SelectState,
+    pub eligible: bool, // for discarding or playing to a trick
 }
 
 impl Card {
@@ -38,7 +38,7 @@ impl Card {
             rank,
             points,
             face_up: false,
-            select_state: SelectState::OutOfScope,
+            eligible: false,
         }
     }
 

@@ -4,7 +4,6 @@ use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 
-use crate::card::SelectState;
 use crate::game::PlayerAction;
 use crate::view::eventer::Eventer;
 use crate::view::eventer::EventerEvent;
@@ -24,13 +23,12 @@ pub struct CardView {
     pub face_texture: Texture2D,
     pub back_texture: Texture2D,
 
-    pub alt_color: Option<Color>,
-    pub use_alt_color: bool,
+    pub dimmed_color: Color,
+    pub dimmed: bool,
 
     pub trans_anim: Option<TranslationAnimator>,
     pub angle_anim: Option<RotationAnimator>,
 
-    pub select_state: SelectState,
     sender: Sender<PlayerAction>,
     pub player_action: Option<PlayerAction>,
 }
@@ -44,11 +42,10 @@ impl CardView {
             eventer: Eventer::new(),
             face_texture: face,
             back_texture: back,
-            alt_color: Some(Color::from_rgba(200, 255, 200, 255)), //Some(Color::from_rgba(220, 220, 220, 255)),
-            use_alt_color: false,
+            dimmed_color: Color::from_rgba(200, 255, 200, 255),
+            dimmed: false,
             trans_anim: None,
             angle_anim: None,
-            select_state: SelectState::OutOfScope,
             sender,
             player_action: None,
         }
@@ -58,16 +55,6 @@ impl CardView {
         self.card_image.texture = match face_up {
             true => self.face_texture.clone(),
             false => self.back_texture.clone(),
-        }
-    }
-
-    pub fn set_select_state(&mut self, state: SelectState) {
-        self.select_state = state;
-        self.use_alt_color = match self.select_state {
-            SelectState::Selected => true,
-            SelectState::Eligible => false,
-            SelectState::Ineligible => false,
-            SelectState::OutOfScope => false,
         }
     }
 
@@ -111,29 +98,34 @@ impl CardView {
             .contains_point(point, &self.transform, size, centered)
     }
 
+    /// Returns true if event found.
     pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
         let size = self.card_image.draw_size();
         let centered = self.card_image.centered;
 
         match self.eventer.process_events(mouse_pos, &self.transform, size, centered) {
-            Some(event) => match event {
-                EventerEvent::LeftMouseReleased => {
-                    if self.select_state == SelectState::Eligible {
+            Some(event) => {           
+                match event {
+                    EventerEvent::LeftMouseReleased => {
+                        // Send action if one exists. Dimmed cards should not have actions.
                         if let Some(action) = &self.player_action {
                             self.sender.send(action.clone()).expect("Send error");
                         }
-                    }
-                    true
-                },
-                _ => true,
-            },
-            None => false,
+                    },
+                    _ => {},
+                }
+                // Regardless, card contained mouse_pos, so return true.
+                return true; 
+            }
+            None => {
+                return false;
+            }
         }
     }
 
     pub fn draw(&mut self) {
-        if self.use_alt_color {
-            self.card_image.draw(&self.transform, self.alt_color);
+        if self.dimmed {
+            self.card_image.draw(&self.transform, Some(self.dimmed_color));
         } else {
             self.card_image.draw(&self.transform, None);
         }

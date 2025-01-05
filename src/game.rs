@@ -1,6 +1,5 @@
 use crate::{
-    card::{Card, CardSuit, Points, Rank, SelectState},
-    trick::Trick,
+    card::{Card, CardSuit, Points, Rank}, trick::Trick,
 };
 
 #[derive(Clone)]
@@ -311,33 +310,56 @@ impl Game {
             }
         }
         for card in &mut self.hands[maker] {
-            card.select_state = SelectState::Eligible;
+            card.eligible = true;
         }
         self.sort_hand(maker);
     }
 
-    pub fn discard_to_nest(&mut self, id: u8) {
+    pub fn exchange_with_nest(&mut self, id: u8) {
         let maker = self.maker.unwrap();
-        // println!("maker is {}, id is {}", maker, id);
-        // for card in &self.hands[maker] {
-        //     print!("{}, ", card.id);
-        // }
-        let idx = self.hands[maker].iter().position(|c| c.id == id);
-        let card = self.hands[maker].remove(idx.unwrap());
-        self.nest.push(card);
+        
+        // Check if hand card.
+        if let Some(idx) = self.hands[maker].iter().position(|c| c.id == id) {
+            if !self.nest_is_full() {
+                let card = self.hands[maker].remove(idx);
+                self.nest.push(card);
+            } 
+        }
+       
+        // Check if nest card.
+        else if let Some(idx) = self.nest.iter().position(|c| c.id == id) {
+            let card = self.nest.remove(idx);
+            self.hands[maker].push(card);
+            self.sort_hand(maker);
+        }
     }
 
-    pub fn undiscard_from_nest(&mut self, id: u8) {
-        let idx = self.nest.iter().position(|c| c.id == id);
-        let card = self.nest.remove(idx.unwrap());
-        let maker = self.maker.unwrap();
-        self.hands[maker].push(card);
-        self.sort_hand(maker);
+    pub fn nest_is_full(&self) -> bool {
+        self.nest.len() == NEST_SIZE
     }
 
-    pub fn mark_hand_as_out_of_scope(&mut self, player: usize) {
+    // pub fn discard_to_nest(&mut self, id: u8) {
+    //     let maker = self.maker.unwrap();
+    //     // println!("maker is {}, id is {}", maker, id);
+    //     // for card in &self.hands[maker] {
+    //     //     print!("{}, ", card.id);
+    //     // }
+    //     let idx = self.hands[maker].iter().position(|c| c.id == id);
+    //     let card = self.hands[maker].remove(idx.unwrap());
+    //     self.nest.push(card);
+    // }
+
+    // pub fn undiscard_from_nest(&mut self, id: u8) {
+    //     let idx = self.nest.iter().position(|c| c.id == id);
+    //     let card = self.nest.remove(idx.unwrap());
+    //     let maker = self.maker.unwrap();
+    //     self.hands[maker].push(card);
+    //     self.sort_hand(maker);
+    // }
+
+    pub fn mark_hand_ineligible(&mut self, player: usize) {
         for card in &mut self.hands[player] {
-            card.select_state = SelectState::OutOfScope;
+            card.eligible = false;
         }
     }
 

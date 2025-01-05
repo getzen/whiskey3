@@ -1,14 +1,13 @@
 use std::sync::mpsc::Sender;
 
 use macroquad::{
-    color::{BLACK, GRAY, GREEN, WHITE},
+    color::WHITE,
     math::{vec2, Vec2},
-    shapes::{draw_rectangle, draw_rectangle_lines},
 };
 
 use crate::{card::Points, game::{Bid, PlayerAction}};
 
-use super::{button_text::ButtonText, eventer::EventerEvent, texter::Texter, transform::Transform};
+use super::{button_text::ButtonText, texter::Texter, transform::Transform};
 
 pub struct BidPanel {
     pub min_bid: Points,

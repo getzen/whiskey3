@@ -3,9 +3,8 @@ use std::{collections::HashSet, sync::mpsc::Sender};
 use macroquad::prelude::*;
 
 use crate::{
-    card::{Card, SelectState},
-    game::{self, Bid, Game, PlayerAction, MIN_BID, NEST_SIZE, PLAYERS},
-    state_mgr::State,
+    card::Card,
+    game::{self, Bid, Game, PlayerAction, MIN_BID, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
 
@@ -224,10 +223,20 @@ impl View {
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
                 view.set_face_up(card.face_up);
-                view.set_select_state(card.select_state.clone());
+                // card.eligible and card_view.dimmed not handled here
             }
         }
         self.z_order_needs_update = true;
+    }
+
+    // After player exchanges or plays a card, call this to reset the nest or hand.
+    pub fn reset_eligibility(&mut self, cards: &[Card]) {
+        for card in cards {
+            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
+                view.dimmed = false;
+                view.player_action = None;
+            }
+        }
     }
 
     pub fn set_discardable_hand_cards(&mut self, game: &Game) {
@@ -235,9 +244,21 @@ impl View {
         let hand = &game.hands[maker];
         for card in hand {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                if card.select_state == SelectState::Eligible {
-                    view.set_select_state(card.select_state.clone());
+                view.dimmed = !card.eligible;
+                if card.eligible {
                     view.player_action = Some(PlayerAction::Discard(card.id));
+                }
+            }
+        }
+    }
+
+    pub fn set_playable_hand_cards(&mut self, game: &Game) {
+        let hand = &game.hands[game.active];
+        for card in hand {
+            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
+                view.dimmed = !card.eligible;
+                if card.eligible {
+                    view.player_action = Some(PlayerAction::PlayCard(card.id));
                 }
             }
         }
@@ -299,25 +320,25 @@ impl View {
         self.bid_markers[game.active].visible = true;
     }
 
-    pub fn get_human_play(&mut self, game: &mut Game) {
-        self.playable_card_ids = game.get_playable_card_ids();
+    // pub fn get_human_play(&mut self, game: &mut Game) {
+    //     self.playable_card_ids = game.get_playable_card_ids();
 
-        self.hand_table_ids.clear();
-        for card in &game.hands[game.active] {
-            self.hand_table_ids.insert(card.id);
-        }
-        for card in &game.nest {
-            self.hand_table_ids.insert(card.id);
-        }
+    //     self.hand_table_ids.clear();
+    //     for card in &game.hands[game.active] {
+    //         self.hand_table_ids.insert(card.id);
+    //     }
+    //     for card in &game.nest {
+    //         self.hand_table_ids.insert(card.id);
+    //     }
 
-        for view in &mut self.card_views {
-            if self.hand_table_ids.contains(&view.id) {
-                view.set_select_state(SelectState::Eligible);
-            } else {
-                view.set_select_state(SelectState::OutOfScope);
-            }
-        }
+    //     for view in &mut self.card_views {
+    //         if self.hand_table_ids.contains(&view.id) {
+    //             view.set_select_state(SelectState::Eligible);
+    //         } else {
+    //             view.set_select_state(SelectState::OutOfScope);
+    //         }
+    //     }
 
-        self.selected_ids.clear();
-    }
+    //     self.selected_ids.clear();
+    // }
 }
