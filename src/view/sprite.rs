@@ -33,6 +33,7 @@ impl Sprite {
         ));
     }
 
+    #[allow(unused)]
     pub fn rotate_to(&mut self, end_radian: f32, velocity: f32) {
         self.angle_anim = Some(RotationAnimator::new(
             self.transform.rotation,

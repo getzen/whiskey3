@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, card_view, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED}
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, card_view, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED}
 };
 
 
@@ -21,6 +21,7 @@ pub struct View {
     play_button: ButtonShaded,
     bid_markers: Vec<BidMarker>,
     bid_panel: BidPanel,
+    done_exchanging_button: ButtonText,
     sender: Sender<PlayerAction>,
     // For human card play:
     playable_card_ids: Vec<u8>,
@@ -50,6 +51,11 @@ impl View {
             bid_markers.push(marker);
         }
 
+        let mut done_exchanging_button = ButtonText::new(0, DONE_EXCHANGING_BUTTON_POS, "Done", 16, Some("Menlo-Bold.ttf"),  vec2(80.0, 40.0)).await;
+        done_exchanging_button.sender = Some(sender.clone());
+        done_exchanging_button.player_action = Some(PlayerAction::DoneExchanging);
+        done_exchanging_button.state = ButtonState::Hidden;
+
         Self {
             card_views: Vec::new(),
             turn_marker,
@@ -58,6 +64,7 @@ impl View {
             play_button,
             bid_markers,
             bid_panel: BidPanel::new(65, 120, BID_PANEL_POS, sender.clone()).await,
+            done_exchanging_button,
             sender,
             playable_card_ids: Vec::new(),
             hand_table_ids: HashSet::new(),
@@ -119,6 +126,10 @@ impl View {
         }
 
         if self.bid_panel.process_events(&mouse_pos) {
+            return;
+        }
+
+        if self.done_exchanging_button.process_events(&mouse_pos) {
             return;
         }
 
@@ -239,6 +250,17 @@ impl View {
         }
     }
 
+    pub fn show_done_exchanging_button(&mut self, enabled: bool) {
+        match enabled {
+            true => self.done_exchanging_button.state = ButtonState::Normal,
+            false => self.done_exchanging_button.state = ButtonState::Disabled,
+        }
+    }
+
+    pub fn hide_done_exchanging_button(&mut self) {
+        self.done_exchanging_button.state = ButtonState::Hidden;
+    }
+
     pub fn set_discardable_hand_cards(&mut self, game: &Game) {
         let maker = game.maker.unwrap();
         let hand = &game.hands[maker];
@@ -246,7 +268,7 @@ impl View {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
                 view.dimmed = !card.eligible;
                 if card.eligible {
-                    view.player_action = Some(PlayerAction::Discard(card.id));
+                    view.player_action = Some(PlayerAction::Exchange(card.id));
                 }
             }
         }
@@ -268,13 +290,14 @@ impl View {
         clear_background(Color::from_rgba(100, 100, 100, 255));
         
 
-        let gl = unsafe { get_internal_gl().quad_gl };
-        let matrix = glam::Mat4::from_translation(vec3(100.0, 0.0, 0.0));
-        gl.push_model_matrix(matrix);
-        gl.pop_model_matrix();
+        // let gl = unsafe { get_internal_gl().quad_gl };
+        // let matrix = glam::Mat4::from_translation(vec3(100.0, 0.0, 0.0));
+        // gl.push_model_matrix(matrix);
+        // gl.pop_model_matrix();
 
 
-        self.turn_marker.draw();
+        //self.turn_marker.draw();
+
         for marker in &mut self.bid_markers {
             marker.draw();
         }
@@ -287,6 +310,7 @@ impl View {
         self.score_table.draw();
         self.play_button.draw();
         self.bid_panel.draw();
+        self.done_exchanging_button.draw();
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
         next_frame().await;

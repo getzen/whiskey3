@@ -5,9 +5,10 @@ use crate::{
 #[derive(Clone)]
 pub enum PlayerAction {
     Bid(Bid),
-    IncBid,
-    DecBid,
-    Discard(u8),
+    //IncBid,
+   // DecBid,
+    Exchange(u8),
+    DoneExchanging,
     PlayCard(u8),
     ShouldExit,
 }

@@ -1,8 +1,10 @@
-use macroquad::color::BLACK;
+use std::sync::mpsc::Sender;
+
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::shapes::draw_rectangle_lines;
 
+use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
 use crate::view::eventer::EventerEvent;
@@ -21,6 +23,8 @@ pub struct ButtonText {
     pub normal_color: Color,
     pub highlighted_color: Color,
     pub disabled_color: Color,
+    pub sender: Option<Sender<PlayerAction>>,
+    pub player_action: Option<PlayerAction>,
 }
 
 impl ButtonText {
@@ -44,7 +48,9 @@ impl ButtonText {
             state: ButtonState::Normal,
             normal_color: Color::from_rgba(220, 220, 220, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
-            disabled_color: Color::from_rgba(100, 100, 100, 255),
+            disabled_color: Color::from_rgba(150, 150, 150, 255),
+            sender: None,
+            player_action: None,
         }
     }
 
@@ -77,6 +83,12 @@ impl ButtonText {
             }
             EventerEvent::LeftMouseReleased => {
                 self.state = ButtonState::Highlighted;
+                // Send action if sender and action exist.
+                if let Some(sender) = &self.sender {
+                    if let Some(action) = &self.player_action {
+                        sender.send(action.clone()).expect("Send error");
+                    }
+                }
                 return true;
             }
             _ => {

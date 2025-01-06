@@ -40,7 +40,7 @@ impl Transform {
         //translation * rotation * scale
     }
 
-    /// Returns the position as rotated by the (parent) angle.
+    /// Returns the position as rotated by the given angle.
     fn rotated_position(&self, angle: f32) -> Vec2 {
         let angle_vec = Vec2::from_angle(angle);
         self.position.rotate(angle_vec)

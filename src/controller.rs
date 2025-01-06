@@ -7,7 +7,7 @@ use crate::game::{Bid, Game, PlayerAction};
 use crate::view::view::View;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum GameAction { // move this to Game
+pub enum GameAction {
     Setup,
     ResetForNewHand,
     DealToHands,
@@ -17,10 +17,11 @@ pub enum GameAction { // move this to Game
     MakeBid(Bid),
     EndBidding,
     MoveNestToMaker,
-    GetDiscards,
-    WaitForDiscards,
-    Discard(u8),
-    EndDiscarding,
+    GetExchanges,
+    WaitForExchanges,
+    Exchange(u8),
+    EndExchanging,
+    GetTrump,
     WaitForTrump,
     SelectTrump(CardSuit),
     GetCardPlay,
@@ -33,7 +34,7 @@ pub enum GameAction { // move this to Game
     Exit,
 }
 
-pub struct Controller2 {
+pub struct Controller {
     game: Game,
     view: View,
 
@@ -44,7 +45,7 @@ pub struct Controller2 {
     delay_before_game_action: f32,
 }
 
-impl Controller2 {
+impl Controller {
     pub async fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
 
@@ -83,14 +84,18 @@ impl Controller2 {
                     PlayerAction::Bid(bid) => {
                         self.game_action = Some(GameAction::MakeBid(bid));
                     },
-                    PlayerAction::Discard(id) => {
-                        self.game_action = Some(GameAction::Discard(id));
+                    PlayerAction::Exchange(id) => {
+                        self.game_action = Some(GameAction::Exchange(id));
                     }
+                    PlayerAction::DoneExchanging => {
+                        self.game_action = Some(GameAction::EndExchanging);
+                    },
                     PlayerAction::PlayCard(card_id) => {
                         self.game_action = Some(GameAction::PlayCard(card_id));
                     },
                     PlayerAction::ShouldExit => todo!(),
-                    _ => {} // Remaining actions were handled directly by view.
+                   
+                    // _ => {} // Remaining actions were handled directly by view.
                 }
             }
 
@@ -192,31 +197,36 @@ impl Controller2 {
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
                             self.view.set_discardable_hand_cards(&self.game);
-                            self.game_action = Some(GameAction::GetDiscards);
+                            self.game_action = Some(GameAction::GetExchanges);
                         },
-                        GameAction::GetDiscards => {
+                        GameAction::GetExchanges => {
                             self.view.update_message("Discard 3 cards.");
-                            self.game_action = Some(GameAction::WaitForDiscards);
+                            self.view.show_done_exchanging_button(false);
+                            self.game_action = Some(GameAction::WaitForExchanges);
                         },
-                        GameAction::WaitForDiscards => self.game_action = None,
-                        GameAction::Discard(id) => {
+                        GameAction::WaitForExchanges => self.game_action = None,
+                        GameAction::Exchange(id) => {
                             self.game.exchange_with_nest(*id);
 
-                            // Enable a Done button if nest is full.
-                            if self.game.nest_is_full() {
-                                println!("Done!");
-                            }
+                            // Disable Done button if nest is full.
+                            self.view.show_done_exchanging_button(self.game.nest_is_full());
 
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
                             self.view.update_nest(&self.game);
 
-                            self.game_action = Some(GameAction::WaitForDiscards);
+                            self.game_action = Some(GameAction::WaitForExchanges);
                         },
-                        GameAction::EndDiscarding => {
+                        GameAction::EndExchanging => {
                             let maker = self.game.maker.unwrap();
                             self.view.reset_eligibility(&self.game.hands[maker]);
                             self.view.reset_eligibility(&self.game.nest);
+                            self.view.hide_done_exchanging_button();
+
+                            self.game_action = Some(GameAction::GetTrump);
+                        },
+                        GameAction::GetTrump => {
+                            self.game_action = None;
                         },
                         GameAction::WaitForTrump => todo!(),
                         GameAction::SelectTrump(_) => todo!(),

@@ -2,8 +2,8 @@ use macroquad::prelude::*;
 
 mod bot_monte;
 mod card;
-mod controller2;
-use controller2::Controller2;
+mod controller;
+use controller::Controller;
 mod game;
 mod trick;
 mod view;
@@ -27,6 +27,6 @@ async fn main() {
     // let mut controller = Controller::new().await;
     // controller.go().await;
 
-    let mut controller = Controller2::new().await;
+    let mut controller = Controller::new().await;
     controller.go().await;
 }
