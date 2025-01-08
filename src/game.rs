@@ -10,6 +10,7 @@ pub enum PlayerAction {
     // DecBid,
     Exchange(u8),
     DoneExchanging,
+    ChooseTrump(CardSuit),
     PlayCard(u8),
     ShouldExit,
 }

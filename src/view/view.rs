@@ -3,23 +3,15 @@ use std::sync::mpsc::Sender;
 use macroquad::prelude::*;
 
 use crate::{
-    card::Card,
+    card::{Card, CardSuit},
     game::{self, Bid, Game, PlayerAction, MIN_BID, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_shaded::ButtonShaded,
-    button_text::ButtonText,
-    score_table::ScoreTable,
-    sprite::Sprite,
-    texter::Texter,
-    view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
-        PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED,
-    },
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::Texter, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
+        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, TURN_MARKER_SPEED
+    }
 };
 
 pub struct View {
@@ -31,6 +23,8 @@ pub struct View {
     bid_markers: Vec<BidMarker>,
     bid_panel: BidPanel,
     done_exchanging_button: ButtonText,
+    trump_chooser: TrumpChooser,
+    trump_marker: TrumpMarker,
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
 }
@@ -85,6 +79,8 @@ impl View {
             bid_markers,
             bid_panel: BidPanel::new(65, 120, BID_PANEL_POS, sender.clone()).await,
             done_exchanging_button,
+            trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
+            trump_marker: TrumpMarker::new(CENTER),
             sender,
             z_order_needs_update: false,
         }
@@ -138,7 +134,6 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
-        // Buttons
         if self.play_button.process_events(&mouse_pos) {
             self.play_button.state = ButtonState::Hidden;
             return;
@@ -149,6 +144,10 @@ impl View {
         }
 
         if self.done_exchanging_button.process_events(&mouse_pos) {
+            return;
+        }
+
+        if self.trump_chooser.process_events(&mouse_pos) {
             return;
         }
 
@@ -281,6 +280,21 @@ impl View {
         }
     }
 
+    pub fn show_trump_chooser(&mut self) {
+        self.trump_chooser.visible = true;
+        self.message.text = "Select trump suit.".to_string();
+        
+    }
+
+    pub fn hide_trump_chooser(&mut self) {
+        self.trump_chooser.visible = false;
+        self.message.text = "".to_string();
+    }
+
+    pub async fn set_trump_suit(&mut self, suit: Option<CardSuit>) {
+        self.trump_marker.set_suit(suit).await;
+    }
+
     pub fn set_playable_hand_cards(&mut self, game: &Game) {
         let hand = &game.hands[game.active];
         for card in hand {
@@ -303,6 +317,8 @@ impl View {
 
         //self.turn_marker.draw();
 
+        self.trump_marker.draw();
+
         for marker in &mut self.bid_markers {
             marker.draw();
         }
@@ -316,6 +332,7 @@ impl View {
         self.play_button.draw();
         self.bid_panel.draw();
         self.done_exchanging_button.draw();
+        self.trump_chooser.draw();
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
         next_frame().await;

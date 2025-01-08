@@ -28,7 +28,7 @@ impl ButtonShaded {
             image: Imager::new(texture, tex_size_multiplier, true),
             eventer: Eventer::new(),
             state: ButtonState::Normal,
-            normal_color: Color::from_rgba(240, 240, 240, 255),
+            normal_color: Color::from_rgba(230, 230, 230, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
             disabled_color: Color::from_rgba(100, 100, 100, 255),
         }
@@ -66,6 +66,13 @@ impl ButtonShaded {
                 self.state = ButtonState::Normal;
                 return true;
             }
+            
+            EventerEvent::MouseEntered => {
+                self.state = ButtonState::Highlighted;
+            },
+            EventerEvent::MouseExited => {
+                self.state = ButtonState::Normal;
+            },
             _ => self.state = ButtonState::Normal,
         };
         false

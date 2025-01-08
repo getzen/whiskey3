@@ -11,6 +11,8 @@ pub mod score_table;
 pub mod sprite;
 pub mod texter;
 pub mod transform;
+pub mod trump_chooser;
+pub mod trump_marker;
 pub mod view;
 pub mod view_geom;
 
