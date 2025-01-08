@@ -1,12 +1,13 @@
 use crate::{
-    card::{Card, CardSuit, Points, Rank}, trick::Trick,
+    card::{Card, CardSuit, Points, Rank},
+    trick::Trick,
 };
 
 #[derive(Clone)]
 pub enum PlayerAction {
     Bid(Bid),
     //IncBid,
-   // DecBid,
+    // DecBid,
     Exchange(u8),
     DoneExchanging,
     PlayCard(u8),
@@ -59,7 +60,7 @@ pub struct Game {
     /// The high bidder.
     pub maker: Option<usize>,
     pub high_bid: Option<Bid>,
-    
+
     /// The hand's trump suit.
     pub trump_suit: Option<CardSuit>,
     /// The current trick
@@ -250,7 +251,7 @@ impl Game {
             Some(bid) => match bid {
                 Bid::Pass => todo!(),
                 Bid::Bid(b) => b + 5,
-            }
+            },
             None => MIN_BID,
         }
     }
@@ -318,15 +319,14 @@ impl Game {
 
     pub fn exchange_with_nest(&mut self, id: u8) {
         let maker = self.maker.unwrap();
-        
+
         // Check if hand card.
         if let Some(idx) = self.hands[maker].iter().position(|c| c.id == id) {
             if !self.nest_is_full() {
                 let card = self.hands[maker].remove(idx);
                 self.nest.push(card);
-            } 
+            }
         }
-       
         // Check if nest card.
         else if let Some(idx) = self.nest.iter().position(|c| c.id == id) {
             let card = self.nest.remove(idx);
@@ -337,6 +337,12 @@ impl Game {
 
     pub fn nest_is_full(&self) -> bool {
         self.nest.len() == NEST_SIZE
+    }
+
+    pub fn turn_nest_cards(&mut self, face_up: bool) {
+        for card in &mut self.nest {
+            card.face_up = face_up;
+        }
     }
 
     // pub fn discard_to_nest(&mut self, id: u8) {

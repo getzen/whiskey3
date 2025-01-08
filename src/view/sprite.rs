@@ -59,7 +59,9 @@ impl Sprite {
     }
 
     pub fn draw(&mut self) {
-        if !self.visible { return }
+        if !self.visible {
+            return;
+        }
         self.imager.draw(&self.transform, None);
     }
 }

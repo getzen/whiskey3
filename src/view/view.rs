@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::mpsc::Sender};
+use std::sync::mpsc::Sender;
 
 use macroquad::prelude::*;
 
@@ -9,9 +9,18 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, card_view, eventer::EventerEvent, score_table::ScoreTable, sprite::Sprite, texter::Texter, view_geom::{self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED}
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_shaded::ButtonShaded,
+    button_text::ButtonText,
+    score_table::ScoreTable,
+    sprite::Sprite,
+    texter::Texter,
+    view_geom::{
+        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
+        PLAY_BUTTON_POS, SCORE_TABLE_POS, TURN_MARKER_SPEED,
+    },
 };
-
 
 pub struct View {
     card_views: Vec<CardView>,
@@ -23,10 +32,6 @@ pub struct View {
     bid_panel: BidPanel,
     done_exchanging_button: ButtonText,
     sender: Sender<PlayerAction>,
-    // For human card play:
-    playable_card_ids: Vec<u8>,
-    hand_table_ids: HashSet<u8>,
-    selected_ids: HashSet<u8>,
     z_order_needs_update: bool,
 }
 
@@ -40,7 +45,14 @@ impl View {
         let mut play_button = ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5);
         play_button.state = ButtonState::Hidden;
 
-        let mut message = Texter::new("Welcome to Whiskey", 16, Some("Menlo-Bold.ttf"), false, false).await;
+        let mut message = Texter::new(
+            "Welcome to Whiskey",
+            16,
+            Some("Menlo-Bold.ttf"),
+            false,
+            false,
+        )
+        .await;
         message.transform.position = MESSAGE_POS;
         message.centered_horiz = true;
 
@@ -51,7 +63,15 @@ impl View {
             bid_markers.push(marker);
         }
 
-        let mut done_exchanging_button = ButtonText::new(0, DONE_EXCHANGING_BUTTON_POS, "Done", 16, Some("Menlo-Bold.ttf"),  vec2(80.0, 40.0)).await;
+        let mut done_exchanging_button = ButtonText::new(
+            0,
+            DONE_EXCHANGING_BUTTON_POS,
+            "Done",
+            16,
+            Some("Menlo-Bold.ttf"),
+            vec2(80.0, 40.0),
+        )
+        .await;
         done_exchanging_button.sender = Some(sender.clone());
         done_exchanging_button.player_action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.state = ButtonState::Hidden;
@@ -66,9 +86,6 @@ impl View {
             bid_panel: BidPanel::new(65, 120, BID_PANEL_POS, sender.clone()).await,
             done_exchanging_button,
             sender,
-            playable_card_ids: Vec::new(),
-            hand_table_ids: HashSet::new(),
-            selected_ids: HashSet::new(),
             z_order_needs_update: false,
         }
     }
@@ -114,7 +131,9 @@ impl View {
     pub fn check_events(&mut self) {
         // Key presses
         if is_key_released(KeyCode::Escape) {
-            self.sender.send(PlayerAction::ShouldExit).expect("Send error");
+            self.sender
+                .send(PlayerAction::ShouldExit)
+                .expect("Send error");
         }
 
         let mouse_pos: Vec2 = mouse_position().into();
@@ -178,10 +197,13 @@ impl View {
         self.z_order_needs_update = true;
     }
 
-    pub fn update_nest(&mut self, game: &Game) {
+    pub fn update_nest(&mut self, game: &Game, aside: bool) {
         for (idx, card) in game.nest.iter().enumerate() {
             if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::nest_geom(idx, game.nest.len());
+                let geom = match aside {
+                    true => view_geom::nest_aside_geom(idx, game.nest.len()),
+                    false => view_geom::nest_geom(idx, game.nest.len()),
+                };
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
@@ -205,21 +227,6 @@ impl View {
             }
             self.bid_markers[p].visible = false;
         }
-    }
-
-    pub fn update_taken(&mut self, game: &Game) {
-        for team in 0..2 {
-            for (idx, card) in game.taken[team].iter().rev().enumerate() {
-                let geom = view_geom::taken_geom(team, idx);
-                if let Some(view) = self.find_card_view_mut(card.id) {
-                    view.move_to(geom.pos, view_geom::CARD_SPEED_TAKE);
-                    view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                    view.card_image.z_order = 200 - idx;
-                    view.set_face_up(card.face_up);
-                }
-            }
-        }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_hand(&mut self, game: &Game, player: usize) {
@@ -288,13 +295,11 @@ impl View {
 
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
-        
 
         // let gl = unsafe { get_internal_gl().quad_gl };
         // let matrix = glam::Mat4::from_translation(vec3(100.0, 0.0, 0.0));
         // gl.push_model_matrix(matrix);
         // gl.pop_model_matrix();
-
 
         //self.turn_marker.draw();
 
@@ -321,19 +326,17 @@ impl View {
         self.bid_markers[game.active].visible = false;
 
         match &game.high_bid {
-            Some(bid) => {
-                match bid {
-                    Bid::Pass => todo!(),
-                    Bid::Bid(b) => {
-                        self.bid_panel.min_bid = b + 5;
-                        self.bid_panel.update_bid_amount(b + 5);
-                    }
+            Some(bid) => match bid {
+                Bid::Pass => todo!(),
+                Bid::Bid(b) => {
+                    self.bid_panel.min_bid = b + 5;
+                    self.bid_panel.update_bid_amount(b + 5);
                 }
             },
             None => {
                 self.bid_panel.min_bid = MIN_BID;
                 self.bid_panel.update_bid_amount(MIN_BID);
-            },
+            }
         }
         println!("getting human bid");
         self.bid_panel.visible = true;

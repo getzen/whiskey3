@@ -1,6 +1,9 @@
 use std::sync::mpsc::Sender;
 
-use crate::{card::{CardSuit, Points}, game::{Bid, Game, PlayerAction, PLAYERS}};
+use crate::{
+    card::{CardSuit, Points},
+    game::{Bid, Game, PlayerAction, PLAYERS},
+};
 
 #[derive(Clone)]
 pub struct BotMonte {}
@@ -22,7 +25,7 @@ impl BotMonte {
                 14 => bid_pts += 15,
                 13 => bid_pts += 5,
                 10 => bid_pts += 10,
-                _ => {},
+                _ => {}
             }
         }
 

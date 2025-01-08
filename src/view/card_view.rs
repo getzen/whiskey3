@@ -103,19 +103,22 @@ impl CardView {
         let size = self.card_image.draw_size();
         let centered = self.card_image.centered;
 
-        match self.eventer.process_events(mouse_pos, &self.transform, size, centered) {
-            Some(event) => {           
+        match self
+            .eventer
+            .process_events(mouse_pos, &self.transform, size, centered)
+        {
+            Some(event) => {
                 match event {
                     EventerEvent::LeftMouseReleased => {
                         // Send action if one exists. Dimmed cards should not have actions.
                         if let Some(action) = &self.player_action {
                             self.sender.send(action.clone()).expect("Send error");
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
                 // Regardless, card contained mouse_pos, so return true.
-                return true; 
+                return true;
             }
             None => {
                 return false;
@@ -125,7 +128,8 @@ impl CardView {
 
     pub fn draw(&mut self) {
         if self.dimmed {
-            self.card_image.draw(&self.transform, Some(self.dimmed_color));
+            self.card_image
+                .draw(&self.transform, Some(self.dimmed_color));
         } else {
             self.card_image.draw(&self.transform, None);
         }

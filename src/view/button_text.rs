@@ -68,7 +68,7 @@ impl ButtonText {
         let event = self
             .eventer
             .process_events(mouse_pos, &self.transform, self.size, true);
-        
+
         if event.is_none() {
             return false;
         }

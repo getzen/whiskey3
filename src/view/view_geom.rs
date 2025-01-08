@@ -57,10 +57,7 @@ pub fn deck_geom(index: usize) -> ViewGeom {
     }
 }
 
-pub fn nest_geom(
-    index: usize,
-    count: usize,
-) -> ViewGeom {
+pub fn nest_geom(index: usize, count: usize) -> ViewGeom {
     let max_width = 300.;
     let max_spacing: f32 = 80.;
 
@@ -74,6 +71,25 @@ pub fn nest_geom(
     ViewGeom {
         pos,
         rot: 0.0,
+        z: index,
+        ..Default::default()
+    }
+}
+
+pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
+    let max_width = 100.;
+    let max_spacing: f32 = 60.;
+
+    let computed_width = max_width / count as f32;
+    let x_spacing = max_spacing.min(computed_width);
+
+    let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
+    x_offset += index as f32 * x_spacing;
+    let pos = vec2(100., 100.) + vec2(x_offset, 0.0);
+
+    ViewGeom {
+        pos,
+        rot: -0.2,
         z: index,
         ..Default::default()
     }

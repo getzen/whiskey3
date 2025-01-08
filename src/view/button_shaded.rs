@@ -61,7 +61,7 @@ impl ButtonShaded {
         match event.as_ref().unwrap() {
             EventerEvent::LeftMousePressed => {
                 self.state = ButtonState::Highlighted;
-            },
+            }
             EventerEvent::LeftMouseReleased => {
                 self.state = ButtonState::Normal;
                 return true;

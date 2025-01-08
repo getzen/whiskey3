@@ -4,8 +4,6 @@ use crate::game::Bid;
 
 use super::{texter::Texter, transform::Transform};
 
-
-
 pub struct BidMarker {
     pub visible: bool,
     transform: Transform,
@@ -34,12 +32,11 @@ impl BidMarker {
                     Bid::Pass => self.text.text = "Pass".to_string(),
                     Bid::Bid(bid) => {
                         self.text.text = bid.to_string();
-                    },
+                    }
                 }
-            },
+            }
             None => self.visible = false,
         }
-       
     }
 
     pub fn draw(&mut self) {

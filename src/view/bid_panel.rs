@@ -5,7 +5,10 @@ use macroquad::{
     math::{vec2, Vec2},
 };
 
-use crate::{card::Points, game::{Bid, PlayerAction}};
+use crate::{
+    card::Points,
+    game::{Bid, PlayerAction},
+};
 
 use super::{button_text::ButtonText, texter::Texter, transform::Transform};
 
@@ -27,7 +30,12 @@ pub struct BidPanel {
 }
 
 impl BidPanel {
-    pub async fn new(min_bid: Points, max_bid: Points, position: Vec2, sender: Sender<PlayerAction>) -> Self {
+    pub async fn new(
+        min_bid: Points,
+        max_bid: Points,
+        position: Vec2,
+        sender: Sender<PlayerAction>,
+    ) -> Self {
         let bid_button = ButtonText::new(
             0,
             position + vec2(-5.0, 0.0),
@@ -102,12 +110,16 @@ impl BidPanel {
         }
 
         if self.bid_button.process_events(mouse_pos) {
-            self.sender.send(PlayerAction::Bid(Bid::Bid(self.current_bid))).expect("Send error");
+            self.sender
+                .send(PlayerAction::Bid(Bid::Bid(self.current_bid)))
+                .expect("Send error");
             return true;
         }
 
         if self.pass_button.process_events(mouse_pos) {
-            self.sender.send(PlayerAction::Bid(Bid::Pass)).expect("Send error");
+            self.sender
+                .send(PlayerAction::Bid(Bid::Pass))
+                .expect("Send error");
             return true;
         }
 
