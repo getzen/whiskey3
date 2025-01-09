@@ -9,13 +9,12 @@ pub const DECK_POS: Vec2 = vec2(SCREEN.x - 80.0, SCREEN.y - 100.0);
 pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
 pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 175.0, 30.0);
 pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
-pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 200.);
+pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 220.);
 pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 140.0);
 pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 150.);
 
 pub const TURN_MARKER_SPEED: f32 = 600.0;
 pub const CARD_SPEED: f32 = 800.0;
-pub const CARD_SPEED_TAKE: f32 = 300.0;
 pub const ROT_SPEED: f32 = 10.0;
 
 pub struct ViewGeom {
@@ -92,23 +91,6 @@ pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
         pos,
         rot: -0.2,
         z: index,
-        ..Default::default()
-    }
-}
-
-pub fn taken_geom(team: usize, index: usize) -> ViewGeom {
-    let spacing = 30.0;
-    let pos = match team {
-        // 0 => vec2(SCREEN.x - 100.0 + index as f32 * spacing, SCREEN.y - 100.0),
-        // 1 => vec2(SCREEN.x - 100.0 + index as f32 * spacing, 80.0),
-        // _ => panic!(),
-        0 => vec2(140.0 - index as f32 * spacing, SCREEN.y - 120.0),
-        1 => vec2(140.0 - index as f32 * spacing, 100.0),
-        _ => panic!(),
-    };
-    ViewGeom {
-        pos,
-        z: 200 - index,
         ..Default::default()
     }
 }

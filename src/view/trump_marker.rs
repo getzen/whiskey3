@@ -4,17 +4,14 @@ use crate::card::CardSuit;
 
 use super::{imager::Imager, transform::Transform};
 
-
 pub struct TrumpMarker {
     pub visible: bool,
     transform: Transform,
     image: Option<Imager>,
 }
 
-impl TrumpMarker{
-    pub fn new(
-        position: Vec2,
-    ) -> Self {
+impl TrumpMarker {
+    pub fn new(position: Vec2) -> Self {
         Self {
             visible: true,
             transform: Transform::new(position, 0.0),

@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    card::{CardSuit, Points},
+    card::{Card, CardSuit, Points},
     game::{Bid, Game, PlayerAction, PLAYERS},
 };
 
@@ -36,6 +36,76 @@ impl BotMonte {
         }
 
         sender.send(PlayerAction::Bid(bid)).expect("send error");
+    }
+
+    fn best_suit(&self, cards: &[Card]) -> CardSuit {
+        const SUITS: [CardSuit; 5] = [
+            CardSuit::Club,
+            CardSuit::Diamond,
+            CardSuit::Heart,
+            CardSuit::Spade,
+            CardSuit::Joker,
+        ];
+        let mut best_suit_score = 0;
+        let mut best_suit = CardSuit::Club;
+
+        let mut suit_score = 0;
+
+        for suit in SUITS.iter() {
+            for card in cards {
+                if card.suit == *suit {
+                    suit_score += card.rank;
+                }
+            }
+            if suit_score > best_suit_score {
+                best_suit_score = suit_score;
+                best_suit = *suit;
+            }
+        }
+
+        best_suit
+    }
+
+    pub fn choose_discards(&self, game: &Game, nest_size: usize, sender: Sender<PlayerAction>) {
+        // Super basic: dump the three lowest non-trump cards.
+
+        // Make a copy of the hand cards.
+        let mut cards_copy = Vec::new();
+        for card in game.active_hand() {
+            cards_copy.push(card.clone());
+        }
+        let mut discards = Vec::new();
+
+        let trump_suit = self.best_suit(&cards_copy);
+
+        while discards.len() < nest_size {
+            let mut found_idx = None;
+            for _rank in 2..14 {
+                for (idx, card) in cards_copy.iter().enumerate() {
+                    if card.is_trump(&trump_suit) {
+                        continue;
+                    }
+                    discards.push(card.id);
+                    found_idx = Some(idx);
+                    break;
+                }
+                if let Some(idx) = found_idx {
+                    cards_copy.remove(idx);
+                    break;
+                }
+            }
+        }
+        sender
+            .send(PlayerAction::Discard(discards))
+            .expect("send error");
+    }
+
+    pub fn choose_trump(&self, game: &Game, sender: Sender<PlayerAction>) {
+        let cards = game.active_hand();
+        let suit = self.best_suit(&cards);
+        sender
+            .send(PlayerAction::ChooseTrump(suit))
+            .expect("send error");
     }
 
     // Use a MonteCarlo simulation to pick the best card.

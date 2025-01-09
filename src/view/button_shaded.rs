@@ -66,13 +66,13 @@ impl ButtonShaded {
                 self.state = ButtonState::Normal;
                 return true;
             }
-            
+
             EventerEvent::MouseEntered => {
                 self.state = ButtonState::Highlighted;
-            },
+            }
             EventerEvent::MouseExited => {
                 self.state = ButtonState::Normal;
-            },
+            }
             _ => self.state = ButtonState::Normal,
         };
         false

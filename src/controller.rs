@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use crate::bot_monte::BotMonte;
 use crate::card::CardSuit;
-use crate::game::{Bid, Game, PlayerAction};
+use crate::game::{Bid, Game, PlayerAction, NEST_SIZE};
 
 use crate::view::view::View;
 
@@ -20,6 +20,7 @@ pub enum GameAction {
     GetExchanges,
     WaitForExchanges,
     Exchange(u8),
+    Discard(Vec<u8>),
     EndExchanging,
     GetTrump,
     WaitForTrump,
@@ -83,19 +84,24 @@ impl Controller {
                 match received.unwrap() {
                     PlayerAction::Bid(bid) => {
                         self.game_action = Some(GameAction::MakeBid(bid));
-                    },
+                    }
                     PlayerAction::Exchange(id) => {
+                        // human
                         self.game_action = Some(GameAction::Exchange(id));
-                    },
+                    }
+                    PlayerAction::Discard(ids) => {
+                        // bot
+                        self.game_action = Some(GameAction::Discard(ids));
+                    }
                     PlayerAction::DoneExchanging => {
                         self.game_action = Some(GameAction::EndExchanging);
-                    },
+                    }
                     PlayerAction::ChooseTrump(suit) => {
                         self.game_action = Some(GameAction::ChooseTrump(suit));
-                    },
+                    }
                     PlayerAction::PlayCard(card_id) => {
                         self.game_action = Some(GameAction::PlayCard(card_id));
-                    },
+                    }
                     PlayerAction::ShouldExit => todo!(),
                     // _ => {} // Remaining actions were handled directly by view.
                 }
@@ -120,7 +126,7 @@ impl Controller {
 
                 // Here is where the sausage is made.
                 if let Some(action) = &self.game_action {
-                    println!("{:?}", action);
+                    //println!("{:?}", action);
                     match action {
                         GameAction::Setup => {
                             self.game.create_deck();
@@ -132,14 +138,14 @@ impl Controller {
                             self.view.update_message("Welcome to Whiskey");
 
                             self.game_action = Some(GameAction::ResetForNewHand);
-                        },
+                        }
                         GameAction::ResetForNewHand => {
                             self.game.reset_for_new_hand();
                             self.view.update_info(&self.game);
                             self.view.update_deck(&self.game);
                             self.view.update_message("");
                             self.game_action = Some(GameAction::DealToHands);
-                        },
+                        }
                         GameAction::DealToHands => {
                             if self.game.hand_cards_to_deal > 0 {
                                 self.game.hand_cards_to_deal -= 1;
@@ -150,7 +156,7 @@ impl Controller {
                             } else {
                                 self.game_action = Some(GameAction::DealToNest);
                             }
-                        },
+                        }
                         GameAction::DealToNest => {
                             if self.game.nest_cards_to_deal > 0 {
                                 self.game.nest_cards_to_deal -= 1;
@@ -160,7 +166,7 @@ impl Controller {
                             } else {
                                 self.game_action = Some(GameAction::GetBid);
                             }
-                        },
+                        }
                         GameAction::GetBid => {
                             self.view.update_info(&self.game);
                             self.view.update_bids(&self.game);
@@ -172,8 +178,8 @@ impl Controller {
                                 self.view.get_human_bid(&mut self.game);
                             }
                             self.delay_before_game_action = 1.0;
-                            self.game_action = Some(GameAction::WaitForBid);
-                        },
+                            self.game_action = None;
+                        }
                         GameAction::WaitForBid => self.game_action = None,
                         GameAction::MakeBid(bid) => {
                             println!("MakeBid!");
@@ -190,25 +196,31 @@ impl Controller {
                             } else {
                                 self.game_action = Some(GameAction::GetBid);
                             }
-                        },
+                        }
                         GameAction::EndBidding => {
                             self.view.hide_bids_except_maker(&self.game);
                             self.game_action = Some(GameAction::MoveNestToMaker);
-                        },
+                        }
                         GameAction::MoveNestToMaker => {
                             self.game.move_nest_cards_to_maker();
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
                             self.view.set_discardable_hand_cards(&self.game);
                             self.game_action = Some(GameAction::GetExchanges);
-                        },
+                        }
                         GameAction::GetExchanges => {
-                            self.view.update_message("Discard 3 cards.");
-                            self.view.show_done_exchanging_button(false);
-                            self.game_action = Some(GameAction::WaitForExchanges);
-                        },
+                            if self.game.bot_is_active() {
+                                self.view.get_bot_discards(&mut self.game);
+                                self.spawn_discard_bot();
+                            } else {
+                                self.view.get_human_exchanges();
+                            }
+                            self.delay_before_game_action = 1.0;
+                            self.game_action = None;
+                        }
                         GameAction::WaitForExchanges => self.game_action = None,
                         GameAction::Exchange(id) => {
+                            // human
                             self.game.exchange_with_nest(*id);
 
                             // Disable Done button if nest is full.
@@ -220,7 +232,20 @@ impl Controller {
                             self.view.update_nest(&self.game, false);
 
                             self.game_action = Some(GameAction::WaitForExchanges);
-                        },
+                        }
+                        GameAction::Discard(ids) => {
+                            // bot
+                            for id in ids {
+                                // The cards will already be face down.
+                                self.game.exchange_with_nest(*id);
+
+                                let maker = self.game.maker.unwrap();
+                                self.view.update_hand(&self.game, maker);
+                                self.view.update_nest(&self.game, false);
+                            }
+                            self.delay_before_game_action = 1.5;
+                            self.game_action = Some(GameAction::EndExchanging);
+                        }
                         GameAction::EndExchanging => {
                             let maker = self.game.maker.unwrap();
                             self.game.turn_nest_cards(false);
@@ -231,18 +256,24 @@ impl Controller {
                             self.view.update_nest(&self.game, true); // true == aside
 
                             self.game_action = Some(GameAction::GetTrump);
-                        },
+                        }
                         GameAction::GetTrump => {
-                            self.view.show_trump_chooser();
-                            self.game_action = Some(GameAction::WaitForTrump);
-                        },
+                            if self.game.bot_is_active() {
+                                //self.view.get_bot_trump(&mut self.game);
+                                //self.spawn_trump_bot();
+                            } else {
+                                self.view.show_trump_chooser();
+                            }
+                            self.delay_before_game_action = 1.0;
+                            self.game_action = None;
+                        }
                         GameAction::WaitForTrump => self.game_action = None,
                         GameAction::ChooseTrump(suit) => {
                             self.game.trump_suit = Some(*suit);
                             self.view.hide_trump_chooser();
                             self.view.set_trump_suit(Some(*suit)).await;
                             self.game_action = None;
-                        },
+                        }
                         GameAction::GetCardPlay => todo!(),
                         GameAction::WaitForCardPlay => todo!(),
                         GameAction::PlayCard(card_id) => {
@@ -283,6 +314,21 @@ impl Controller {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
                 bot.get_bid(&game_clone, min_bid, max_bid, sender);
+            });
+        }
+    }
+
+    fn spawn_discard_bot(&self) {
+        let game_clone = self.game.clone();
+        let sender = self.sender.clone();
+
+        if cfg!(target_family = "wasm") {
+            let bot = BotMonte::new();
+            bot.choose_discards(&game_clone, NEST_SIZE, sender);
+        } else {
+            std::thread::spawn(move || {
+                let bot = BotMonte::new();
+                bot.choose_discards(&game_clone, NEST_SIZE, sender);
             });
         }
     }

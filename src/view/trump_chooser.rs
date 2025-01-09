@@ -1,11 +1,13 @@
 use std::sync::mpsc::Sender;
 
-use macroquad::{math::{vec2, Vec2}, texture::load_texture};
+use macroquad::{
+    math::{vec2, Vec2},
+    texture::load_texture,
+};
 
 use crate::{card::CardSuit, game::PlayerAction};
 
 use super::{button_shaded::ButtonShaded, transform::Transform};
-
 
 pub struct TrumpChooser {
     pub visible: bool,
@@ -19,10 +21,7 @@ pub struct TrumpChooser {
 }
 
 impl TrumpChooser {
-    pub async fn new(
-        position: Vec2,
-        sender: Sender<PlayerAction>,
-    ) -> Self {
+    pub async fn new(position: Vec2, sender: Sender<PlayerAction>) -> Self {
         let tex_mult = 0.3333;
 
         let tex = load_texture("src/assets/club.png").await.unwrap();
@@ -64,21 +63,21 @@ impl TrumpChooser {
 
         if self.diamond_button.process_events(mouse_pos) {
             self.sender
-            .send(PlayerAction::ChooseTrump(CardSuit::Diamond))
+                .send(PlayerAction::ChooseTrump(CardSuit::Diamond))
                 .expect("Send error");
             return true;
         }
 
         if self.heart_button.process_events(mouse_pos) {
             self.sender
-            .send(PlayerAction::ChooseTrump(CardSuit::Heart))
-            .expect("Send error");
+                .send(PlayerAction::ChooseTrump(CardSuit::Heart))
+                .expect("Send error");
             return true;
         }
 
         if self.spade_button.process_events(mouse_pos) {
             self.sender
-            .send(PlayerAction::ChooseTrump(CardSuit::Spade))
+                .send(PlayerAction::ChooseTrump(CardSuit::Spade))
                 .expect("Send error");
         }
         false

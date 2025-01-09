@@ -1,17 +1,28 @@
-use std::sync::mpsc::Sender;
+use std::{f32::consts::PI, sync::mpsc::Sender};
 
 use macroquad::prelude::*;
 
 use crate::{
     card::{Card, CardSuit},
-    game::{self, Bid, Game, PlayerAction, MIN_BID, PLAYERS},
+    game::{self, Bid, Game, PlayerAction, MIN_BID, NEST_SIZE, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::Texter, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, TURN_MARKER_SPEED
-    }
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_shaded::ButtonShaded,
+    button_text::ButtonText,
+    score_table::ScoreTable,
+    sprite::Sprite,
+    texter::Texter,
+    transform4::Transform4,
+    trump_chooser::TrumpChooser,
+    trump_marker::TrumpMarker,
+    view_geom::{
+        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
+        PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, TURN_MARKER_SPEED,
+    },
 };
 
 pub struct View {
@@ -256,6 +267,12 @@ impl View {
         }
     }
 
+    pub fn get_human_exchanges(&mut self) {
+        let message = format!("Discard {} cards.", NEST_SIZE);
+        self.update_message(&message);
+        self.show_done_exchanging_button(false);
+    }
+
     pub fn show_done_exchanging_button(&mut self, enabled: bool) {
         match enabled {
             true => self.done_exchanging_button.state = ButtonState::Normal,
@@ -283,7 +300,6 @@ impl View {
     pub fn show_trump_chooser(&mut self) {
         self.trump_chooser.visible = true;
         self.message.text = "Select trump suit.".to_string();
-        
     }
 
     pub fn hide_trump_chooser(&mut self) {
@@ -335,6 +351,43 @@ impl View {
         self.trump_chooser.draw();
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
+        let screen_pt = vec2(50.0, 30.0);
+        let circle_trans = Transform4::from_position_rotation(vec2(0.0, 0.0), 0.00);
+
+        let rect_trans = Transform4::from_position_rotation(vec2(0.0, 0.0), 0.1);
+        let rect_size = vec2(100., 100.0);
+
+        let gl = unsafe { get_internal_gl().quad_gl };
+        gl.push_model_matrix(circle_trans.matrix());
+        draw_circle(0.0, 0.0, 5.0, GREEN);
+
+        gl.push_model_matrix(rect_trans.matrix_centered(rect_size));
+        //gl.push_model_matrix(rect_trans.matrix());
+        draw_rectangle(0.0, 0.0, rect_size.x, rect_size.y, ORANGE);
+        gl.pop_model_matrix();
+        gl.pop_model_matrix();
+
+        draw_circle(screen_pt.x, screen_pt.y, 3.0, WHITE);
+        let combined = circle_trans.combine_matrix(rect_trans.matrix_centered(rect_size));
+        //let combined = circle_trans.combine_matrix(rect_trans.matrix());
+        let contains = combined.contains_point(screen_pt, rect_size, false);
+        println!("contains: {}", contains);
+
+        // let trans = vec3(100.0, 100.0, 0.0);
+        // let rot = glam::Quat::from_rotation_z(0.0);
+        // let matrix = glam::Mat4::from_rotation_translation(rot, trans);
+        // let world_pt = matrix
+        //     .inverse()
+        //     .transform_point3(vec3(screen_pt.x, screen_pt.y, 0.0));
+
+        // let gl = unsafe { get_internal_gl().quad_gl };
+        // gl.push_model_matrix(matrix);
+        // draw_circle(0.0, 0.0, 5.0, GREEN);
+        // draw_rectangle(0.0, 0.0, 100.0, 5.0, ORANGE);
+        // gl.pop_model_matrix();
+
+        //println!("screen: {} -> world: {}", screen_pt, world_pt);
+
         next_frame().await;
     }
 
@@ -355,13 +408,17 @@ impl View {
                 self.bid_panel.update_bid_amount(MIN_BID);
             }
         }
-        println!("getting human bid");
+        self.update_message("Your bid.");
         self.bid_panel.visible = true;
     }
 
     pub fn end_human_bid(&mut self, game: &Game) {
         self.bid_panel.visible = false;
         self.bid_markers[game.active].visible = true;
+    }
+
+    pub fn get_bot_discards(&mut self, game: &Game) {
+        self.update_message("Bot thinking.");
     }
 
     // pub fn get_human_play(&mut self, game: &mut Game) {

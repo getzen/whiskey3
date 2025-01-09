@@ -8,7 +8,8 @@ pub enum PlayerAction {
     Bid(Bid),
     //IncBid,
     // DecBid,
-    Exchange(u8),
+    Exchange(u8),     // human
+    Discard(Vec<u8>), // bot
     DoneExchanging,
     ChooseTrump(CardSuit),
     PlayCard(u8),
