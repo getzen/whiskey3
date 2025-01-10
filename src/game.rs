@@ -227,7 +227,10 @@ impl Game {
 
     pub fn deal_card_to_hand(&mut self) {
         let mut card = self.deck.pop().unwrap();
-        card.face_up = !self.bot_players[self.active];
+        
+        // card.face_up = !self.bot_players[self.active]; //////////////
+        card.face_up = true;
+
         self.active_hand_mut().push(card);
         if !self.bot_is_active() {
             self.sort_hand(self.active);
@@ -309,7 +312,8 @@ impl Game {
         let is_human = !self.bot_players[maker];
         while !self.nest.is_empty() {
             if let Some(mut card) = self.nest.pop() {
-                card.face_up = is_human;
+                //card.face_up = is_human; ///////////////////////
+                card.face_up = true;
                 self.hands[maker].push(card);
             }
         }
@@ -343,7 +347,8 @@ impl Game {
 
     pub fn turn_nest_cards(&mut self, face_up: bool) {
         for card in &mut self.nest {
-            card.face_up = face_up;
+            // card.face_up = face_up; /////////////////////////
+            card.face_up = true;
         }
     }
 

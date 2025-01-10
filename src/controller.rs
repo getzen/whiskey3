@@ -23,10 +23,10 @@ pub enum GameAction {
     Discard(Vec<u8>),
     EndExchanging,
     GetTrump,
-    WaitForTrump,
+    //WaitForTrump,
     ChooseTrump(CardSuit),
     GetCardPlay,
-    WaitForCardPlay,
+    //WaitForCardPlay,
     PlayCard(u8),
     AwardTrick,
     EndHand,
@@ -126,7 +126,7 @@ impl Controller {
 
                 // Here is where the sausage is made.
                 if let Some(action) = &self.game_action {
-                    //println!("{:?}", action);
+                    println!("{:?}", action);
                     match action {
                         GameAction::Setup => {
                             self.game.create_deck();
@@ -175,7 +175,7 @@ impl Controller {
                                 self.spawn_bid_bot();
                             } else {
                                 self.view.update_message("Your bid");
-                                self.view.get_human_bid(&mut self.game);
+                                self.view.get_human_bid(&self.game);
                             }
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
@@ -210,7 +210,7 @@ impl Controller {
                         }
                         GameAction::GetExchanges => {
                             if self.game.bot_is_active() {
-                                self.view.get_bot_discards(&mut self.game);
+                                self.view.get_bot_discards(&self.game);
                                 self.spawn_discard_bot();
                             } else {
                                 self.view.get_human_exchanges();
@@ -259,27 +259,39 @@ impl Controller {
                         }
                         GameAction::GetTrump => {
                             if self.game.bot_is_active() {
-                                //self.view.get_bot_trump(&mut self.game);
-                                //self.spawn_trump_bot();
+                                self.view.get_bot_trump(&self.game);
+                                self.spawn_trump_bot();
                             } else {
                                 self.view.show_trump_chooser();
                             }
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
-                        GameAction::WaitForTrump => self.game_action = None,
+                        //GameAction::WaitForTrump => self.game_action = None,
                         GameAction::ChooseTrump(suit) => {
                             self.game.trump_suit = Some(*suit);
                             self.view.hide_trump_chooser();
                             self.view.set_trump_suit(Some(*suit)).await;
-                            self.game_action = None;
+                            self.delay_before_game_action = 1.0;
+                            self.game_action = Some(GameAction::GetCardPlay);
                         }
-                        GameAction::GetCardPlay => todo!(),
-                        GameAction::WaitForCardPlay => todo!(),
+                        GameAction::GetCardPlay => {
+                            if self.game.bot_is_active() {
+                                self.view.get_bot_card_play(&self.game);
+                                self.spawn_play_bot();
+                            } else {
+                                self.view.get_human_card_play(&self.game);
+                            }
+                            self.delay_before_game_action = 1.0;
+                            self.game_action = None;
+                        },
+                        //GameAction::WaitForCardPlay => todo!(),
                         GameAction::PlayCard(card_id) => {
+                            let player = self.game.active;
                             self.game.play_card_id(*card_id);
 
-                            // view ...
+                            self.view.update_hand(&self.game, player);
+                            self.view.update_trick(&self.game);
 
                             if self.game.trick_completed() {
                                 self.delay_before_game_action = 1.0;
@@ -329,6 +341,21 @@ impl Controller {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
                 bot.choose_discards(&game_clone, NEST_SIZE, sender);
+            });
+        }
+    }
+
+    fn spawn_trump_bot(&self) {
+        let game_clone = self.game.clone();
+        let sender = self.sender.clone();
+
+        if cfg!(target_family = "wasm") {
+            let bot = BotMonte::new();
+            bot.choose_trump(&game_clone, sender);
+        } else {
+            std::thread::spawn(move || {
+                let bot = BotMonte::new();
+                bot.choose_trump(&game_clone, sender);
             });
         }
     }

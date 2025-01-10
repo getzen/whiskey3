@@ -257,6 +257,22 @@ impl View {
         self.z_order_needs_update = true;
     }
 
+    pub fn update_trick(&mut self, game: &Game) {
+        for (idx, opt_card) in game.trick.cards.iter().enumerate() {
+            if let Some(card) = opt_card {
+                if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
+                    let geom =
+                        view_geom::trick_card_geom(idx, game::PLAYERS);
+                    view.move_to(geom.pos, view_geom::CARD_SPEED);
+                    view.rotate_to(geom.rot, view_geom::ROT_SPEED);
+                    view.card_image.z_order = geom.z;
+                    view.set_face_up(true);
+                }
+            }
+        }
+        self.z_order_needs_update = true;
+    }
+
     // After player exchanges or plays a card, call this to reset the nest or hand.
     pub fn reset_eligibility(&mut self, cards: &[Card]) {
         for card in cards {
@@ -351,43 +367,37 @@ impl View {
         self.trump_chooser.draw();
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
-        let screen_pt = vec2(50.0, 30.0);
-        let circle_trans = Transform4::from_position_rotation(vec2(0.0, 0.0), 0.00);
 
-        let rect_trans = Transform4::from_position_rotation(vec2(0.0, 0.0), 0.1);
+        /*/
+        let mouse_pos = mouse_position();
+        let mouse_pt = vec2(mouse_pos.0, mouse_pos.1);
+        let circle_trans = Transform4::from_position_rotation(vec2(100.0, 100.0), 0.0);
+        let circle_matrix = circle_trans.matrix(None);
+
+        let rect_trans = Transform4::from_position_rotation(vec2(50.0, 100.0), 0.2);
         let rect_size = vec2(100., 100.0);
+        let rect_matrix = rect_trans.matrix(Some(rect_size));
 
         let gl = unsafe { get_internal_gl().quad_gl };
-        gl.push_model_matrix(circle_trans.matrix());
-        draw_circle(0.0, 0.0, 5.0, GREEN);
+        gl.push_model_matrix(circle_matrix);
+        draw_circle(0.0, 0.0, 5.0, ORANGE);
 
-        gl.push_model_matrix(rect_trans.matrix_centered(rect_size));
-        //gl.push_model_matrix(rect_trans.matrix());
+        gl.push_model_matrix(rect_matrix);
         draw_rectangle(0.0, 0.0, rect_size.x, rect_size.y, ORANGE);
         gl.pop_model_matrix();
         gl.pop_model_matrix();
 
-        draw_circle(screen_pt.x, screen_pt.y, 3.0, WHITE);
-        let combined = circle_trans.combine_matrix(rect_trans.matrix_centered(rect_size));
-        //let combined = circle_trans.combine_matrix(rect_trans.matrix());
-        let contains = combined.contains_point(screen_pt, rect_size, false);
-        println!("contains: {}", contains);
-
-        // let trans = vec3(100.0, 100.0, 0.0);
-        // let rot = glam::Quat::from_rotation_z(0.0);
-        // let matrix = glam::Mat4::from_rotation_translation(rot, trans);
-        // let world_pt = matrix
-        //     .inverse()
-        //     .transform_point3(vec3(screen_pt.x, screen_pt.y, 0.0));
-
-        // let gl = unsafe { get_internal_gl().quad_gl };
-        // gl.push_model_matrix(matrix);
-        // draw_circle(0.0, 0.0, 5.0, GREEN);
-        // draw_rectangle(0.0, 0.0, 100.0, 5.0, ORANGE);
-        // gl.pop_model_matrix();
-
-        //println!("screen: {} -> world: {}", screen_pt, world_pt);
-
+        // There doesn't seem to be a way to get the current model_matrix.
+        
+        let combined = circle_matrix * rect_matrix;
+        let combined_trans = Transform4::from_matrix(combined);
+        let contains = combined_trans.contains_point(mouse_pt, rect_size, false);
+        let color = match contains {
+            true => GREEN,
+            false => RED,
+        };
+        draw_circle(mouse_pt.x, mouse_pt.y, 3.0, color);
+        */
         next_frame().await;
     }
 
@@ -421,25 +431,15 @@ impl View {
         self.update_message("Bot thinking.");
     }
 
-    // pub fn get_human_play(&mut self, game: &mut Game) {
-    //     self.playable_card_ids = game.get_playable_card_ids();
+    pub fn get_bot_trump(&mut self, game: &Game) {
+        self.update_message("Bot thinking.");
+    }
 
-    //     self.hand_table_ids.clear();
-    //     for card in &game.hands[game.active] {
-    //         self.hand_table_ids.insert(card.id);
-    //     }
-    //     for card in &game.nest {
-    //         self.hand_table_ids.insert(card.id);
-    //     }
+    pub fn get_human_card_play(&mut self, game: &Game) {
+        self.update_message("Play card.");
+    }
 
-    //     for view in &mut self.card_views {
-    //         if self.hand_table_ids.contains(&view.id) {
-    //             view.set_select_state(SelectState::Eligible);
-    //         } else {
-    //             view.set_select_state(SelectState::OutOfScope);
-    //         }
-    //     }
-
-    //     self.selected_ids.clear();
-    // }
+    pub fn get_bot_card_play(&mut self, game: &Game) {
+        self.update_message("Hmmm.");
+    }
 }

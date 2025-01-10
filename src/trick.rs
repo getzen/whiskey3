@@ -28,7 +28,7 @@ impl Trick {
             *card = None;
         }
         self.lead_card_suit = None;
-        self.winner = None;
+        //self.winner = None;
         self.points = 0;
     }
 
@@ -47,13 +47,13 @@ impl Trick {
             let winning_card = self.cards[winning_player].as_ref().unwrap();
             if card.suit == winning_card.suit {
                 if card.rank > winning_card.rank {
-                    self.winner == Some(player);
+                    self.winner = Some(player);
                 }
             } else {
                 // Not the same suit as winning card
                 if let Some(trump_suit) = trump_suit {
                     if card.suit == *trump_suit {
-                        self.winner == Some(player);
+                        self.winner = Some(player);
                     }
                 }
             }

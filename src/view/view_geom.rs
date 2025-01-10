@@ -77,7 +77,7 @@ pub fn nest_geom(index: usize, count: usize) -> ViewGeom {
 }
 
 pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
-    let max_width = 100.;
+    let max_width = 120.;
     let max_spacing: f32 = 60.;
 
     let computed_width = max_width / count as f32;
@@ -142,6 +142,20 @@ pub fn hand_card_geom(
         pos,
         rot: angle,
         z: index + 100,
+        ..Default::default()
+    }
+}
+
+pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
+    let distance_from_center = 105.0;
+    let rad = player_radians_from_center(player, player_count);
+    let pos = position_from(CENTER, rad, distance_from_center);
+    let angle = player_rotation(player, player_count);
+
+    ViewGeom {
+        pos,
+        rot: angle,
+        z: 200,
         ..Default::default()
     }
 }
