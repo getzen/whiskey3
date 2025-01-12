@@ -1,5 +1,5 @@
 use crate::{
-    card::{Card, CardSuit, Points, Rank},
+    card::{Card, Suit, Points, Rank},
     trick::Trick,
 };
 
@@ -11,63 +11,63 @@ pub enum PlayerAction {
     Exchange(u8),     // human
     Discard(Vec<u8>), // bot
     DoneExchanging,
-    ChooseTrump(CardSuit),
+    ChooseTrump(Suit),
     PlayCard(u8),
     ShouldExit,
 }
 
-pub const ALL_CARDS: [(CardSuit, Rank, Points); 43] = [
-    (CardSuit::Club, 5, 5),
-    (CardSuit::Club, 6, 0),
-    (CardSuit::Club, 7, 0),
-    (CardSuit::Club, 8, 0),
-    (CardSuit::Club, 9, 0),
-    (CardSuit::Club, 10, 10),
-    (CardSuit::Club, 11, 0),
-    (CardSuit::Club, 12, 0),
-    (CardSuit::Club, 13, 10),
-    (CardSuit::Club, 14, 15),
+pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
+    (Suit::Club, 5, 5),
+    (Suit::Club, 6, 0),
+    (Suit::Club, 7, 0),
+    (Suit::Club, 8, 0),
+    (Suit::Club, 9, 0),
+    (Suit::Club, 10, 10),
+    (Suit::Club, 11, 0),
+    (Suit::Club, 12, 0),
+    (Suit::Club, 13, 10),
+    (Suit::Club, 14, 15),
 
-    (CardSuit::Diamond, 4, 0),
-    (CardSuit::Diamond, 5, 5),
-    (CardSuit::Diamond, 6, 0),
-    (CardSuit::Diamond, 7, 0),
-    (CardSuit::Diamond, 8, 0),
-    (CardSuit::Diamond, 9, 0),
-    (CardSuit::Diamond, 10, 10),
-    (CardSuit::Diamond, 11, 0),
-    (CardSuit::Diamond, 12, 0),
-    (CardSuit::Diamond, 13, 10),
-    (CardSuit::Diamond, 14, 15),
+    (Suit::Diamond, 4, 0),
+    (Suit::Diamond, 5, 5),
+    (Suit::Diamond, 6, 0),
+    (Suit::Diamond, 7, 0),
+    (Suit::Diamond, 8, 0),
+    (Suit::Diamond, 9, 0),
+    (Suit::Diamond, 10, 10),
+    (Suit::Diamond, 11, 0),
+    (Suit::Diamond, 12, 0),
+    (Suit::Diamond, 13, 10),
+    (Suit::Diamond, 14, 15),
 
-    (CardSuit::Heart, 4, 0),
-    (CardSuit::Heart, 5, 5),
-    (CardSuit::Heart, 6, 0),
-    (CardSuit::Heart, 7, 0),
-    (CardSuit::Heart, 8, 0),
-    (CardSuit::Heart, 9, 0),
-    (CardSuit::Heart, 10, 10),
-    (CardSuit::Heart, 11, 0),
-    (CardSuit::Heart, 12, 0),
-    (CardSuit::Heart, 13, 10),
-    (CardSuit::Heart, 14, 15),
+    (Suit::Heart, 4, 0),
+    (Suit::Heart, 5, 5),
+    (Suit::Heart, 6, 0),
+    (Suit::Heart, 7, 0),
+    (Suit::Heart, 8, 0),
+    (Suit::Heart, 9, 0),
+    (Suit::Heart, 10, 10),
+    (Suit::Heart, 11, 0),
+    (Suit::Heart, 12, 0),
+    (Suit::Heart, 13, 10),
+    (Suit::Heart, 14, 15),
     
-    (CardSuit::Spade, 5, 5),
-    (CardSuit::Spade, 6, 0),
-    (CardSuit::Spade, 7, 0),
-    (CardSuit::Spade, 8, 0),
-    (CardSuit::Spade, 9, 0),
-    (CardSuit::Spade, 10, 10),
-    (CardSuit::Spade, 11, 0),
-    (CardSuit::Spade, 12, 0),
-    (CardSuit::Spade, 13, 10),
-    (CardSuit::Spade, 14, 15),
+    (Suit::Spade, 5, 5),
+    (Suit::Spade, 6, 0),
+    (Suit::Spade, 7, 0),
+    (Suit::Spade, 8, 0),
+    (Suit::Spade, 9, 0),
+    (Suit::Spade, 10, 10),
+    (Suit::Spade, 11, 0),
+    (Suit::Spade, 12, 0),
+    (Suit::Spade, 13, 10),
+    (Suit::Spade, 14, 15),
 
-    (CardSuit::Joker, 15, 0),
+    (Suit::Joker, 15, 0),
 ];
 
 pub const MIN_BID: Points = 80;
-pub const POINTS_TO_WIN: Points = 200;
+pub const POINTS_TO_WIN: Points = 300;
 
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
@@ -76,8 +76,6 @@ pub const PLAYERS: usize = 4;
 pub const NEST_SIZE: usize = 3;
 /// Number of nest card to deal face up.
 pub const NEST_CARDS_UP: u8 = 0;
-
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Bid {
@@ -107,7 +105,7 @@ pub struct Game {
     pub high_bid: Option<Bid>,
 
     /// The hand's trump suit.
-    pub trump_suit: Option<CardSuit>,
+    pub trump_suit: Option<Suit>,
     /// The current trick
     pub trick: Trick,
     pub tricks_played: u8,
@@ -192,7 +190,7 @@ impl Game {
         bid
     }
 
-    fn create_card(&mut self, id: u8, suit: CardSuit, rank: Rank, points: Points) {
+    fn create_card(&mut self, id: u8, suit: Suit, rank: Rank, points: Points) {
         let mut card = Card::new(id, suit, rank, points);
         card.face_up = false;
         self.deck.push(card);
@@ -231,13 +229,13 @@ impl Game {
         self.high_bid = None;
         self.bids.fill(None);
         self.tricks_played = 0;
-        self.set_joker_suit(CardSuit::Joker);
+        self.set_joker_suit(Suit::Joker);
 
         self.hand_cards_to_deal = (self.hand_size() * PLAYERS) as u8;
         self.nest_cards_to_deal = NEST_SIZE as u8;
     }
 
-    fn set_joker_suit(&mut self, suit: CardSuit) {
+    fn set_joker_suit(&mut self, suit: Suit) {
         for p in 0..PLAYERS {
             for card in &mut self.hands[p] {
                 if card.is_joker {
@@ -382,7 +380,7 @@ impl Game {
         }
     }
 
-    pub fn set_trump_suit(&mut self, suit: CardSuit) {
+    pub fn set_trump_suit(&mut self, suit: Suit) {
         self.trump_suit = Some(suit);
         self.set_joker_suit(suit);
         self.sort_hand(0);

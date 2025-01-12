@@ -5,7 +5,7 @@ use macroquad::{
     texture::load_texture,
 };
 
-use crate::{card::CardSuit, game::PlayerAction};
+use crate::{card::Suit, game::PlayerAction};
 
 use super::{button_shaded::ButtonShaded, transform::Transform};
 
@@ -56,28 +56,28 @@ impl TrumpChooser {
 
         if self.club_button.process_events(mouse_pos) {
             self.sender
-                .send(PlayerAction::ChooseTrump(CardSuit::Club))
+                .send(PlayerAction::ChooseTrump(Suit::Club))
                 .expect("Send error");
             return true;
         }
 
         if self.diamond_button.process_events(mouse_pos) {
             self.sender
-                .send(PlayerAction::ChooseTrump(CardSuit::Diamond))
+                .send(PlayerAction::ChooseTrump(Suit::Diamond))
                 .expect("Send error");
             return true;
         }
 
         if self.heart_button.process_events(mouse_pos) {
             self.sender
-                .send(PlayerAction::ChooseTrump(CardSuit::Heart))
+                .send(PlayerAction::ChooseTrump(Suit::Heart))
                 .expect("Send error");
             return true;
         }
 
         if self.spade_button.process_events(mouse_pos) {
             self.sender
-                .send(PlayerAction::ChooseTrump(CardSuit::Spade))
+                .send(PlayerAction::ChooseTrump(Suit::Spade))
                 .expect("Send error");
         }
         false

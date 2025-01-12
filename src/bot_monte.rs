@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    card::{Card, CardSuit, Points},
+    card::{Card, Suit, Points},
     game::{Bid, Game, PlayerAction, PLAYERS},
 };
 
@@ -37,15 +37,15 @@ impl BotMonte {
         sender.send(PlayerAction::Bid(bid)).expect("send error");
     }
 
-    fn best_suit(&self, cards: &[Card]) -> CardSuit {
-        const SUITS: [CardSuit; 4] = [
-            CardSuit::Club,
-            CardSuit::Diamond,
-            CardSuit::Heart,
-            CardSuit::Spade,
+    fn best_suit(&self, cards: &[Card]) -> Suit {
+        const SUITS: [Suit; 4] = [
+            Suit::Club,
+            Suit::Diamond,
+            Suit::Heart,
+            Suit::Spade,
         ];
         let mut best_suit_score = 0;
-        let mut best_suit = CardSuit::Club;
+        let mut best_suit = Suit::Club;
 
         for suit in SUITS.iter() {
             let mut suit_score = 0;
@@ -64,7 +64,7 @@ impl BotMonte {
         best_suit
     }
 
-    fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<CardSuit>) -> u8 {
+    fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<Suit>) -> u8 {
         let mut lowest_rank = 99;
         let mut lowest_id = 0;
 

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum CardSuit {
+pub enum Suit {
     Club,
     Diamond,
     Heart,
@@ -15,7 +15,7 @@ pub type Points = u16;
 #[derive(Clone, Debug)]
 pub struct Card {
     pub id: u8,
-    pub suit: CardSuit,
+    pub suit: Suit,
     pub rank: Rank,
     // Used to remember a card is a joker when its suit is changed to trump.
     pub is_joker: bool,
@@ -25,9 +25,9 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn new(id: u8, suit: CardSuit, rank: Rank, points: Points) -> Self {
+    pub fn new(id: u8, suit: Suit, rank: Rank, points: Points) -> Self {
         let is_joker = match suit {
-            CardSuit::Joker => true,
+            Suit::Joker => true,
             _ => false,
         };
         Self {
@@ -41,7 +41,7 @@ impl Card {
         }
     }
 
-    pub fn is_trump(&self, trump_suit: &Option<CardSuit>) -> bool {
+    pub fn is_trump(&self, trump_suit: &Option<Suit>) -> bool {
         match trump_suit {
             Some(suit) => self.suit == *suit,
             None => false,
@@ -52,11 +52,11 @@ impl Card {
     pub fn sort_order(&self) -> u8 {
         self.rank
             + match self.suit {
-                CardSuit::Club => 0,
-                CardSuit::Diamond => 20,
-                CardSuit::Heart => 40,
-                CardSuit::Spade => 60,
-                CardSuit::Joker => 80,
+                Suit::Club => 0,
+                Suit::Diamond => 20,
+                Suit::Heart => 40,
+                Suit::Spade => 60,
+                Suit::Joker => 80,
             }
     }
 
@@ -73,11 +73,11 @@ impl Card {
     pub fn file_string(&self) -> String {
         let rank = self.rank_string();
         match self.suit {
-            CardSuit::Club => format!("clb{}", rank),
-            CardSuit::Diamond => format!("dia{}", rank),
-            CardSuit::Heart => format!("hrt{}", rank),
-            CardSuit::Spade => format!("spd{}", rank),
-            CardSuit::Joker => format!("joker"),
+            Suit::Club => format!("clb{}", rank),
+            Suit::Diamond => format!("dia{}", rank),
+            Suit::Heart => format!("hrt{}", rank),
+            Suit::Spade => format!("spd{}", rank),
+            Suit::Joker => format!("joker"),
         }
     }
 }
@@ -106,11 +106,11 @@ impl core::fmt::Display for Card {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let rank = self.rank_string();
         match self.suit {
-            CardSuit::Spade => write!(f, "{rank}♤"),
-            CardSuit::Club => write!(f, "{rank}♧"),
-            CardSuit::Diamond => write!(f, "{rank}♦️"),
-            CardSuit::Heart => write!(f, "{rank}♥️"),
-            CardSuit::Joker => write!(f, "{rank},Jkr"),
+            Suit::Spade => write!(f, "{rank}♤"),
+            Suit::Club => write!(f, "{rank}♧"),
+            Suit::Diamond => write!(f, "{rank}♦️"),
+            Suit::Heart => write!(f, "{rank}♥️"),
+            Suit::Joker => write!(f, "{rank},Jkr"),
         }
     }
 }

@@ -1,6 +1,6 @@
 use macroquad::{math::Vec2, texture::load_texture};
 
-use crate::card::CardSuit;
+use crate::card::Suit;
 
 use super::{imager::Imager, transform::Transform};
 
@@ -19,14 +19,14 @@ impl TrumpMarker {
         }
     }
 
-    pub async fn set_suit(&mut self, suit: Option<CardSuit>) {
+    pub async fn set_suit(&mut self, suit: Option<Suit>) {
         if let Some(suit) = suit {
             let tex = match suit {
-                CardSuit::Club => load_texture("src/assets/club.png").await.unwrap(),
-                CardSuit::Diamond => load_texture("src/assets/diamond.png").await.unwrap(),
-                CardSuit::Heart => load_texture("src/assets/heart.png").await.unwrap(),
-                CardSuit::Spade => load_texture("src/assets/spade.png").await.unwrap(),
-                CardSuit::Joker => load_texture("src/assets/joker.png").await.unwrap(),
+                Suit::Club => load_texture("src/assets/club.png").await.unwrap(),
+                Suit::Diamond => load_texture("src/assets/diamond.png").await.unwrap(),
+                Suit::Heart => load_texture("src/assets/heart.png").await.unwrap(),
+                Suit::Spade => load_texture("src/assets/spade.png").await.unwrap(),
+                Suit::Joker => load_texture("src/assets/joker.png").await.unwrap(),
             };
             self.image = Some(Imager::new(tex, 0.3333, true));
         } else {

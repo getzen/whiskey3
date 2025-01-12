@@ -3,7 +3,7 @@ use std::{f32::consts::PI, sync::mpsc::Sender};
 use macroquad::prelude::*;
 
 use crate::{
-    card::{Card, CardSuit},
+    card::{Card, Suit},
     game::{self, Bid, Game, PlayerAction, MIN_BID, NEST_SIZE, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
@@ -336,7 +336,7 @@ impl View {
         self.message.text = "".to_string();
     }
 
-    pub async fn set_trump_suit(&mut self, suit: Option<CardSuit>) {
+    pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
         self.trump_marker.set_suit(suit).await;
     }
 

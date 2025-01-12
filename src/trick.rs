@@ -1,4 +1,4 @@
-use crate::card::{Card, CardSuit, Points};
+use crate::card::{Card, Suit, Points};
 
 #[derive(Clone)]
 pub struct Trick {
@@ -35,7 +35,7 @@ impl Trick {
         self.lead_card.is_none()
     }
 
-    pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<CardSuit>) {
+    pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<Suit>) {
         if self.lead_card.is_none() {
             // this is the lead card
             self.lead_card = Some(card.clone());

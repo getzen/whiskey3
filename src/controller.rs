@@ -1,7 +1,7 @@
 use std::sync::mpsc::{self, Receiver, Sender};
 
 use crate::bot_monte::BotMonte;
-use crate::card::CardSuit;
+use crate::card::Suit;
 use crate::game::{Bid, Game, PlayerAction, NEST_SIZE};
 
 use crate::view::view::View;
@@ -21,7 +21,7 @@ pub enum GameAction {
     Discard(Vec<u8>),
     EndExchanging,
     GetTrump,
-    ChooseTrump(CardSuit),
+    ChooseTrump(Suit),
     GetCardPlay,
     PlayCard(u8),
     AwardTrick,
