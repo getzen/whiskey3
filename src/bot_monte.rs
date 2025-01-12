@@ -29,9 +29,9 @@ impl BotMonte {
             }
         }
 
-        if bid_pts > min {
-            bid_pts = min + 5;
-            bid_pts = bid_pts.min(max);
+        if bid_pts >= min {
+            bid_pts = min;
+            //bid_pts = bid_pts.min(max);
             bid = Bid::Bid(bid_pts);
         }
 
@@ -111,7 +111,7 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn best_card_play(&self, game: &Game, simulations: usize, sender: Sender<PlayerAction>) {
+    pub fn best_card_play(&self, game: &mut Game, simulations: usize, sender: Sender<PlayerAction>) {
         println!("bot thinking");
 
         let monte_player = game.active;
@@ -173,6 +173,7 @@ impl BotMonte {
 
                 while !sim_game.hand_completed() {
                     if sim_game.trick_completed() {
+                        
                         sim_game.award_trick();
                         sim_game.reset_for_next_trick();
                     }
@@ -181,9 +182,10 @@ impl BotMonte {
                     if let Some(id) = fastrand::choice(ids) {
                         sim_game.play_card_id(id);
                     }
+                   
                 }
-                sim_game.award_nest_cards();
-
+                let _ = sim_game.award_nest_cards();
+                
                 sim_score += sim_game.scores[team] as i32;
                 sim_score -= sim_game.scores[opp_team] as i32;
             }

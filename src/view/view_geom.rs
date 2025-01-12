@@ -72,26 +72,24 @@ pub fn nest_geom(index: usize, count: usize) -> ViewGeom {
         pos,
         rot: 0.0,
         z: index,
-        ..Default::default()
     }
 }
 
 pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
     let max_width = 120.;
-    let max_spacing: f32 = 60.;
+    let max_spacing: f32 = 20.;
 
     let computed_width = max_width / count as f32;
     let x_spacing = max_spacing.min(computed_width);
 
     let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
     x_offset += index as f32 * x_spacing;
-    let pos = vec2(100., 100.) + vec2(x_offset, 0.0);
+    let pos = vec2(80., SCREEN.y - 100.0) + vec2(x_offset, 0.0);
 
     ViewGeom {
         pos,
-        rot: -0.2,
+        rot: -0.1,
         z: index,
-        ..Default::default()
     }
 }
 
@@ -121,9 +119,9 @@ pub fn hand_card_geom(
 
     let max_width = match is_bot {
         true => 340.,
-        false => 500.,
+        false => 470.,
     };
-    let max_spacing: f32 = 100.;
+    let max_spacing: f32 = 70.;
 
     let computed_width = max_width / hand_count as f32;
     let x_spacing = max_spacing.min(computed_width);
@@ -142,7 +140,6 @@ pub fn hand_card_geom(
         pos,
         rot: angle,
         z: index + 100,
-        ..Default::default()
     }
 }
 
@@ -156,6 +153,26 @@ pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
         pos,
         rot: angle,
         z: 200,
-        ..Default::default()
+    }
+}
+
+pub fn taken_geom(team: usize) -> ViewGeom {
+    let dist_from_corner = 40.0;
+    match team {
+        0 => {
+            ViewGeom {
+                pos: vec2(SCREEN.x - dist_from_corner, SCREEN.y - dist_from_corner),
+                rot: PI / 4.0,
+                z: 300,
+            }
+        }
+        1 => {
+            ViewGeom {
+                pos: vec2(dist_from_corner, dist_from_corner),
+                rot: PI / 4.0,
+                z: 300,
+            }
+        }
+        _ => panic!()
     }
 }

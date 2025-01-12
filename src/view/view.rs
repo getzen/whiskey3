@@ -273,6 +273,20 @@ impl View {
         self.z_order_needs_update = true;
     }
 
+    pub fn update_taken(&mut self, game: &Game) {
+        for team in 0..2 {
+            for card in &game.taken[team] {
+                if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
+                    let geom = view_geom::taken_geom(team);
+                    view.move_to(geom.pos, view_geom::CARD_SPEED);
+                    view.rotate_to(geom.rot, view_geom::ROT_SPEED);
+                    view.card_image.z_order = geom.z;
+                    view.set_face_up(false);
+                }
+            }
+        }
+    }
+
     // After player exchanges or plays a card, call this to reset the nest or hand.
     pub fn reset_eligibility(&mut self, cards: &[Card]) {
         for card in cards {
@@ -436,10 +450,11 @@ impl View {
     }
 
     pub fn get_human_card_play(&mut self, game: &Game) {
+        self.set_playable_hand_cards(game);
         self.update_message("Play card.");
     }
 
     pub fn get_bot_card_play(&mut self, game: &Game) {
-        self.update_message("Hmmm.");
+        self.update_message("");
     }
 }

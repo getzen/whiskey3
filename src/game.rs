@@ -68,6 +68,7 @@ pub struct Game {
     /// The current trick
     pub trick: Trick,
     pub tricks_played: u8,
+    pub last_trick_winner: usize,
 
     pub hand_cards_to_deal: u8,
     pub nest_cards_to_deal: u8,
@@ -98,6 +99,7 @@ impl Game {
             trump_suit: None,
             trick: Trick::new(PLAYERS),
             tricks_played: 0,
+            last_trick_winner: 0,
 
             hand_cards_to_deal: 0,
             nest_cards_to_deal: 0,
@@ -226,12 +228,30 @@ impl Game {
     }
 
     pub fn deal_card_to_hand(&mut self) {
-        let mut card = self.deck.pop().unwrap();
-        
-        // card.face_up = !self.bot_players[self.active]; //////////////
-        card.face_up = true;
 
-        self.active_hand_mut().push(card);
+        // Deal Joker to me.
+       
+        if let Some(idx) = self.deck.iter().position(|c| c.rank == 15) {
+            if self.active == 0 {
+                let mut card = self.deck.remove(idx);
+                card.face_up = true;
+                self.active_hand_mut().push(card);
+            } else {
+                let mut card = self.deck.pop().unwrap();
+        
+            // card.face_up = !self.bot_players[self.active]; //////////////
+            card.face_up = true;
+            self.active_hand_mut().push(card);
+            }
+        }
+        else { // normal
+            let mut card = self.deck.pop().unwrap();
+        
+            // card.face_up = !self.bot_players[self.active]; //////////////
+            card.face_up = true;
+            self.active_hand_mut().push(card);
+        }
+       
         if !self.bot_is_active() {
             self.sort_hand(self.active);
         }
@@ -352,25 +372,6 @@ impl Game {
         }
     }
 
-    // pub fn discard_to_nest(&mut self, id: u8) {
-    //     let maker = self.maker.unwrap();
-    //     // println!("maker is {}, id is {}", maker, id);
-    //     // for card in &self.hands[maker] {
-    //     //     print!("{}, ", card.id);
-    //     // }
-    //     let idx = self.hands[maker].iter().position(|c| c.id == id);
-    //     let card = self.hands[maker].remove(idx.unwrap());
-    //     self.nest.push(card);
-    // }
-
-    // pub fn undiscard_from_nest(&mut self, id: u8) {
-    //     let idx = self.nest.iter().position(|c| c.id == id);
-    //     let card = self.nest.remove(idx.unwrap());
-    //     let maker = self.maker.unwrap();
-    //     self.hands[maker].push(card);
-    //     self.sort_hand(maker);
-    // }
-
     pub fn mark_hand_ineligible(&mut self, player: usize) {
         for card in &mut self.hands[player] {
             card.eligible = false;
@@ -378,35 +379,45 @@ impl Game {
     }
 
     fn has_card_in_lead_suit(&self) -> bool {
-        if let Some(lead_suit) = &self.trick.lead_card_suit {
+        if let Some(lead_card) = &self.trick.lead_card {
             let hand = self.active_hand();
             for card in hand {
-                if card.suit == *lead_suit {
+                if card.suit == lead_card.suit {
                     return true;
+                }
+               
+                if let Some(trump) = self.trump_suit {
+                    if lead_card.is_trump(&trump) && card.is_trump(&trump) {
+                        return true;
+                    }
                 }
             }
         }
         false
     }
 
-    pub fn get_playable_card_ids(&self) -> Vec<u8> {
+    pub fn get_playable_card_ids(&mut self) -> Vec<u8> {
         let mut eligible_ids = Vec::new();
         let has_card_in_lead_suit = self.has_card_in_lead_suit();
 
-        for card in self.active_hand() {
+        let trick_is_empty = self.trick.is_empty();
+        let lead_card_suit = self.trick.lead_card_suit;
+
+        for card in self.active_hand_mut() {
             let mut eligible = false;
 
             // Is this the first card to play or there are no matching cards in hand?
-            if self.trick.is_empty() || !has_card_in_lead_suit {
+            if trick_is_empty || !has_card_in_lead_suit {
                 eligible = true;
             }
             // Not the first card in play.
-            else if card.suit == self.trick.lead_card_suit.unwrap() {
+            else if card.suit == lead_card_suit.unwrap() {
                 eligible = true;
             }
             if eligible {
                 eligible_ids.push(card.id);
             }
+            card.eligible = eligible;
         }
         eligible_ids
     }
@@ -437,8 +448,9 @@ impl Game {
     }
 
     pub fn award_trick(&mut self) {
-        let winner = self.trick.winner.unwrap();
-        let team = self.team_index(winner);
+        self.last_trick_winner = self.trick.winner.unwrap();
+        
+        let team = self.team_index(self.last_trick_winner);
         self.scores[team] += self.trick.points;
         self.tricks_played += 1;
 
@@ -457,13 +469,20 @@ impl Game {
         self.tricks_played == HAND_SIZE as u8
     }
 
-    pub fn award_nest_cards(&mut self) {
+    pub fn award_nest_cards(&mut self) -> u16 {
         let winner = self.trick.winner.unwrap();
         let team = self.team_index(winner);
-        for card in &self.nest {
+        let mut points = 0;
+        for card in &mut self.nest {
+            card.face_up = true;
             self.scores[team] += card.points;
+            points += card.points;
         }
-        self.taken[team].append(&mut self.nest);
+        points
+    }
+
+    pub fn complete_hand(&mut self) {
+        
     }
 
     pub fn complete_game(&mut self) {

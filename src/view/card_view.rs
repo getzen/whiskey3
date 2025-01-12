@@ -42,7 +42,7 @@ impl CardView {
             eventer: Eventer::new(),
             face_texture: face,
             back_texture: back,
-            dimmed_color: Color::from_rgba(200, 255, 200, 255),
+            dimmed_color: Color::from_rgba(200, 200, 200, 255),
             dimmed: false,
             trans_anim: None,
             angle_anim: None,

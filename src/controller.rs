@@ -29,7 +29,6 @@ pub enum GameAction {
     //WaitForCardPlay,
     PlayCard(u8),
     AwardTrick,
-    EndHand,
     AwardNest,
     PresentScore,
     Exit,
@@ -152,7 +151,7 @@ impl Controller {
                                 let player = self.game.active;
                                 self.game.deal_card_to_hand();
                                 self.view.update_hand(&self.game, player);
-                                self.delay_before_game_action = 0.1;
+                                //self.delay_before_game_action = 0.1;
                             } else {
                                 self.game_action = Some(GameAction::DealToNest);
                             }
@@ -280,6 +279,7 @@ impl Controller {
                                 self.view.get_bot_card_play(&self.game);
                                 self.spawn_play_bot();
                             } else {
+                                self.game.get_playable_card_ids();
                                 self.view.get_human_card_play(&self.game);
                             }
                             self.delay_before_game_action = 1.0;
@@ -290,6 +290,7 @@ impl Controller {
                             let player = self.game.active;
                             self.game.play_card_id(*card_id);
 
+                            self.view.reset_eligibility(&self.game.hands[player]);
                             self.view.update_hand(&self.game, player);
                             self.view.update_trick(&self.game);
 
@@ -300,10 +301,35 @@ impl Controller {
                                 self.game_action = Some(GameAction::GetCardPlay);
                             }
                         }
-                        GameAction::AwardTrick => todo!(),
-                        GameAction::EndHand => todo!(),
-                        GameAction::AwardNest => todo!(),
-                        GameAction::PresentScore => todo!(),
+                        GameAction::AwardTrick => {
+                            self.game.award_trick();
+                            
+                            self.view.update_taken(&self.game);
+                            self.view.update_info(&self.game);
+
+                            if self.game.hand_completed() {
+                                self.game_action = Some(GameAction::AwardNest);
+                            } else {
+                                self.game.reset_for_next_trick();
+                                self.game_action = Some(GameAction::GetCardPlay);
+                            }
+                        },
+                 
+                        GameAction::AwardNest => {
+                            let points = self.game.award_nest_cards();
+
+                            let message = format!("There were {} points in the nest.", points);
+                            self.view.update_message(&message);
+                            self.view.update_info(&self.game);
+                            self.view.update_nest(&self.game, false);
+                            self.delay_before_game_action = 3.0;
+                            self.game_action = Some(GameAction::PresentScore);
+                        },
+                        GameAction::PresentScore => {
+                            self.game_action = None;
+
+                            self.game.reset_for_new_hand();
+                        },
                         GameAction::Exit => todo!(),
                     }
                 }
@@ -361,33 +387,17 @@ impl Controller {
     }
 
     fn spawn_play_bot(&self) {
-        let game_clone = self.game.clone();
+        let mut game_clone = self.game.clone();
         let sender = self.sender.clone();
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.best_card_play(&game_clone, 500, sender);
+            bot.best_card_play(&mut game_clone, 500, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.best_card_play(&game_clone, 500, sender);
+                bot.best_card_play(&mut game_clone, 500, sender);
             });
         }
     }
-
-    // Return true to exit app.
-    // fn check_player_actions(&mut self) -> bool {
-    //     let received = self.receiver.try_recv();
-    //     if received.is_ok() {
-    //         match received.unwrap() {
-    //             PlayerAction::Bid(bid) => todo!(),
-    //             PlayerAction::IncBid => todo!(),
-    //             PlayerAction::DecBid => todo!(),
-    //             PlayerAction::Discard(id) => GameAction::Discard(id),
-    //             PlayerAction::PlayCard(_) => todo!(),
-    //             PlayerAction::ShouldExit => todo!(),
-    //         }
-    //     }
-    //     return false;
-    // }
 }

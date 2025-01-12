@@ -3,6 +3,7 @@ use crate::card::{Card, CardSuit, Points};
 #[derive(Clone)]
 pub struct Trick {
     pub cards: Vec<Option<Card>>,
+    pub lead_card: Option<Card>,
     pub lead_card_suit: Option<CardSuit>,
     pub winner: Option<usize>,
     pub points: Points,
@@ -17,6 +18,7 @@ impl Trick {
 
         Self {
             cards,
+            lead_card: None,
             lead_card_suit: None,
             winner: None,
             points: 0,
@@ -27,6 +29,7 @@ impl Trick {
         for card in &mut self.cards {
             *card = None;
         }
+        self.lead_card = None;
         self.lead_card_suit = None;
         //self.winner = None;
         self.points = 0;
@@ -39,20 +42,36 @@ impl Trick {
     pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<CardSuit>) {
         if self.lead_card_suit.is_none() {
             // this is the lead card
+            self.lead_card = Some(card.clone());
             self.lead_card_suit = Some(card.suit);
             self.winner = Some(player);
         } else {
             // this is not the lead card
             let winning_player = self.winner.unwrap();
             let winning_card = self.cards[winning_player].as_ref().unwrap();
-            if card.suit == winning_card.suit {
-                if card.rank > winning_card.rank {
-                    self.winner = Some(player);
+
+            // Hand has a trump suit.
+            if let Some(trump_suit) = trump_suit {
+                if winning_card.is_trump(trump_suit) && card.is_trump(trump_suit) {
+                    if card.rank > winning_card.rank {
+                        self.winner = Some(player);
+                    }
+                } else {
+                    // winning card is not trump
+                    if card.is_trump(trump_suit) {
+                        self.winner = Some(player);
+                    } else {
+                        if card.suit == winning_card.suit {
+                            if card.rank > winning_card.rank {
+                                self.winner = Some(player);
+                            }
+                        }
+                    }
                 }
             } else {
-                // Not the same suit as winning card
-                if let Some(trump_suit) = trump_suit {
-                    if card.suit == *trump_suit {
+                // Hand does not have a trump suit.
+                if card.suit == winning_card.suit {
+                    if card.rank > winning_card.rank {
                         self.winner = Some(player);
                     }
                 }
@@ -61,6 +80,8 @@ impl Trick {
         self.points += card.points;
         self.cards[player] = Some(card);
     }
+
+    
 
     pub fn completed(&self) -> bool {
         !self.cards.contains(&None)
