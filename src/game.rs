@@ -30,6 +30,7 @@ pub const NEST_SIZE: usize = 3;
 pub const NEST_CARDS_UP: u8 = 1;
 pub const JOKER_RANK: u8 = 15;
 pub const JOKER_PTS: Points = 0;
+pub const JOKER_ID: u8 = 99;
 
 pub const MIN_BID: Points = 60;
 pub const MAX_MID: Points = 120;
@@ -157,45 +158,43 @@ impl Game {
         }
     }
 
-    fn create_card(&mut self, id: u8, suit: CardSuit, rank: Rank, points: Points) {
-        let mut card = Card::new(id, suit, rank, points);
+    fn create_card(&mut self, id: u8, suit: CardSuit, rank: Rank, is_joker: bool, points: Points) {
+        let mut card = Card::new(id, suit, rank, is_joker, points);
         card.face_up = false;
         self.deck.push(card);
     }
 
     pub fn create_deck(&mut self) {
-        const SUITS: [CardSuit; 5] = [
+        const SUITS: [CardSuit; 4] = [
             CardSuit::Club,
             CardSuit::Diamond,
             CardSuit::Heart,
             CardSuit::Spade,
-            CardSuit::Joker,
         ];
         let mut id = 0;
         for suit in &SUITS {
-            if *suit == CardSuit::Joker {
-                self.create_card(id, *suit, JOKER_RANK, JOKER_PTS);
-                id += 1;
-            } else {
-                for rank in CARD_RANKS {
-                    let points = match rank {
-                        5 => 5,
-                        10 => 10,
-                        14 => 10,
-                        _ => 0,
-                    };
+            for rank in CARD_RANKS {
+                let points = match rank {
+                    5 => 5,
+                    10 => 10,
+                    14 => 10,
+                    _ => 0,
+                };
 
-                    self.create_card(id, *suit, rank, points);
-                    id += 1;
-                }
+                self.create_card(id, *suit, rank, false, points);
+                id += 1;
             }
         }
 
         // Add specific cards.
         for (rank, suit) in ADD_CARDS {
-            self.create_card(id, suit, rank, 0);
+            self.create_card(id, suit, rank, false, 0);
             id += 1;
         }
+
+        // Add Joker
+        self.create_card(JOKER_ID, CardSuit::Joker, JOKER_RANK, true, JOKER_PTS);
+
         println!("cards created: {}", self.deck.len());
     }
 
@@ -222,9 +221,33 @@ impl Game {
         self.high_bid = None;
         self.bids.fill(None);
         self.tricks_played = 0;
+        self.set_joker_suit(CardSuit::Joker);
 
         self.hand_cards_to_deal = (HAND_SIZE * PLAYERS) as u8;
         self.nest_cards_to_deal = NEST_SIZE as u8;
+    }
+
+    fn set_joker_suit(&mut self, suit: CardSuit) {
+        for p in 0..PLAYERS {
+            for card in &mut self.hands[p] {
+                if card.is_joker {
+                    card.suit = suit;
+                    return;
+                }
+            }
+        }
+        for card in &mut self.nest {
+            if card.is_joker {
+                card.suit = suit;
+                return;
+            }
+        }
+        for card in &mut self.deck {
+            if card.is_joker {
+                card.suit = suit;
+                return;
+            }
+        }
     }
 
     pub fn deal_card_to_hand(&mut self) {
@@ -372,10 +395,10 @@ impl Game {
         }
     }
 
-    pub fn mark_hand_ineligible(&mut self, player: usize) {
-        for card in &mut self.hands[player] {
-            card.eligible = false;
-        }
+    pub fn set_trump_suit(&mut self, suit: CardSuit) {
+        self.trump_suit = Some(suit);
+        self.set_joker_suit(suit);
+        self.sort_hand(0);
     }
 
     fn has_card_in_lead_suit(&self) -> bool {
@@ -384,12 +407,6 @@ impl Game {
             for card in hand {
                 if card.suit == lead_card.suit {
                     return true;
-                }
-               
-                if let Some(trump) = self.trump_suit {
-                    if lead_card.is_trump(&trump) && card.is_trump(&trump) {
-                        return true;
-                    }
                 }
             }
         }
@@ -401,7 +418,8 @@ impl Game {
         let has_card_in_lead_suit = self.has_card_in_lead_suit();
 
         let trick_is_empty = self.trick.is_empty();
-        let lead_card_suit = self.trick.lead_card_suit;
+
+        let lead_card = self.trick.lead_card.clone();
 
         for card in self.active_hand_mut() {
             let mut eligible = false;
@@ -411,7 +429,7 @@ impl Game {
                 eligible = true;
             }
             // Not the first card in play.
-            else if card.suit == lead_card_suit.unwrap() {
+            else if card.suit == lead_card.as_ref().unwrap().suit {
                 eligible = true;
             }
             if eligible {
@@ -421,12 +439,6 @@ impl Game {
         }
         eligible_ids
     }
-
-    // pub fn set_select_state_for_cards(state: SelectState, cards: &mut [Card]) {
-    //     for card in cards {
-    //         card.select_state = state.clone();
-    //     }
-    // }
 
     pub fn play_card_id(&mut self, card_id: u8) {
         let mut index = 0;

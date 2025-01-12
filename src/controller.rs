@@ -268,9 +268,12 @@ impl Controller {
                         }
                         //GameAction::WaitForTrump => self.game_action = None,
                         GameAction::ChooseTrump(suit) => {
-                            self.game.trump_suit = Some(*suit);
+                            self.game.set_trump_suit(*suit);
+
+                            self.view.update_hand(&self.game, 0);
                             self.view.hide_trump_chooser();
                             self.view.set_trump_suit(Some(*suit)).await;
+
                             self.delay_before_game_action = 1.0;
                             self.game_action = Some(GameAction::GetCardPlay);
                         }

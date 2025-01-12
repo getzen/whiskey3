@@ -18,7 +18,7 @@ impl BotMonte {
         let mut bid_pts = 40;
         let cards = game.active_hand();
         for card in cards {
-            if card.suit == CardSuit::Joker {
+            if card.is_joker {
                 bid_pts += 15;
             }
             match card.rank {
@@ -65,7 +65,7 @@ impl BotMonte {
         best_suit
     }
 
-    fn lowest_non_trump_card(&self, cards: &[Card], trump: CardSuit) -> u8 {
+    fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<CardSuit>) -> u8 {
         let mut lowest_rank = 99;
         let mut lowest_id = 0;
 
@@ -91,7 +91,7 @@ impl BotMonte {
         let trump = self.best_suit(&cards_copy);
 
         while discards.len() < nest_size {
-            let lowest_card_id = self.lowest_non_trump_card(&cards_copy, trump);
+            let lowest_card_id = self.lowest_non_trump_card(&cards_copy, &Some(trump));
             discards.push(lowest_card_id);
             if let Some(idx) = cards_copy.iter().position(|c| c.id == lowest_card_id) {
                 cards_copy.swap_remove(idx);
@@ -143,6 +143,10 @@ impl BotMonte {
             for card in &game.deck {
                 hidden_cards.push(card);
             }
+        }
+
+        if legal_card_ids.is_empty() {
+            panic!("No legal card ids!");
         }
 
         for card_id in &legal_card_ids {

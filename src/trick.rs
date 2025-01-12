@@ -4,7 +4,6 @@ use crate::card::{Card, CardSuit, Points};
 pub struct Trick {
     pub cards: Vec<Option<Card>>,
     pub lead_card: Option<Card>,
-    pub lead_card_suit: Option<CardSuit>,
     pub winner: Option<usize>,
     pub points: Points,
 }
@@ -19,7 +18,6 @@ impl Trick {
         Self {
             cards,
             lead_card: None,
-            lead_card_suit: None,
             winner: None,
             points: 0,
         }
@@ -30,20 +28,17 @@ impl Trick {
             *card = None;
         }
         self.lead_card = None;
-        self.lead_card_suit = None;
-        //self.winner = None;
         self.points = 0;
     }
 
     pub fn is_empty(&self) -> bool {
-        self.lead_card_suit.is_none()
+        self.lead_card.is_none()
     }
 
     pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<CardSuit>) {
-        if self.lead_card_suit.is_none() {
+        if self.lead_card.is_none() {
             // this is the lead card
             self.lead_card = Some(card.clone());
-            self.lead_card_suit = Some(card.suit);
             self.winner = Some(player);
         } else {
             // this is not the lead card
@@ -51,7 +46,7 @@ impl Trick {
             let winning_card = self.cards[winning_player].as_ref().unwrap();
 
             // Hand has a trump suit.
-            if let Some(trump_suit) = trump_suit {
+            if trump_suit.is_some() {
                 if winning_card.is_trump(trump_suit) && card.is_trump(trump_suit) {
                     if card.rank > winning_card.rank {
                         self.winner = Some(player);

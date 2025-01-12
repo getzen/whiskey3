@@ -26,7 +26,7 @@ impl TrumpMarker {
                 CardSuit::Diamond => load_texture("src/assets/diamond.png").await.unwrap(),
                 CardSuit::Heart => load_texture("src/assets/heart.png").await.unwrap(),
                 CardSuit::Spade => load_texture("src/assets/spade.png").await.unwrap(),
-                CardSuit::Joker => todo!(),
+                CardSuit::Joker => load_texture("src/assets/joker.png").await.unwrap(),
             };
             self.image = Some(Imager::new(tex, 0.3333, true));
         } else {

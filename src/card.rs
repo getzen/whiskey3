@@ -25,25 +25,32 @@ pub struct Card {
     pub id: u8,
     pub suit: CardSuit,
     pub rank: Rank,
+    pub is_joker: bool,
     pub points: Points,
     pub face_up: bool,
     pub eligible: bool, // for discarding or playing to a trick
 }
 
 impl Card {
-    pub fn new(id: u8, suit: CardSuit, rank: Rank, points: Points) -> Self {
+    pub fn new(id: u8, suit: CardSuit, rank: Rank, is_joker: bool, points: Points) -> Self {
         Self {
             id,
             suit,
             rank,
+            is_joker,
             points,
             face_up: false,
             eligible: false,
         }
     }
 
-    pub fn is_trump(&self, trump_suit: &CardSuit) -> bool {
-        self.suit == *trump_suit || self.suit == CardSuit::Joker
+    pub fn is_trump(&self, trump_suit: &Option<CardSuit>) -> bool {
+        match trump_suit {
+            Some(suit) => {
+                self.suit == *suit
+            },
+            None => false,
+        }
     }
 
     /// Used by PartialOrd to determine sort order.
@@ -75,10 +82,12 @@ impl Card {
             CardSuit::Diamond => format!("dia{}", rank),
             CardSuit::Heart => format!("hrt{}", rank),
             CardSuit::Spade => format!("spd{}", rank),
-            CardSuit::Joker => format!("joker"),
+            CardSuit::Joker=> format!("joker"),
         }
     }
 }
+
+
 
 impl Ord for Card {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -108,7 +117,7 @@ impl core::fmt::Display for Card {
             CardSuit::Club => write!(f, "{rank}♧"),
             CardSuit::Diamond => write!(f, "{rank}♦️"),
             CardSuit::Heart => write!(f, "{rank}♥️"),
-            CardSuit::Joker => write!(f, "Jkr"),
+            CardSuit::Joker => write!(f, "{rank},Jkr"),
         }
     }
 }
