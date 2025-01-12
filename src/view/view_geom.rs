@@ -156,23 +156,14 @@ pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
     }
 }
 
-pub fn taken_geom(team: usize) -> ViewGeom {
-    let dist_from_corner = 40.0;
-    match team {
-        0 => {
-            ViewGeom {
-                pos: vec2(SCREEN.x - dist_from_corner, SCREEN.y - dist_from_corner),
-                rot: PI / 4.0,
-                z: 300,
-            }
-        }
-        1 => {
-            ViewGeom {
-                pos: vec2(dist_from_corner, dist_from_corner),
-                rot: PI / 4.0,
-                z: 300,
-            }
-        }
-        _ => panic!()
+pub fn taken_geom(player: usize, player_count: usize) -> ViewGeom {
+    let distance_from_center = 440.0;
+    let rad = player_radians_from_center(player, player_count) - PI / 4.0;
+    let pos = position_from(CENTER, rad, distance_from_center);
+    let angle = player_rotation(player, player_count) - 0.2;
+    ViewGeom {
+        pos,
+        rot: angle,
+        z: 0,
     }
 }

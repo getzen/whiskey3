@@ -3,11 +3,11 @@ use crate::{
     trick::Trick,
 };
 
+pub const DEBUGGING: bool = false;
+
 #[derive(Clone)]
 pub enum PlayerAction {
     Bid(Bid),
-    //IncBid,
-    // DecBid,
     Exchange(u8),     // human
     Discard(Vec<u8>), // bot
     DoneExchanging,
@@ -16,26 +16,68 @@ pub enum PlayerAction {
     ShouldExit,
 }
 
-/// Card ranks to include in the game. // TO-DO: include card points.
-pub const CARD_RANKS: [u8; 10] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-/// Specific cards to add.
-pub const ADD_CARDS: [(u8, CardSuit); 2] = [(4, CardSuit::Diamond), (4, CardSuit::Heart)];
+pub const ALL_CARDS: [(CardSuit, Rank, Points); 43] = [
+    (CardSuit::Club, 5, 5),
+    (CardSuit::Club, 6, 0),
+    (CardSuit::Club, 7, 0),
+    (CardSuit::Club, 8, 0),
+    (CardSuit::Club, 9, 0),
+    (CardSuit::Club, 10, 10),
+    (CardSuit::Club, 11, 0),
+    (CardSuit::Club, 12, 0),
+    (CardSuit::Club, 13, 10),
+    (CardSuit::Club, 14, 15),
+
+    (CardSuit::Diamond, 4, 0),
+    (CardSuit::Diamond, 5, 5),
+    (CardSuit::Diamond, 6, 0),
+    (CardSuit::Diamond, 7, 0),
+    (CardSuit::Diamond, 8, 0),
+    (CardSuit::Diamond, 9, 0),
+    (CardSuit::Diamond, 10, 10),
+    (CardSuit::Diamond, 11, 0),
+    (CardSuit::Diamond, 12, 0),
+    (CardSuit::Diamond, 13, 10),
+    (CardSuit::Diamond, 14, 15),
+
+    (CardSuit::Heart, 4, 0),
+    (CardSuit::Heart, 5, 5),
+    (CardSuit::Heart, 6, 0),
+    (CardSuit::Heart, 7, 0),
+    (CardSuit::Heart, 8, 0),
+    (CardSuit::Heart, 9, 0),
+    (CardSuit::Heart, 10, 10),
+    (CardSuit::Heart, 11, 0),
+    (CardSuit::Heart, 12, 0),
+    (CardSuit::Heart, 13, 10),
+    (CardSuit::Heart, 14, 15),
+    
+    (CardSuit::Spade, 5, 5),
+    (CardSuit::Spade, 6, 0),
+    (CardSuit::Spade, 7, 0),
+    (CardSuit::Spade, 8, 0),
+    (CardSuit::Spade, 9, 0),
+    (CardSuit::Spade, 10, 10),
+    (CardSuit::Spade, 11, 0),
+    (CardSuit::Spade, 12, 0),
+    (CardSuit::Spade, 13, 10),
+    (CardSuit::Spade, 14, 15),
+
+    (CardSuit::Joker, 15, 0),
+];
+
+pub const MIN_BID: Points = 80;
+pub const POINTS_TO_WIN: Points = 200;
+
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
-/// Initial hand size.
-pub const HAND_SIZE: usize = 10;
-// Initial number of cards dealt to the table.
+/// Number of cards dealt to the nest. The remaining cards are dealt to the players
+/// and determine the value returned by self.hand_size().
 pub const NEST_SIZE: usize = 3;
-// Number of nest card to deal face up.
-pub const NEST_CARDS_UP: u8 = 1;
-pub const JOKER_RANK: u8 = 15;
-pub const JOKER_PTS: Points = 0;
-pub const JOKER_ID: u8 = 99;
+/// Number of nest card to deal face up.
+pub const NEST_CARDS_UP: u8 = 0;
 
-pub const MIN_BID: Points = 60;
-pub const MAX_MID: Points = 120;
 
-pub const POINTS_TO_WIN: Points = 200;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Bid {
@@ -52,7 +94,7 @@ pub struct Game {
     pub nest: Vec<Card>,
     pub hands: Vec<Vec<Card>>,
     pub bids: [Option<Bid>; PLAYERS],
-    pub taken: [Vec<Card>; 2], // We, They
+    pub taken: [Vec<Card>; PLAYERS],
 
     /// The player who is the dealer.
     pub dealer: usize,
@@ -91,7 +133,7 @@ impl Game {
             nest: Vec::new(),
             hands,
             bids: [None, None, None, None],
-            taken: [Vec::new(), Vec::new()],
+            taken: [Vec::new(), Vec::new(), Vec::new(), Vec::new()],
             dealer,
             active: dealer,
             nest_face_up_count: 0,
@@ -138,63 +180,31 @@ impl Game {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn print_table(&self) {
-        print!("table: ");
-        for card in &self.nest {
-            print!("{} ", card.to_string());
-        }
-        println!("");
+    pub fn hand_size(&self) -> usize {
+       (ALL_CARDS.len() - NEST_SIZE) / PLAYERS
     }
 
-    #[allow(dead_code)]
-    pub fn print_captures(&self) {
-        for team in 0..2 {
-            print!("captured: {}: ", team);
-            for card in &self.taken[team] {
-                print!("{} ", card.to_string());
-            }
-            println!("");
+    pub fn max_bid(&self) -> Points {
+        let mut bid = 0;
+        for (_suit, _rank, points) in &ALL_CARDS {
+            bid += points;
         }
+        bid
     }
 
-    fn create_card(&mut self, id: u8, suit: CardSuit, rank: Rank, is_joker: bool, points: Points) {
-        let mut card = Card::new(id, suit, rank, is_joker, points);
+    fn create_card(&mut self, id: u8, suit: CardSuit, rank: Rank, points: Points) {
+        let mut card = Card::new(id, suit, rank, points);
         card.face_up = false;
         self.deck.push(card);
     }
 
     pub fn create_deck(&mut self) {
-        const SUITS: [CardSuit; 4] = [
-            CardSuit::Club,
-            CardSuit::Diamond,
-            CardSuit::Heart,
-            CardSuit::Spade,
-        ];
         let mut id = 0;
-        for suit in &SUITS {
-            for rank in CARD_RANKS {
-                let points = match rank {
-                    5 => 5,
-                    10 => 10,
-                    14 => 10,
-                    _ => 0,
-                };
 
-                self.create_card(id, *suit, rank, false, points);
-                id += 1;
-            }
-        }
-
-        // Add specific cards.
-        for (rank, suit) in ADD_CARDS {
-            self.create_card(id, suit, rank, false, 0);
+        for (suit, rank, points) in ALL_CARDS {
+            self.create_card(id, suit, rank, points);
             id += 1;
         }
-
-        // Add Joker
-        self.create_card(JOKER_ID, CardSuit::Joker, JOKER_RANK, true, JOKER_PTS);
-
         println!("cards created: {}", self.deck.len());
     }
 
@@ -204,9 +214,9 @@ impl Game {
 
     pub fn reset_for_new_hand(&mut self) {
         // If a game is over, all the cards are now in "taken."
-        for team in 0..2 {
-            if self.taken[team].len() > 0 {
-                self.deck.append(&mut self.taken[team]);
+        for p in 0..PLAYERS {
+            if self.taken[p].len() > 0 {
+                self.deck.append(&mut self.taken[p]);
             }
         }
         for card in &mut self.deck {
@@ -223,7 +233,7 @@ impl Game {
         self.tricks_played = 0;
         self.set_joker_suit(CardSuit::Joker);
 
-        self.hand_cards_to_deal = (HAND_SIZE * PLAYERS) as u8;
+        self.hand_cards_to_deal = (self.hand_size() * PLAYERS) as u8;
         self.nest_cards_to_deal = NEST_SIZE as u8;
     }
 
@@ -251,30 +261,12 @@ impl Game {
     }
 
     pub fn deal_card_to_hand(&mut self) {
+        // normal
+        let mut card = self.deck.pop().unwrap();
 
-        // Deal Joker to me.
-       
-        if let Some(idx) = self.deck.iter().position(|c| c.rank == 15) {
-            if self.active == 0 {
-                let mut card = self.deck.remove(idx);
-                card.face_up = true;
-                self.active_hand_mut().push(card);
-            } else {
-                let mut card = self.deck.pop().unwrap();
-        
-            // card.face_up = !self.bot_players[self.active]; //////////////
-            card.face_up = true;
-            self.active_hand_mut().push(card);
-            }
-        }
-        else { // normal
-            let mut card = self.deck.pop().unwrap();
-        
-            // card.face_up = !self.bot_players[self.active]; //////////////
-            card.face_up = true;
-            self.active_hand_mut().push(card);
-        }
-       
+        card.face_up = !self.bot_players[self.active] || DEBUGGING;
+        self.active_hand_mut().push(card);
+
         if !self.bot_is_active() {
             self.sort_hand(self.active);
         }
@@ -302,10 +294,6 @@ impl Game {
             },
             None => MIN_BID,
         }
-    }
-
-    pub fn max_bid(&self) -> Points {
-        MAX_MID
     }
 
     pub fn make_bid(&mut self, bid: Bid) {
@@ -355,8 +343,7 @@ impl Game {
         let is_human = !self.bot_players[maker];
         while !self.nest.is_empty() {
             if let Some(mut card) = self.nest.pop() {
-                //card.face_up = is_human; ///////////////////////
-                card.face_up = true;
+                card.face_up = is_human || DEBUGGING;
                 self.hands[maker].push(card);
             }
         }
@@ -390,7 +377,7 @@ impl Game {
 
     pub fn turn_nest_cards(&mut self, face_up: bool) {
         for card in &mut self.nest {
-            // card.face_up = face_up; /////////////////////////
+            card.face_up = face_up || DEBUGGING;
             card.face_up = true;
         }
     }
@@ -461,14 +448,14 @@ impl Game {
 
     pub fn award_trick(&mut self) {
         self.last_trick_winner = self.trick.winner.unwrap();
-        
+
         let team = self.team_index(self.last_trick_winner);
         self.scores[team] += self.trick.points;
         self.tricks_played += 1;
 
         for opt_card in &mut self.trick.cards {
             let card = opt_card.take().unwrap();
-            self.taken[team].push(card);
+            self.taken[self.last_trick_winner].push(card);
         }
     }
 
@@ -478,7 +465,7 @@ impl Game {
     }
 
     pub fn hand_completed(&self) -> bool {
-        self.tricks_played == HAND_SIZE as u8
+        self.tricks_played == self.hand_size() as u8
     }
 
     pub fn award_nest_cards(&mut self) -> u16 {
@@ -494,6 +481,11 @@ impl Game {
     }
 
     pub fn complete_hand(&mut self) {
+        for p in 0..PLAYERS {
+            // Get points in taken...
+
+            let team = self.team_index(p);
+        }
         
     }
 

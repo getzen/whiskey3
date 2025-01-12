@@ -13,20 +13,16 @@ pub enum GameAction {
     DealToHands,
     DealToNest,
     GetBid,
-    WaitForBid,
     MakeBid(Bid),
     EndBidding,
     MoveNestToMaker,
     GetExchanges,
-    WaitForExchanges,
     Exchange(u8),
     Discard(Vec<u8>),
     EndExchanging,
     GetTrump,
-    //WaitForTrump,
     ChooseTrump(CardSuit),
     GetCardPlay,
-    //WaitForCardPlay,
     PlayCard(u8),
     AwardTrick,
     AwardNest,
@@ -179,7 +175,6 @@ impl Controller {
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
-                        GameAction::WaitForBid => self.game_action = None,
                         GameAction::MakeBid(bid) => {
                             println!("MakeBid!");
                             self.game.make_bid(bid.clone());
@@ -217,7 +212,6 @@ impl Controller {
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
-                        GameAction::WaitForExchanges => self.game_action = None,
                         GameAction::Exchange(id) => {
                             // human
                             self.game.exchange_with_nest(*id);
@@ -230,7 +224,7 @@ impl Controller {
                             self.view.update_hand(&self.game, maker);
                             self.view.update_nest(&self.game, false);
 
-                            self.game_action = Some(GameAction::WaitForExchanges);
+                            self.game_action = None;
                         }
                         GameAction::Discard(ids) => {
                             // bot
@@ -266,7 +260,6 @@ impl Controller {
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
-                        //GameAction::WaitForTrump => self.game_action = None,
                         GameAction::ChooseTrump(suit) => {
                             self.game.set_trump_suit(*suit);
 
@@ -287,8 +280,7 @@ impl Controller {
                             }
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
-                        },
-                        //GameAction::WaitForCardPlay => todo!(),
+                        }
                         GameAction::PlayCard(card_id) => {
                             let player = self.game.active;
                             self.game.play_card_id(*card_id);
@@ -306,7 +298,7 @@ impl Controller {
                         }
                         GameAction::AwardTrick => {
                             self.game.award_trick();
-                            
+
                             self.view.update_taken(&self.game);
                             self.view.update_info(&self.game);
 
@@ -316,8 +308,8 @@ impl Controller {
                                 self.game.reset_for_next_trick();
                                 self.game_action = Some(GameAction::GetCardPlay);
                             }
-                        },
-                 
+                        }
+
                         GameAction::AwardNest => {
                             let points = self.game.award_nest_cards();
 
@@ -327,12 +319,12 @@ impl Controller {
                             self.view.update_nest(&self.game, false);
                             self.delay_before_game_action = 3.0;
                             self.game_action = Some(GameAction::PresentScore);
-                        },
+                        }
                         GameAction::PresentScore => {
                             self.game_action = None;
 
                             self.game.reset_for_new_hand();
-                        },
+                        }
                         GameAction::Exit => todo!(),
                     }
                 }

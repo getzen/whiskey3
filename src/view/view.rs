@@ -261,8 +261,7 @@ impl View {
         for (idx, opt_card) in game.trick.cards.iter().enumerate() {
             if let Some(card) = opt_card {
                 if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom =
-                        view_geom::trick_card_geom(idx, game::PLAYERS);
+                    let geom = view_geom::trick_card_geom(idx, game::PLAYERS);
                     view.move_to(geom.pos, view_geom::CARD_SPEED);
                     view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                     view.card_image.z_order = geom.z;
@@ -274,10 +273,10 @@ impl View {
     }
 
     pub fn update_taken(&mut self, game: &Game) {
-        for team in 0..2 {
-            for card in &game.taken[team] {
+        for p in 0..PLAYERS {
+            for card in &game.taken[p] {
                 if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom = view_geom::taken_geom(team);
+                    let geom = view_geom::taken_geom(p, PLAYERS);
                     view.move_to(geom.pos, view_geom::CARD_SPEED);
                     view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                     view.card_image.z_order = geom.z;
@@ -381,7 +380,6 @@ impl View {
         self.trump_chooser.draw();
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
-
         /*/
         let mouse_pos = mouse_position();
         let mouse_pt = vec2(mouse_pos.0, mouse_pos.1);
@@ -402,7 +400,7 @@ impl View {
         gl.pop_model_matrix();
 
         // There doesn't seem to be a way to get the current model_matrix.
-        
+
         let combined = circle_matrix * rect_matrix;
         let combined_trans = Transform4::from_matrix(combined);
         let contains = combined_trans.contains_point(mouse_pt, rect_size, false);

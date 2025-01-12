@@ -76,8 +76,6 @@ impl Trick {
         self.cards[player] = Some(card);
     }
 
-    
-
     pub fn completed(&self) -> bool {
         !self.cards.contains(&None)
     }

@@ -15,16 +15,15 @@ impl BotMonte {
 
     pub fn get_bid(&self, game: &Game, min: Points, max: Points, sender: Sender<PlayerAction>) {
         let mut bid = Bid::Pass;
-        let mut bid_pts = 40;
+        let mut bid_pts = 50;
         let cards = game.active_hand();
         for card in cards {
             if card.is_joker {
-                bid_pts += 15;
+                bid_pts += 20;
             }
             match card.rank {
-                14 => bid_pts += 15,
-                13 => bid_pts += 5,
-                10 => bid_pts += 10,
+                14 => bid_pts += 20,
+                13 => bid_pts += 15,
                 _ => {}
             }
         }
@@ -111,7 +110,12 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn best_card_play(&self, game: &mut Game, simulations: usize, sender: Sender<PlayerAction>) {
+    pub fn best_card_play(
+        &self,
+        game: &mut Game,
+        simulations: usize,
+        sender: Sender<PlayerAction>,
+    ) {
         println!("bot thinking");
 
         let monte_player = game.active;
@@ -177,7 +181,6 @@ impl BotMonte {
 
                 while !sim_game.hand_completed() {
                     if sim_game.trick_completed() {
-                        
                         sim_game.award_trick();
                         sim_game.reset_for_next_trick();
                     }
@@ -186,10 +189,9 @@ impl BotMonte {
                     if let Some(id) = fastrand::choice(ids) {
                         sim_game.play_card_id(id);
                     }
-                   
                 }
                 let _ = sim_game.award_nest_cards();
-                
+
                 sim_score += sim_game.scores[team] as i32;
                 sim_score -= sim_game.scores[opp_team] as i32;
             }
@@ -200,7 +202,7 @@ impl BotMonte {
             }
         }
         sender
-            .send(PlayerAction::PlayCard(best_play.clone()))
+            .send(PlayerAction::PlayCard(*best_play))
             .expect("send error");
     }
 }

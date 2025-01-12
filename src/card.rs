@@ -9,14 +9,6 @@ pub enum CardSuit {
     Joker,
 }
 
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum SelectState {
-//     Selected,
-//     Eligible,   // Eligible to be selected. Responds to clicks.
-//     Ineligible, // Not eligible given the game state. Dimmed. Unresponsive.
-//     OutOfScope, // Cards that can't possibly be eligible. Not dimmed, but unresponsive.
-// }
-
 pub type Rank = u8;
 pub type Points = u16;
 
@@ -25,6 +17,7 @@ pub struct Card {
     pub id: u8,
     pub suit: CardSuit,
     pub rank: Rank,
+    // Used to remember a card is a joker when its suit is changed to trump.
     pub is_joker: bool,
     pub points: Points,
     pub face_up: bool,
@@ -32,7 +25,11 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn new(id: u8, suit: CardSuit, rank: Rank, is_joker: bool, points: Points) -> Self {
+    pub fn new(id: u8, suit: CardSuit, rank: Rank, points: Points) -> Self {
+        let is_joker = match suit {
+            CardSuit::Joker => true,
+            _ => false,
+        };
         Self {
             id,
             suit,
@@ -46,9 +43,7 @@ impl Card {
 
     pub fn is_trump(&self, trump_suit: &Option<CardSuit>) -> bool {
         match trump_suit {
-            Some(suit) => {
-                self.suit == *suit
-            },
+            Some(suit) => self.suit == *suit,
             None => false,
         }
     }
@@ -82,12 +77,10 @@ impl Card {
             CardSuit::Diamond => format!("dia{}", rank),
             CardSuit::Heart => format!("hrt{}", rank),
             CardSuit::Spade => format!("spd{}", rank),
-            CardSuit::Joker=> format!("joker"),
+            CardSuit::Joker => format!("joker"),
         }
     }
 }
-
-
 
 impl Ord for Card {
     fn cmp(&self, other: &Self) -> Ordering {
