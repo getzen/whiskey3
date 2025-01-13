@@ -106,19 +106,6 @@ impl Controller {
                 self.delay_before_game_action =
                     (self.delay_before_game_action - time_delta).max(0.0);
             } else {
-                /*
-                view.update_info(&mut self.game, state);
-                view.update_deck(&self.game);
-                view.update_nest(&self.game);
-                view.update_bids(&self.game);
-                view.update_taken(&self.game);
-                view.update_hand(&self.game, *player);
-
-                view.get_human_bid(&mut self.game);
-                view.end_human_bid(&self.game);
-                view.get_human_play(&mut self.game);
-                */
-
                 // Here is where the sausage is made.
                 if let Some(action) = &self.game_action {
                     println!("{:?}", action);
@@ -147,7 +134,6 @@ impl Controller {
                                 let player = self.game.active;
                                 self.game.deal_card_to_hand();
                                 self.view.update_hand(&self.game, player);
-                                //self.delay_before_game_action = 0.1;
                             } else {
                                 self.game_action = Some(GameAction::DealToNest);
                             }
@@ -159,6 +145,7 @@ impl Controller {
                                 self.view.update_nest(&self.game, false);
                                 self.delay_before_game_action = 0.5;
                             } else {
+                                self.delay_before_game_action = 1.0;
                                 self.game_action = Some(GameAction::GetBid);
                             }
                         }
@@ -172,22 +159,24 @@ impl Controller {
                                 self.view.update_message("Your bid");
                                 self.view.get_human_bid(&self.game);
                             }
-                            self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
                         GameAction::MakeBid(bid) => {
-                            println!("MakeBid!");
+                            let is_bot = self.game.bot_is_active();
                             self.game.make_bid(bid.clone());
 
                             self.view.update_info(&self.game);
                             self.view.update_message("");
                             self.view.update_bids(&self.game);
-                            self.view.end_human_bid(&self.game);
+                            if !is_bot {
+                                self.view.end_human_bid(&self.game);
+                            }
 
                             if self.game.bidding_completed() {
                                 self.delay_before_game_action = 2.0;
                                 self.game_action = Some(GameAction::EndBidding);
                             } else {
+                                self.delay_before_game_action = 1.0;
                                 self.game_action = Some(GameAction::GetBid);
                             }
                         }

@@ -216,6 +216,7 @@ impl Game {
             if self.taken[p].len() > 0 {
                 self.deck.append(&mut self.taken[p]);
             }
+            self.bids[p] = None;
         }
         for card in &mut self.deck {
             card.face_up = false;
@@ -227,7 +228,6 @@ impl Game {
         self.nest_face_up_count = 0;
         self.maker = None;
         self.high_bid = None;
-        self.bids.fill(None);
         self.tricks_played = 0;
         self.set_joker_suit(Suit::Joker);
 
@@ -376,7 +376,6 @@ impl Game {
     pub fn turn_nest_cards(&mut self, face_up: bool) {
         for card in &mut self.nest {
             card.face_up = face_up || DEBUGGING;
-            card.face_up = true;
         }
     }
 

@@ -69,7 +69,8 @@ impl BotMonte {
         let mut lowest_id = 0;
 
         for card in cards {
-            if !card.is_trump(&trump) && card.rank < lowest_rank {
+            // Note: this will exclude point cards.
+            if !card.is_trump(&trump) && card.rank < lowest_rank && card.points == 0 {
                 lowest_rank = card.rank;
                 lowest_id = card.id;
             }

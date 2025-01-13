@@ -179,6 +179,10 @@ impl View {
             self.z_order_needs_update = false;
         }
         self.turn_marker.update(time_delta);
+
+        for bid_marker in &mut self.bid_markers {
+            bid_marker.update(time_delta);
+        }
     }
 
     pub fn update_info(&mut self, game: &Game) {
@@ -225,7 +229,6 @@ impl View {
 
     pub fn update_bids(&mut self, game: &Game) {
         for (p, opt_bid) in game.bids.iter().enumerate() {
-            self.bid_markers[p].visible = true;
             self.bid_markers[p].update_with_bid(opt_bid.clone());
         }
     }
@@ -430,13 +433,12 @@ impl View {
                 self.bid_panel.update_bid_amount(MIN_BID);
             }
         }
-        self.update_message("Your bid.");
+        self.update_message("");
         self.bid_panel.visible = true;
     }
 
     pub fn end_human_bid(&mut self, game: &Game) {
         self.bid_panel.visible = false;
-        self.bid_markers[game.active].visible = true;
     }
 
     pub fn get_bot_discards(&mut self, game: &Game) {
@@ -444,7 +446,7 @@ impl View {
     }
 
     pub fn get_bot_trump(&mut self, game: &Game) {
-        self.update_message("Bot thinking.");
+        self.update_message("");
     }
 
     pub fn get_human_card_play(&mut self, game: &Game) {

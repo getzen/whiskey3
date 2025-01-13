@@ -68,18 +68,22 @@ impl RotationAnimator {
 
     /// Returns the shortest angle difference in radians, depending on whether one goes
     /// or counterclockwise to get from start to end.
-    fn shortest_angle_diff(mut start: f32, mut end: f32) -> f32 {
-        let double_pi = std::f32::consts::PI * 2.0;
-        start = start % double_pi;
-        end = end % double_pi;
+    fn shortest_angle_diff(start: f32, end: f32) -> f32 {
+        let vs = Vec2::from_angle(start);
+        let ve = Vec2::from_angle(end);
+        vs.angle_between(ve)
 
-        let mut diff = end - start;
-        if diff > std::f32::consts::PI {
-            diff -= double_pi;
-        }
-        if diff < -std::f32::consts::PI {
-            diff += double_pi;
-        }
-        diff
+        // let double_pi = std::f32::consts::PI * 2.0;
+        // start = start % double_pi;
+        // end = end % double_pi;
+
+        // let mut diff = end - start;
+        // if diff > std::f32::consts::PI {
+        //     diff -= double_pi;
+        // }
+        // if diff < -std::f32::consts::PI {
+        //     diff += double_pi;
+        // }
+        // diff
     }
 }

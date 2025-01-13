@@ -53,7 +53,7 @@ impl ScoreTable {
         bid: &Option<Bid>,
         hand: &[Points; 2],
     ) {
-        self.score.text = format!("Score   {:>2}    {:>2}", scores[0], scores[1]);
+        self.score.text = format!("Score    {:>2}    {:>2}", scores[0], scores[1]);
 
         let mut bid0 = "-".to_string();
         let mut bid1 = "-".to_string();
@@ -76,7 +76,7 @@ impl ScoreTable {
         }
         self.bid.text = format!("Bid      {}     {}", bid0, bid1);
 
-        self.hand.text = format!("Hand    {:>2}    {:>2}", hand[0], hand[1]);
+        self.hand.text = format!("Hand     {:>2}    {:>2}", hand[0], hand[1]);
     }
 
     pub fn draw(&mut self) {

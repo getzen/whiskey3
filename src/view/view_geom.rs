@@ -84,11 +84,11 @@ pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
 
     let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
     x_offset += index as f32 * x_spacing;
-    let pos = vec2(220., SCREEN.y - 210.0) + vec2(x_offset, 0.0);
+    let pos = vec2(210., SCREEN.y - 210.0) + vec2(x_offset, 0.0);
 
     ViewGeom {
         pos,
-        rot: -0.2,
+        rot: 0.0, // was -0.2
         z: index,
     }
 }
@@ -118,10 +118,10 @@ pub fn hand_card_geom(
     let distance_from_center = 330.0;
 
     let max_width = match is_bot {
-        true => 340.,
-        false => 470.,
+        true => 350.,
+        false => 450.,
     };
-    let max_spacing: f32 = 70.;
+    let max_spacing: f32 = 60.;
 
     let computed_width = max_width / hand_count as f32;
     let x_spacing = max_spacing.min(computed_width);
@@ -157,8 +157,8 @@ pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
 }
 
 pub fn taken_geom(player: usize, player_count: usize) -> ViewGeom {
-    let distance_from_center = 440.0;
-    let rad = player_radians_from_center(player, player_count) - PI / 4.0;
+    let distance_from_center = 470.0;
+    let rad = player_radians_from_center(player, player_count) - PI / 4.0 + 0.1;
     let pos = position_from(CENTER, rad, distance_from_center);
     let angle = player_rotation(player, player_count) - 0.2;
     ViewGeom {
