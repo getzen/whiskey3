@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    card::{Card, Suit, Points},
+    card::{Card, Points, Suit},
     game::{Bid, Game, PlayerAction, PLAYERS},
 };
 
@@ -29,21 +29,18 @@ impl BotMonte {
         }
 
         if bid_pts >= min {
-            bid_pts = min;
-            //bid_pts = bid_pts.min(max);
-            bid = Bid::Bid(bid_pts);
+            // bid_pts is the max we should bid. Let's bid half-way between
+            // the min and bid_pts. Add a random factor?
+            let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
+            adj_bid = adj_bid.min(max);
+            bid = Bid::Points(adj_bid);
         }
 
         sender.send(PlayerAction::Bid(bid)).expect("send error");
     }
 
     fn best_suit(&self, cards: &[Card]) -> Suit {
-        const SUITS: [Suit; 4] = [
-            Suit::Club,
-            Suit::Diamond,
-            Suit::Heart,
-            Suit::Spade,
-        ];
+        const SUITS: [Suit; 4] = [Suit::Club, Suit::Diamond, Suit::Heart, Suit::Spade];
         let mut best_suit_score = 0;
         let mut best_suit = Suit::Club;
 
@@ -66,7 +63,8 @@ impl BotMonte {
 
     fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<Suit>) -> u8 {
         let mut lowest_rank = 99;
-        let mut lowest_id = 0;
+        // Just in case all cards are point cards and skipped below...
+        let mut lowest_id = cards.first().unwrap().id;
 
         for card in cards {
             // Note: this will exclude point cards.
@@ -192,9 +190,10 @@ impl BotMonte {
                     }
                 }
                 let _ = sim_game.award_nest_cards();
+                sim_game.complete_hand();
 
-                sim_score += sim_game.scores[team] as i32;
-                sim_score -= sim_game.scores[opp_team] as i32;
+                sim_score += sim_game.scoring.hand[team] as i32;
+                sim_score -= sim_game.scoring.hand[opp_team] as i32;
             }
 
             if sim_score > best_score {

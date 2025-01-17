@@ -1,8 +1,16 @@
-use macroquad::{color::{Color, WHITE}, math::{vec4, Vec2}, shapes::draw_circle_lines};
+use macroquad::{
+    color::{Color, WHITE},
+    math::{vec4, Vec2},
+    shapes::draw_circle_lines,
+    text::load_ttf_font,
+};
 
 use crate::game::Bid;
 
-use super::{texter::Texter, transform::Transform};
+use super::{
+    texter::{AlignH, AlignV, Texter},
+    transform::Transform,
+};
 
 pub struct BidMarker {
     pub visible: bool,
@@ -17,8 +25,8 @@ pub struct BidMarker {
 
 impl BidMarker {
     pub async fn new(position: Vec2) -> Self {
-        let mut text = Texter::new("?", 18, Some("Menlo-Bold.ttf"), true, true).await;
-        text.transform.position = position;
+        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+        let text = Texter::new(position, "?", font, 18, AlignH::Center, AlignV::Center);
 
         Self {
             visible: false,
@@ -35,10 +43,12 @@ impl BidMarker {
     pub fn update_with_bid(&mut self, opt_bid: Option<Bid>) {
         if let Some(bid_new) = &opt_bid {
             if let Some(bid_old) = &self.current_bid {
-                if bid_new == bid_old { return }
+                if bid_new == bid_old {
+                    return;
+                }
             }
-        } 
-        
+        }
+
         match &opt_bid {
             Some(bid) => {
                 self.visible = true;
@@ -46,7 +56,7 @@ impl BidMarker {
                 self.color_change_dur = 1.0;
                 match bid {
                     Bid::Pass => self.text.text = "Pass".to_string(),
-                    Bid::Bid(bid) => {
+                    Bid::Points(bid) => {
                         self.text.text = bid.to_string();
                     }
                 }
@@ -54,7 +64,6 @@ impl BidMarker {
             None => self.visible = false,
         }
         self.current_bid = opt_bid;
-        
     }
 
     pub fn update(&mut self, time_delta: f32) {

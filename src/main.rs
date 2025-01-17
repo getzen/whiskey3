@@ -5,6 +5,7 @@ mod card;
 mod controller;
 use controller::Controller;
 mod game;
+mod scoring;
 mod trick;
 mod view;
 

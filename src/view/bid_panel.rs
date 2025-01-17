@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use macroquad::{
     color::WHITE,
     math::{vec2, Vec2},
+    text::load_ttf_font,
 };
 
 use crate::{
@@ -10,7 +11,11 @@ use crate::{
     game::{Bid, PlayerAction},
 };
 
-use super::{button_text::ButtonText, texter::Texter, transform::Transform};
+use super::{
+    button_text::ButtonText,
+    texter::{AlignH, AlignV, Texter},
+    transform::Transform,
+};
 
 pub struct BidPanel {
     pub min_bid: Points,
@@ -36,50 +41,54 @@ impl BidPanel {
         position: Vec2,
         sender: Sender<PlayerAction>,
     ) -> Self {
+        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+
         let bid_button = ButtonText::new(
             0,
             position + vec2(-5.0, 0.0),
             "Bid",
+            font.clone(),
             18,
-            Some("Menlo-Bold.ttf"),
             vec2(80.0, 40.0),
-        )
-        .await;
+        );
 
         let pass_button = ButtonText::new(
             0,
             position + vec2(100.0, 0.0),
             "Pass",
+            font.clone(),
             18,
-            Some("Menlo-Bold.ttf"),
             vec2(80.0, 40.0),
-        )
-        .await;
+        );
 
         let plus_button = ButtonText::new(
             0,
             position + vec2(-70.0, -12.0),
             "+",
+            font.clone(),
             18,
-            Some("Menlo-Bold.ttf"),
             vec2(20.0, 20.0),
-        )
-        .await;
+        );
 
         let minus_button = ButtonText::new(
             0,
             position + vec2(-70.0, 12.0),
             "-",
+            font.clone(),
             18,
-            Some("Menlo-Bold.ttf"),
             vec2(20.0, 20.0),
-        )
-        .await;
+        );
 
         let min_text = min_bid.to_string();
-        let mut bid_text = Texter::new(&min_text, 18, Some("Menlo-Bold.ttf"), true, true).await;
-        bid_text.transform.position = position + vec2(-105.0, 0.0);
-        bid_text.color = WHITE;
+        let pos = position + vec2(-105.0, 0.0);
+        let bid_text = Texter::new(
+            pos,
+            &min_text,
+            font.clone(),
+            18,
+            AlignH::Center,
+            AlignV::Center,
+        );
 
         Self {
             min_bid,
@@ -111,7 +120,7 @@ impl BidPanel {
 
         if self.bid_button.process_events(mouse_pos) {
             self.sender
-                .send(PlayerAction::Bid(Bid::Bid(self.current_bid)))
+                .send(PlayerAction::Bid(Bid::Points(self.current_bid)))
                 .expect("Send error");
             return true;
         }

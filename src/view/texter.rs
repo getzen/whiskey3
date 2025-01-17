@@ -2,84 +2,84 @@ use macroquad::prelude::*;
 
 use crate::view::transform::Transform;
 
+#[allow(unused)]
+#[derive(Clone)]
+pub enum AlignH {
+    Left,
+    Center,
+    Right,
+}
+
+#[allow(unused)]
+#[derive(Clone)]
+pub enum AlignV {
+    Top,
+    Center,
+    Bottom,
+}
+
+#[derive(Clone)]
 pub struct Texter {
-    pub transform: Transform,
     pub visible: bool,
-    pub centered_horiz: bool,
-    pub centered_vert: bool,
+    pub transform: Transform,
     pub text: String,
-    pub color: Color,
-    pub font: Option<Font>,
+    pub font: Font,
     pub font_size: u16,
     pub font_scale: f32,
+    pub align_h: AlignH,
+    pub align_v: AlignV,
+    pub color: Color,
 }
 
 impl Texter {
-    pub async fn new(
+    pub fn new(
+        position: Vec2,
         text: &str,
+        font: Font,
         font_size: u16,
-        font_name: Option<&str>,
-        centered_horiz: bool,
-        centered_vert: bool,
+        align_h: AlignH,
+        align_v: AlignV,
     ) -> Self {
-        let font = match font_name {
-            Some(name) => {
-                let path = format!("./src/assets/{}", name);
-                Some(load_ttf_font(&path).await.unwrap())
-            }
-            None => None,
-        };
-
         Self {
-            transform: Transform::new(Vec2::ZERO, 0.0),
             visible: true,
-            centered_horiz,
-            centered_vert,
+            transform: Transform::new(position, 0.0),
             text: text.to_string(),
-            color: WHITE,
             font,
             font_size,
             font_scale: 1.0,
+            align_h,
+            align_v,
+            color: WHITE,
         }
     }
 
-    /// Returns the size of the drawn text: width, height, y offset from baseline.
-    pub fn draw_size(&self) -> (f32, f32, f32) {
-        let font = match &self.font {
-            Some(font) => Some(font),
-            None => None,
-        };
-        let dimensions = measure_text(&self.text, font, self.font_size, self.font_scale);
-        (dimensions.width, dimensions.height, dimensions.offset_y)
-    }
-
-    pub fn draw(&mut self) {
+    pub fn draw(&self) {
         if !self.visible {
             return;
         }
-
         let mut pos = self.transform.position;
-
         // Is this function slow?
-        let (width, _height, offset_y) = self.draw_size();
+        let dimensions = measure_text(
+            &self.text,
+            Some(&self.font),
+            self.font_size,
+            self.font_scale,
+        );
 
-        //draw_rectangle(pos.x - 1.0, pos.y - 1.0, 2.0, 2.0, RED);
+        pos.x += match self.align_h {
+            AlignH::Left => 0.0,
+            AlignH::Center => -dimensions.width * 0.5,
+            AlignH::Right => -dimensions.width,
+        };
 
-        if self.centered_horiz {
-            pos.x -= width * 0.5;
-        }
-
-        if self.centered_vert {
-            pos.y += offset_y * 0.5;
-        }
-
-        let font = match &self.font {
-            Some(font) => Some(font),
-            None => None,
+        pos.y += match self.align_v {
+            AlignV::Top => dimensions.offset_y,
+            AlignV::Center => dimensions.offset_y * 0.5,
+            AlignV::Bottom => 0.0,
         };
 
         let params = TextParams {
-            font,
+            font: Some(&self.font),
             font_size: self.font_size,
             font_scale: self.font_scale,
             font_scale_aspect: 1.0,

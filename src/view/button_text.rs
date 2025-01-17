@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::shapes::draw_rectangle_lines;
+use macroquad::text::Font;
 
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
@@ -10,6 +11,8 @@ use crate::view::eventer::Eventer;
 use crate::view::eventer::EventerEvent;
 use crate::view::transform::Transform;
 
+use super::texter::AlignH;
+use super::texter::AlignV;
 use super::texter::Texter;
 
 /// A button with drawn text and border. Always centered.
@@ -28,16 +31,8 @@ pub struct ButtonText {
 }
 
 impl ButtonText {
-    pub async fn new(
-        id: u8,
-        pos: Vec2,
-        text: &str,
-        font_size: u16,
-        font_name: Option<&str>,
-        size: Vec2,
-    ) -> Self {
-        let mut text = Texter::new(text, font_size, font_name, true, true).await;
-        text.transform.position = pos;
+    pub fn new(id: u8, pos: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
+        let text = Texter::new(pos, text, font, font_size, AlignH::Center, AlignV::Center);
 
         Self {
             id,

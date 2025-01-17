@@ -1,5 +1,6 @@
 use crate::{
-    card::{Card, Suit, Points, Rank},
+    card::{Card, Points, Rank, Suit},
+    scoring::Scoring,
     trick::Trick,
 };
 
@@ -17,6 +18,7 @@ pub enum PlayerAction {
 }
 
 pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
+    //(Suit::Club, 4, 0), //
     (Suit::Club, 5, 5),
     (Suit::Club, 6, 0),
     (Suit::Club, 7, 0),
@@ -27,7 +29,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Club, 12, 0),
     (Suit::Club, 13, 10),
     (Suit::Club, 14, 15),
-
+    //(Suit::Diamond, 3, 0), //
     (Suit::Diamond, 4, 0),
     (Suit::Diamond, 5, 5),
     (Suit::Diamond, 6, 0),
@@ -39,7 +41,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Diamond, 12, 0),
     (Suit::Diamond, 13, 10),
     (Suit::Diamond, 14, 15),
-
+    //(Suit::Heart, 3, 0), //
     (Suit::Heart, 4, 0),
     (Suit::Heart, 5, 5),
     (Suit::Heart, 6, 0),
@@ -51,7 +53,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Heart, 12, 0),
     (Suit::Heart, 13, 10),
     (Suit::Heart, 14, 15),
-    
+    //(Suit::Spade, 4, 0), //
     (Suit::Spade, 5, 5),
     (Suit::Spade, 6, 0),
     (Suit::Spade, 7, 0),
@@ -62,12 +64,12 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Spade, 12, 0),
     (Suit::Spade, 13, 10),
     (Suit::Spade, 14, 15),
-
     (Suit::Joker, 15, 0),
 ];
 
 pub const MIN_BID: Points = 80;
-pub const POINTS_TO_WIN: Points = 300;
+pub const SUCCESS_BONUS: Points = 40;
+pub const POINTS_TO_WIN: Points = 400;
 
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
@@ -80,14 +82,16 @@ pub const NEST_CARDS_UP: u8 = 0;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Bid {
     Pass,
-    Bid(Points),
+    Points(Points),
 }
 
 #[derive(Clone)]
 pub struct Game {
     pub bot_players: [bool; PLAYERS as usize],
-    pub scores: [Points; 2],
 
+    pub scoring: Scoring,
+    //pub hand_scores: [Points; 2],
+    //pub total_scores: [Points; 2],
     pub deck: Vec<Card>,
     pub nest: Vec<Card>,
     pub hands: Vec<Vec<Card>>,
@@ -102,7 +106,7 @@ pub struct Game {
 
     /// The high bidder.
     pub maker: Option<usize>,
-    pub high_bid: Option<Bid>,
+    pub high_bid: Points,
 
     /// The hand's trump suit.
     pub trump_suit: Option<Suit>,
@@ -126,7 +130,9 @@ impl Game {
 
         Self {
             bot_players: [false, true, true, true],
-            scores: [0, 0],
+            scoring: Scoring::new(),
+            //hand_scores: [0, 0],
+            //total_scores: [0, 0],
             deck: Vec::new(),
             nest: Vec::new(),
             hands,
@@ -136,7 +142,7 @@ impl Game {
             active: dealer,
             nest_face_up_count: 0,
             maker: None,
-            high_bid: None,
+            high_bid: 0,
             trump_suit: None,
             trick: Trick::new(PLAYERS),
             tricks_played: 0,
@@ -179,7 +185,7 @@ impl Game {
     }
 
     pub fn hand_size(&self) -> usize {
-       (ALL_CARDS.len() - NEST_SIZE) / PLAYERS
+        (ALL_CARDS.len() - NEST_SIZE) / PLAYERS
     }
 
     pub fn max_bid(&self) -> Points {
@@ -227,7 +233,7 @@ impl Game {
         self.active = self.dealer;
         self.nest_face_up_count = 0;
         self.maker = None;
-        self.high_bid = None;
+        self.high_bid = 0;
         self.tricks_played = 0;
         self.set_joker_suit(Suit::Joker);
 
@@ -285,20 +291,15 @@ impl Game {
     }
 
     pub fn min_bid(&self) -> Points {
-        match &self.high_bid {
-            Some(bid) => match bid {
-                Bid::Pass => todo!(),
-                Bid::Bid(b) => b + 5,
-            },
-            None => MIN_BID,
-        }
+        MIN_BID.max(self.high_bid + 5)
     }
 
     pub fn make_bid(&mut self, bid: Bid) {
         match bid {
-            Bid::Bid(_) => {
-                self.high_bid = Some(bid.clone());
+            Bid::Points(p) => {
+                self.high_bid = p;
                 self.maker = Some(self.active);
+                self.scoring.update_bids(self.team_index(self.active), p);
             }
             _ => {}
         }
@@ -314,7 +315,7 @@ impl Game {
                 None => break,
                 Some(bid) => match bid {
                     Bid::Pass => continue,
-                    Bid::Bid(_) => break,
+                    Bid::Points(_) => break,
                 },
             }
         }
@@ -328,7 +329,7 @@ impl Game {
             match bid {
                 Some(bid) => match bid {
                     Bid::Pass => passes += 1,
-                    Bid::Bid(_) => bids += 1,
+                    Bid::Points(_) => bids += 1,
                 },
                 None => return false,
             }
@@ -383,6 +384,8 @@ impl Game {
         self.trump_suit = Some(suit);
         self.set_joker_suit(suit);
         self.sort_hand(0);
+        // The first trick begins with the player after the winning bidder.
+        self.next_player();
     }
 
     fn has_card_in_lead_suit(&self) -> bool {
@@ -447,7 +450,8 @@ impl Game {
         self.last_trick_winner = self.trick.winner.unwrap();
 
         let team = self.team_index(self.last_trick_winner);
-        self.scores[team] += self.trick.points;
+        self.scoring.taken[team] += self.trick.points;
+        //self.scoring.update_hands();
         self.tricks_played += 1;
 
         for opt_card in &mut self.trick.cards {
@@ -466,24 +470,43 @@ impl Game {
     }
 
     pub fn award_nest_cards(&mut self) -> u16 {
-        let winner = self.trick.winner.unwrap();
-        let team = self.team_index(winner);
+        // let winner = self.trick.winner.unwrap();
+        // let team = self.team_index(winner);
         let mut points = 0;
+
+        let team = 1 - self.team_index(self.maker.unwrap());
+
         for card in &mut self.nest {
             card.face_up = true;
-            self.scores[team] += card.points;
+            self.scoring.nest[team] += card.points;
             points += card.points;
         }
+        //self.scoring.update_hands();
         points
     }
 
     pub fn complete_hand(&mut self) {
-        for p in 0..PLAYERS {
-            // Get points in taken...
+        let maker = self.maker.unwrap();
+        let team = self.team_index(maker);
+        let opp = 1 - team;
 
-            let team = self.team_index(p);
+        if self.scoring.taken[team] >= self.high_bid {
+            self.scoring.bonus[team] = SUCCESS_BONUS;
+            // Award bid points, not taken points.
+            self.scoring.hand[team] =
+                self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.bonus[team];
+
+            self.scoring.hand[opp] = self.scoring.taken[opp] + self.scoring.nest[opp];
+        } else {
+            // Defenders win.
+            self.scoring.bonus[opp] = SUCCESS_BONUS;
+            self.scoring.hand[opp] =
+                self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.bonus[opp];
+
+            // Override maker hand score.
+            //self.scoring.hand[team] = 0;
         }
-        
+        self.scoring.update_games();
     }
 
     pub fn complete_game(&mut self) {

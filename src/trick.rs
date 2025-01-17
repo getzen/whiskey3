@@ -1,4 +1,4 @@
-use crate::card::{Card, Suit, Points};
+use crate::card::{Card, Points, Suit};
 
 #[derive(Clone)]
 pub struct Trick {

@@ -311,8 +311,9 @@ impl Controller {
                         }
                         GameAction::PresentScore => {
                             self.game_action = None;
+                            self.game.complete_hand();
 
-                            self.game.reset_for_new_hand();
+                            self.view.update_info(&self.game);
                         }
                         GameAction::Exit => todo!(),
                     }

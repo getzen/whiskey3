@@ -1,88 +1,94 @@
-use macroquad::math::Vec2;
+use array2d::Array2D;
+use macroquad::{
+    math::Vec2,
+    shapes::draw_rectangle,
+    text::Font,
+};
 
-use crate::{card::Points, game::Bid};
+use crate::{game::POINTS_TO_WIN, scoring::Scoring};
 
-use super::texter::Texter;
+use super::texter::{AlignH, AlignV, Texter};
 
 pub struct ScoreTable {
-    heading: Texter,
-    score: Texter,
-    bid: Texter,
-    hand: Texter,
+    pub visible: bool,
+    position: Vec2,
+    texters: Array2D<Texter>,
 }
 
 impl ScoreTable {
-    pub async fn new(mut position: Vec2) -> Self {
-        let font_size = 14;
-        let y_spacing = 18.0;
-        let mut heading = Texter::new(
-            "         We   They",
-            14,
-            Some("Menlo-Bold.ttf"),
-            false,
-            false,
-        )
-        .await;
-        heading.transform.position = position;
-        position.y += y_spacing;
+    pub fn new(position: Vec2, font: Font) -> Self {
+        let def_texter = Texter::new(position, "----", font, 14, AlignH::Center, AlignV::Center);
 
-        let mut score = Texter::new("", font_size, Some("Menlo-Bold.ttf"), false, false).await;
-        score.transform.position = position;
-        position.y += y_spacing;
+        let mut texters = Array2D::filled_with(def_texter, 7, 3);
 
-        let mut bid = Texter::new("", font_size, Some("Menlo-Bold.ttf"), false, false).await;
-        bid.transform.position = position;
-        position.y += y_spacing;
+        let col_headings = ["", "We", "They"];
+        for col in 0..col_headings.len() {
+            texters[(0, col)].text = col_headings[col].to_string();
+        }
 
-        let mut hand = Texter::new("", font_size, Some("Menlo-Bold.ttf"), false, false).await;
-        hand.transform.position = position;
-        position.y += y_spacing;
+        let row_headings = ["", "Taken/Bid", "Nest", "Bonus", "", "Hand", "Game"];
+        for row in 0..row_headings.len() {
+            texters[(row, 0)].text = row_headings[row].to_string();
+            texters[(row, 0)].align_h = AlignH::Left;
+        }
+
+        // Assign positions.
+        let column_x = [0.0, 130.0, 220.0];
+        let line_spacing = 19.0;
+
+        for row in 0..texters.num_rows() {
+            for col in 0..texters.num_columns() {
+                let mut pos = position;
+
+                // Row position
+                pos.y += row as f32 * line_spacing;
+    
+                // Column position
+                pos.x += column_x[col];
+
+                texters[(row, col)].transform.position = pos;
+            }
+        }
 
         Self {
-            heading,
-            score,
-            bid,
-            hand,
+            visible: false,
+            position,
+            texters,
         }
     }
 
-    pub fn update(
-        &mut self,
-        scores: &[Points; 2],
-        maker: &Option<usize>,
-        bid: &Option<Bid>,
-        hand: &[Points; 2],
-    ) {
-        self.score.text = format!("Score    {:>2}    {:>2}", scores[0], scores[1]);
+    pub fn update(&mut self, scoring: &Scoring) {
+        self.texters[(1, 1)].text = format!("{}/{}", scoring.taken[0], scoring.bid[0]);
+        self.texters[(1, 2)].text = format!("{}/{}", scoring.taken[1], scoring.bid[1]);
 
-        let mut bid0 = "-".to_string();
-        let mut bid1 = "-".to_string();
-        match maker {
-            Some(m) => {
-                let points = match bid {
-                    Some(bid) => match bid {
-                        Bid::Pass => panic!(),
-                        Bid::Bid(p) => p,
-                    },
-                    None => panic!(),
-                };
-                match m {
-                    0 | 2 => bid0 = format!("{:>2}", points),
-                    1 | 3 => bid1 = format!("{:>2}", points),
-                    _ => panic!(),
-                }
-            }
-            _ => {}
-        }
-        self.bid.text = format!("Bid      {}     {}", bid0, bid1);
+        self.texters[(2, 1)].text = scoring.nest[0].to_string();
+        self.texters[(2, 2)].text = scoring.nest[1].to_string();
 
-        self.hand.text = format!("Hand     {:>2}    {:>2}", hand[0], hand[1]);
+        self.texters[(3, 1)].text = scoring.bonus[0].to_string();
+        self.texters[(3, 2)].text = scoring.bonus[1].to_string();
+
+        self.texters[(5, 1)].text = scoring.hand[0].to_string();
+        self.texters[(5, 2)].text = scoring.hand[1].to_string();
+
+        self.texters[(6, 1)].text = format!("{}/{}", scoring.game[0], POINTS_TO_WIN);
+        self.texters[(6, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
     }
 
-    pub fn draw(&mut self) {
-        self.heading.draw();
-        self.score.draw();
-        self.bid.draw();
-        self.hand.draw();
+    pub fn draw(&self) {
+        if !self.visible {
+            return;
+        }
+
+        draw_rectangle(
+            self.position.x - 14.0,
+            0.0,
+            400.0,
+            155.0,
+            macroquad::color::Color::from_rgba(50, 50, 50, 190),
+        );
+
+        for texter in self.texters.as_row_major() {
+            texter.draw();
+        }
     }
 }
