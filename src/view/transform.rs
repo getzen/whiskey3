@@ -31,6 +31,7 @@ impl Transform {
         )
     }
 
+    #[allow(unused)]
     /// Returns a matrix calculated from the attributes
     pub fn matrix(&self) -> Mat3 {
         let translation = Mat3::from_translation(Vec2::new(self.position.x, self.position.y));
@@ -40,6 +41,7 @@ impl Transform {
         //translation * rotation * scale
     }
 
+    #[allow(unused)]
     /// Returns the position as rotated by the given angle.
     fn rotated_position(&self, angle: f32) -> Vec2 {
         let angle_vec = Vec2::from_angle(angle);

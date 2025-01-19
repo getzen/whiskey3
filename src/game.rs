@@ -64,11 +64,12 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Spade, 12, 0),
     (Suit::Spade, 13, 10),
     (Suit::Spade, 14, 15),
-    (Suit::Joker, 15, 0),
+    (Suit::Joker, 1, 20),
 ];
 
-pub const MIN_BID: Points = 80;
-pub const SUCCESS_BONUS: Points = 40;
+pub const MIN_BID: Points = 60;
+pub const LAST_TRICK_BONUS: Points = 20;
+pub const SUCCESS_BONUS: Points = 50;
 pub const POINTS_TO_WIN: Points = 400;
 
 /// The number of players in the game.
@@ -451,7 +452,6 @@ impl Game {
 
         let team = self.team_index(self.last_trick_winner);
         self.scoring.taken[team] += self.trick.points;
-        //self.scoring.update_hands();
         self.tricks_played += 1;
 
         for opt_card in &mut self.trick.cards {
@@ -481,7 +481,6 @@ impl Game {
             self.scoring.nest[team] += card.points;
             points += card.points;
         }
-        //self.scoring.update_hands();
         points
     }
 
@@ -490,31 +489,28 @@ impl Game {
         let team = self.team_index(maker);
         let opp = 1 - team;
 
-        if self.scoring.taken[team] >= self.high_bid {
+        // Last trick bonus
+        let last_trick_team = self.team_index(self.last_trick_winner);
+        self.scoring.last_trick[last_trick_team] = LAST_TRICK_BONUS;
+
+        let maker_total = self.scoring.taken[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
+        let maker_bid_total = self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
+        let opp_total = self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.last_trick[opp];
+
+        if maker_total >= self.high_bid {
             self.scoring.bonus[team] = SUCCESS_BONUS;
             // Award bid points, not taken points.
-            self.scoring.hand[team] =
-                self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.bonus[team];
-
-            self.scoring.hand[opp] = self.scoring.taken[opp] + self.scoring.nest[opp];
+            self.scoring.hand[team] = maker_bid_total + self.scoring.bonus[team];
+            self.scoring.hand[opp] = opp_total;
         } else {
             // Defenders win.
             self.scoring.bonus[opp] = SUCCESS_BONUS;
-            self.scoring.hand[opp] =
-                self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.bonus[opp];
-
-            // Override maker hand score.
-            //self.scoring.hand[team] = 0;
+            self.scoring.hand[opp] = opp_total + self.scoring.bonus[opp];
         }
-        self.scoring.update_games();
+        self.scoring.update_game_scores();
     }
 
     pub fn complete_game(&mut self) {
-        // let we_they_totals = hand_score.we_they_totals();
-        // self.scores[0] += we_they_totals[0];
-        // self.scores[1] += we_they_totals[1];
-
-        // self.scores[0] += self.sweeps[0];
-        // self.scores[1] += self.sweeps[1];
+        // If both scores exceed the requirement, the maker's team wins.
     }
 }

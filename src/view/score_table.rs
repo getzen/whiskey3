@@ -19,14 +19,14 @@ impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
         let def_texter = Texter::new(position, "----", font, 14, AlignH::Center, AlignV::Center);
 
-        let mut texters = Array2D::filled_with(def_texter, 7, 3);
+        let mut texters = Array2D::filled_with(def_texter, 10, 3);
 
         let col_headings = ["", "We", "They"];
         for col in 0..col_headings.len() {
             texters[(0, col)].text = col_headings[col].to_string();
         }
 
-        let row_headings = ["", "Taken/Bid", "Nest", "Bonus", "", "Hand", "Game"];
+        let row_headings = ["", "Taken", "Last Trick", "Nest", "", "Total/Bid", "Bonus", "", "Hand", "Game/Win"];
         for row in 0..row_headings.len() {
             texters[(row, 0)].text = row_headings[row].to_string();
             texters[(row, 0)].align_h = AlignH::Left;
@@ -58,20 +58,32 @@ impl ScoreTable {
     }
 
     pub fn update(&mut self, scoring: &Scoring) {
-        self.texters[(1, 1)].text = format!("{}/{}", scoring.taken[0], scoring.bid[0]);
-        self.texters[(1, 2)].text = format!("{}/{}", scoring.taken[1], scoring.bid[1]);
+        self.texters[(1, 1)].text = scoring.taken[0].to_string();
+        self.texters[(1, 2)].text = scoring.taken[1].to_string();
 
-        self.texters[(2, 1)].text = scoring.nest[0].to_string();
-        self.texters[(2, 2)].text = scoring.nest[1].to_string();
+        self.texters[(2, 1)].text = scoring.last_trick[0].to_string();
+        self.texters[(2, 2)].text = scoring.last_trick[1].to_string();
 
-        self.texters[(3, 1)].text = scoring.bonus[0].to_string();
-        self.texters[(3, 2)].text = scoring.bonus[1].to_string();
+        self.texters[(3, 1)].text = scoring.nest[0].to_string();
+        self.texters[(3, 2)].text = scoring.nest[1].to_string();
 
-        self.texters[(5, 1)].text = scoring.hand[0].to_string();
-        self.texters[(5, 2)].text = scoring.hand[1].to_string();
+        // Dividing line is row 4.
 
-        self.texters[(6, 1)].text = format!("{}/{}", scoring.game[0], POINTS_TO_WIN);
-        self.texters[(6, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
+        let total0 = scoring.taken[0] + scoring.last_trick[0] + scoring.nest[0];
+        let total1 = scoring.taken[1] + scoring.last_trick[1] + scoring.nest[1];
+        self.texters[(5, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
+        self.texters[(5, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
+
+        self.texters[(6, 1)].text = scoring.bonus[0].to_string();
+        self.texters[(6, 2)].text = scoring.bonus[1].to_string();
+
+        // Dividing line is row 7.
+
+        self.texters[(8, 1)].text = scoring.hand[0].to_string();
+        self.texters[(8, 2)].text = scoring.hand[1].to_string();
+
+        self.texters[(9, 1)].text = format!("{}/{}", scoring.game[0], POINTS_TO_WIN);
+        self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
     }
 
     pub fn draw(&self) {
@@ -83,7 +95,7 @@ impl ScoreTable {
             self.position.x - 14.0,
             0.0,
             400.0,
-            155.0,
+            210.0,
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 

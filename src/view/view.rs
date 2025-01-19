@@ -28,7 +28,6 @@ pub struct View {
     card_views: Vec<CardView>,
     turn_marker: Sprite,
     message: Texter,
-    // score_table_old: ScoreTableOld,
     score_table: ScoreTable,
     play_button: ButtonShaded,
     bid_markers: Vec<BidMarker>,
@@ -84,7 +83,6 @@ impl View {
             card_views: Vec::new(),
             turn_marker,
             message,
-            // score_table_old: ScoreTableOld::new(SCORE_TABLE_POS).await,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             play_button,
             bid_markers,
@@ -111,15 +109,14 @@ impl View {
         self.card_views.push(view);
     }
 
-    #[allow(dead_code)]
-    fn find_card_view(&self, card_id: u8) -> Option<&CardView> {
-        for card_view in &self.card_views {
-            if card_view.id == card_id {
-                return Some(card_view);
-            }
-        }
-        None
-    }
+    // fn find_card_view(&self, card_id: u8) -> Option<&CardView> {
+    //     for card_view in &self.card_views {
+    //         if card_view.id == card_id {
+    //             return Some(card_view);
+    //         }
+    //     }
+    //     None
+    // }
 
     fn find_card_view_mut(&mut self, card_id: u8) -> Option<&mut CardView> {
         for card_view in &mut self.card_views {
@@ -300,7 +297,7 @@ impl View {
     }
 
     pub fn get_human_exchanges(&mut self) {
-        let message = format!("Discard {} cards.", NEST_SIZE);
+        let message = format!("Discard {} to the nest. \nAny point cards go to your opponents\nat the end of the hand.", NEST_SIZE);
         self.update_message(&message);
         self.show_done_exchanging_button(false);
     }
@@ -355,16 +352,40 @@ impl View {
         }
     }
 
+    pub fn get_human_bid(&mut self, game: &Game) {
+        // Hide bid marker for human.
+        self.bid_markers[game.active].visible = false;
+
+        self.bid_panel.update_bid_amount(game.min_bid());
+        self.update_message("");
+        self.bid_panel.visible = true;
+    }
+
+    pub fn end_human_bid(&mut self, _game: &Game) {
+        self.bid_panel.visible = false;
+    }
+
+    pub fn get_bot_discards(&mut self, _game: &Game) {
+        self.update_message("Bot thinking.");
+    }
+
+    pub fn get_bot_trump(&mut self, _game: &Game) {
+        self.update_message("");
+    }
+
+    pub fn get_human_card_play(&mut self, game: &Game) {
+        self.set_playable_hand_cards(game);
+        self.update_message("Play card.");
+    }
+
+    pub fn get_bot_card_play(&mut self, _game: &Game) {
+        self.update_message("");
+    }
+
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
 
-        // let gl = unsafe { get_internal_gl().quad_gl };
-        // let matrix = glam::Mat4::from_translation(vec3(100.0, 0.0, 0.0));
-        // gl.push_model_matrix(matrix);
-        // gl.pop_model_matrix();
-
-        //self.turn_marker.draw();
-
+        self.turn_marker.draw();
         self.trump_marker.draw();
 
         for marker in &mut self.bid_markers {
@@ -376,6 +397,7 @@ impl View {
         }
 
         self.message.draw();
+
         self.score_table.draw();
 
         self.play_button.draw();
@@ -418,33 +440,5 @@ impl View {
         next_frame().await;
     }
 
-    pub fn get_human_bid(&mut self, game: &Game) {
-        // Hide bid marker for human.
-        self.bid_markers[game.active].visible = false;
-
-        self.bid_panel.update_bid_amount(game.min_bid());
-        self.update_message("");
-        self.bid_panel.visible = true;
-    }
-
-    pub fn end_human_bid(&mut self, _game: &Game) {
-        self.bid_panel.visible = false;
-    }
-
-    pub fn get_bot_discards(&mut self, _game: &Game) {
-        self.update_message("Bot thinking.");
-    }
-
-    pub fn get_bot_trump(&mut self, _game: &Game) {
-        self.update_message("");
-    }
-
-    pub fn get_human_card_play(&mut self, game: &Game) {
-        self.set_playable_hand_cards(game);
-        self.update_message("Play card.");
-    }
-
-    pub fn get_bot_card_play(&mut self, _game: &Game) {
-        self.update_message("");
-    }
+    
 }
