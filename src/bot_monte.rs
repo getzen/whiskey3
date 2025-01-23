@@ -116,29 +116,34 @@ impl BotMonte {
         
         sim_game.active = game.active;
 
-        let (_id, score) = self.run_simulations(&mut sim_game, simulations);
-        let average_score = score / simulations as Points;
-        println!("P:{}, trump: {:?}, raw score: {}, avg: {}", game.active, suit, score, average_score);
+        let (_id, _best_score, mut all_scores) = self.run_simulations(&mut sim_game, simulations);
+
+        all_scores.sort_unstable();
+
+        // 0.0 means choose the lowest score produced in all simulations.
+        // 1.0 means choose the highest score produced in a simulations.
+        let aggressiveness = 0.55;
+
+        let index = (all_scores.len() as f64 * aggressiveness) as usize - 1;
+
+        let bid_pts = all_scores[index];
+        println!("P: {}: bid_pts: {}", game.active, bid_pts);
 
         let mut bid = Bid::Pass;
 
-        if average_score > 0 {
-            let bid_pts = average_score;
-            println!("bid_pts: {}", bid_pts);
-            if bid_pts >= min {
-                // bid_pts is the max we should bid. Let's bid half-way between
-                // the min and bid_pts. Add a random factor?
-                let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
-                adj_bid = adj_bid.min(max);
-                bid = Bid::Points(adj_bid);
-            }
-        } 
+        if bid_pts >= min {
+            // bid_pts is the max we should bid. Let's bid half-way between
+            // the min and bid_pts to allow room to raise. Add a random factor?
+            let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
+            adj_bid = adj_bid.min(max);
+            bid = Bid::Points(adj_bid);
+        }
         sender.send(PlayerAction::Bid(bid)).expect("send error");
     }
 
     pub fn get_play(&self, game: &mut Game, simulations: usize, sender: Sender<PlayerAction>) {
         let mut sim_game = game.clone();
-        let (best_play_id, _score) = self.run_simulations(&mut sim_game, simulations);
+        let (best_play_id, _score, _all_scores) = self.run_simulations(&mut sim_game, simulations);
 
         sender
             .send(PlayerAction::PlayCard(best_play_id))
@@ -150,12 +155,16 @@ impl BotMonte {
         &self,
         game: &mut Game,
         simulations: usize,
-    ) -> (u8, Points) {
+    ) -> (u8, Points, Vec<usize>) {
 
         let monte_player = game.active;
         let team = game.team_index(game.active);
-        let opp_team = game.opponent_index(game.active);
+        //let opp_team = game.opponent_index(game.active);
+
+        let legal_card_ids = game.get_playable_card_ids();
         let mut best_score = 0; //i32::MIN;
+        let mut all_scores = Vec::with_capacity(simulations * legal_card_ids.len());
+        
 
         let legal_card_ids = game.get_playable_card_ids();
         let mut best_card_id = &legal_card_ids[0];
@@ -223,11 +232,8 @@ impl BotMonte {
 
                 // Manually calc score to exclude SUCCESS_BONUS.
                 let this_sim_score = sim_game.scoring.taken[team] + sim_game.scoring.nest[team] + sim_game.scoring.last_trick[team];
-                println!("score: {}", this_sim_score);
+                all_scores.push(this_sim_score);
                 sim_score += this_sim_score;
-
-                //sim_score += sim_game.scoring.hand[team] as i32;
-                //sim_score -= sim_game.scoring.hand[opp_team] as i32;
             }
 
             if sim_score > best_score {
@@ -235,6 +241,6 @@ impl BotMonte {
                 best_card_id = card_id;
             }
         }
-        (*best_card_id, best_score)
+        (*best_card_id, best_score, all_scores)
     }
 }

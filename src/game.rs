@@ -4,7 +4,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = true;
+pub const DEBUGGING: bool = false;
 
 #[derive(Clone)]
 pub enum PlayerAction {

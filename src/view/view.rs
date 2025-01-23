@@ -385,7 +385,7 @@ impl View {
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
 
-        self.turn_marker.draw();
+        //self.turn_marker.draw();
         self.trump_marker.draw();
 
         for marker in &mut self.bid_markers {

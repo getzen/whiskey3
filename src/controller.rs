@@ -332,11 +332,11 @@ impl Controller {
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(min_bid, max_bid, &mut game_clone, 20, sender);
+            bot.get_bid(min_bid, max_bid, &mut game_clone, 100, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(min_bid, max_bid, &mut game_clone, 20, sender);
+                bot.get_bid(min_bid, max_bid, &mut game_clone, 100, sender);
             });
         }
     }
