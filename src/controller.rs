@@ -325,18 +325,18 @@ impl Controller {
     }
 
     fn spawn_bid_bot(&self) {
-        let game_clone = self.game.clone();
+        let mut game_clone = self.game.clone();
         let sender = self.sender.clone();
         let min_bid = self.game.min_bid();
         let max_bid = self.game.max_bid();
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(&game_clone, min_bid, max_bid, sender);
+            bot.get_bid(min_bid, max_bid, &mut game_clone, 20, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(&game_clone, min_bid, max_bid, sender);
+                bot.get_bid(min_bid, max_bid, &mut game_clone, 20, sender);
             });
         }
     }
@@ -377,11 +377,11 @@ impl Controller {
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.best_card_play(&mut game_clone, 500, sender);
+            bot.get_play(&mut game_clone, 500, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.best_card_play(&mut game_clone, 500, sender);
+                bot.get_play(&mut game_clone, 500, sender);
             });
         }
     }

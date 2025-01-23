@@ -4,7 +4,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = false;
+pub const DEBUGGING: bool = true;
 
 #[derive(Clone)]
 pub enum PlayerAction {
@@ -469,7 +469,7 @@ impl Game {
         self.tricks_played == self.hand_size() as u8
     }
 
-    pub fn award_nest_cards(&mut self) -> u16 {
+    pub fn award_nest_cards(&mut self) -> Points {
         // let winner = self.trick.winner.unwrap();
         // let team = self.team_index(winner);
         let mut points = 0;

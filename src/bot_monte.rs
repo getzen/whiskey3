@@ -13,7 +13,7 @@ impl BotMonte {
         Self {}
     }
 
-    pub fn get_bid(&self, game: &Game, min: Points, max: Points, sender: Sender<PlayerAction>) {
+    pub fn get_bid2(&self, game: &Game, min: Points, max: Points, sender: Sender<PlayerAction>) {
         let mut bid = Bid::Pass;
         let mut bid_pts = 50;
         let cards = game.active_hand();
@@ -57,7 +57,6 @@ impl BotMonte {
                 best_suit = *suit;
             }
         }
-
         best_suit
     }
 
@@ -108,28 +107,58 @@ impl BotMonte {
             .expect("send error");
     }
 
+    pub fn get_bid(&self, min: Points, max: Points, game: &Game, simulations: usize, sender: Sender<PlayerAction>) {
+        let mut sim_game = game.clone();
+        let cards = sim_game.active_hand();
+        let suit = self.best_suit(cards);
+        sim_game.maker = Some(sim_game.active);
+        sim_game.set_trump_suit(suit);
+        
+        sim_game.active = game.active;
+
+        let (_id, score) = self.run_simulations(&mut sim_game, simulations);
+        let average_score = score / simulations as Points;
+        println!("P:{}, trump: {:?}, raw score: {}, avg: {}", game.active, suit, score, average_score);
+
+        let mut bid = Bid::Pass;
+
+        if average_score > 0 {
+            let bid_pts = average_score;
+            println!("bid_pts: {}", bid_pts);
+            if bid_pts >= min {
+                // bid_pts is the max we should bid. Let's bid half-way between
+                // the min and bid_pts. Add a random factor?
+                let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
+                adj_bid = adj_bid.min(max);
+                bid = Bid::Points(adj_bid);
+            }
+        } 
+        sender.send(PlayerAction::Bid(bid)).expect("send error");
+    }
+
+    pub fn get_play(&self, game: &mut Game, simulations: usize, sender: Sender<PlayerAction>) {
+        let mut sim_game = game.clone();
+        let (best_play_id, _score) = self.run_simulations(&mut sim_game, simulations);
+
+        sender
+            .send(PlayerAction::PlayCard(best_play_id))
+            .expect("send error");
+    }
+
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn best_card_play(
+    pub fn run_simulations(
         &self,
         game: &mut Game,
         simulations: usize,
-        sender: Sender<PlayerAction>,
-    ) {
-        println!("bot thinking");
+    ) -> (u8, Points) {
 
         let monte_player = game.active;
         let team = game.team_index(game.active);
         let opp_team = game.opponent_index(game.active);
-        let mut best_score = i32::MIN;
+        let mut best_score = 0; //i32::MIN;
 
         let legal_card_ids = game.get_playable_card_ids();
-        let mut best_play = &legal_card_ids[0];
-        if legal_card_ids.len() == 1 {
-            sender
-                .send(PlayerAction::PlayCard(best_play.clone()))
-                .expect("send error");
-            return;
-        }
+        let mut best_card_id = &legal_card_ids[0];
 
         // Create a vec with all the cards we don't know about.
         let mut hidden_cards = Vec::new();
@@ -192,17 +221,20 @@ impl BotMonte {
                 let _ = sim_game.award_nest_cards();
                 sim_game.complete_hand();
 
-                sim_score += sim_game.scoring.hand[team] as i32;
-                sim_score -= sim_game.scoring.hand[opp_team] as i32;
+                // Manually calc score to exclude SUCCESS_BONUS.
+                let this_sim_score = sim_game.scoring.taken[team] + sim_game.scoring.nest[team] + sim_game.scoring.last_trick[team];
+                println!("score: {}", this_sim_score);
+                sim_score += this_sim_score;
+
+                //sim_score += sim_game.scoring.hand[team] as i32;
+                //sim_score -= sim_game.scoring.hand[opp_team] as i32;
             }
 
             if sim_score > best_score {
                 best_score = sim_score;
-                best_play = card_id;
+                best_card_id = card_id;
             }
         }
-        sender
-            .send(PlayerAction::PlayCard(*best_play))
-            .expect("send error");
+        (*best_card_id, best_score)
     }
 }
