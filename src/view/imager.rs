@@ -8,7 +8,6 @@ pub struct Imager {
     pub texture: Texture2D,
     pub tex_size_multiplier: f32,
     pub z_order: usize,
-    params: DrawTextureParams,
 }
 
 impl Imager {
@@ -19,7 +18,6 @@ impl Imager {
             texture,
             tex_size_multiplier,
             z_order: 0,
-            params: DrawTextureParams::default(),
         };
         sprite
     }
@@ -31,24 +29,26 @@ impl Imager {
         )
     }
 
-    pub fn draw(&mut self, transform: &Transform, color: Option<Color>) {
+    pub fn draw(&self, transform: &Transform, color: Option<Color>) {
         if !self.visible {
             return;
         }
 
         let size = self.draw_size();
-
-        let (mut pos, rot) = transform.combined_pos_rot();
+        let (mut pos, rotation) = transform.combined_pos_rot();
 
         if self.centered {
             pos.x -= size.x / 2.0;
             pos.y -= size.y / 2.0;
         }
 
-        self.params.rotation = rot;
-        self.params.dest_size = Some(Vec2::new(size.x, size.y));
+        let params = DrawTextureParams {
+            dest_size: Some(size),
+            rotation,
+            ..Default::default()
+        };
 
         let draw_color = color.unwrap_or(WHITE);
-        draw_texture_ex(&self.texture, pos.x, pos.y, draw_color, self.params.clone());
+        draw_texture_ex(&self.texture, pos.x, pos.y, draw_color, params);
     }
 }

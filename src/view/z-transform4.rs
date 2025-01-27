@@ -42,7 +42,7 @@ impl Transform4 {
     }
 
     #[allow(dead_code)]
-    /// Returns a new Transform created by multiplying own matrix by other.
+    /// Creates a new Transform4 from a Mat4.
     pub fn from_matrix(matrix: Mat4) -> Self {
         let (scale, rot, trans) = matrix.to_scale_rotation_translation();
         let (_, rotation) = rot.to_axis_angle();

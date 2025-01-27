@@ -18,7 +18,7 @@ pub enum PlayerAction {
 }
 
 pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
-    //(Suit::Club, 4, 0), //
+    //(Suit::Club, 4, 0),
     (Suit::Club, 5, 5),
     (Suit::Club, 6, 0),
     (Suit::Club, 7, 0),
@@ -29,8 +29,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Club, 12, 0),
     (Suit::Club, 13, 10),
     (Suit::Club, 14, 15),
-    //(Suit::Diamond, 3, 0), //
-    (Suit::Diamond, 4, 0),
+    //(Suit::Diamond, 4, 0),
     (Suit::Diamond, 5, 5),
     (Suit::Diamond, 6, 0),
     (Suit::Diamond, 7, 0),
@@ -41,7 +40,6 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Diamond, 12, 0),
     (Suit::Diamond, 13, 10),
     (Suit::Diamond, 14, 15),
-    //(Suit::Heart, 3, 0), //
     (Suit::Heart, 4, 0),
     (Suit::Heart, 5, 5),
     (Suit::Heart, 6, 0),
@@ -53,7 +51,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Heart, 12, 0),
     (Suit::Heart, 13, 10),
     (Suit::Heart, 14, 15),
-    //(Suit::Spade, 4, 0), //
+    (Suit::Spade, 4, 0),
     (Suit::Spade, 5, 5),
     (Suit::Spade, 6, 0),
     (Suit::Spade, 7, 0),
@@ -91,8 +89,6 @@ pub struct Game {
     pub bot_players: [bool; PLAYERS as usize],
 
     pub scoring: Scoring,
-    //pub hand_scores: [Points; 2],
-    //pub total_scores: [Points; 2],
     pub deck: Vec<Card>,
     pub nest: Vec<Card>,
     pub hands: Vec<Vec<Card>>,
@@ -487,15 +483,18 @@ impl Game {
     pub fn complete_hand(&mut self) {
         let maker = self.maker.unwrap();
         let team = self.team_index(maker);
-        let opp = 1 - team;
+        let opp = self.opponent_index(maker);
 
         // Last trick bonus
         let last_trick_team = self.team_index(self.last_trick_winner);
         self.scoring.last_trick[last_trick_team] = LAST_TRICK_BONUS;
 
-        let maker_total = self.scoring.taken[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
-        let maker_bid_total = self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
-        let opp_total = self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.last_trick[opp];
+        let maker_total =
+            self.scoring.taken[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
+        let maker_bid_total =
+            self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
+        let opp_total =
+            self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.last_trick[opp];
 
         if maker_total >= self.high_bid {
             self.scoring.bonus[team] = SUCCESS_BONUS;

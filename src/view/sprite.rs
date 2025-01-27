@@ -58,7 +58,7 @@ impl Sprite {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&self) {
         if !self.visible {
             return;
         }

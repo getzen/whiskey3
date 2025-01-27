@@ -9,7 +9,7 @@ pub enum EventerEvent {
     LeftMousePressed,
     LeftMouseReleased,
     // Right
-    // DragStarted
+    DragStarted,
 }
 
 pub struct Eventer {
@@ -17,6 +17,7 @@ pub struct Eventer {
     pub mouse_over: bool,
     pub left_mouse_down: bool,
     // right_
+    pub dragging: bool,
     // dragging: bool, drag_start_pos, drag_pos_now
 }
 
@@ -26,6 +27,7 @@ impl Eventer {
             enabled: true,
             mouse_over: false,
             left_mouse_down: false,
+            dragging: false,
         }
     }
 
@@ -81,15 +83,23 @@ impl Eventer {
 
         let left_mouse_down = is_mouse_button_down(MouseButton::Left);
 
+        if mouse_over && self.left_mouse_down && !self.dragging {
+            self.dragging = true;
+            return Some(EventerEvent::DragStarted);
+        }
+
         if mouse_over && left_mouse_down && !self.left_mouse_down {
             self.left_mouse_down = true;
             return Some(EventerEvent::LeftMousePressed);
         }
         self.left_mouse_down = false;
+        self.dragging = false;
 
         if mouse_over && is_mouse_button_released(MouseButton::Left) {
+            self.dragging = false;
             return Some(EventerEvent::LeftMouseReleased);
         }
+
         None
     }
 }

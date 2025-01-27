@@ -10,7 +10,6 @@ use crate::view::transform::Transform;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
-    pub id: u8,
     pub transform: Transform,
     pub image: Imager,
     pub eventer: Eventer,
@@ -21,9 +20,8 @@ pub struct ButtonShaded {
 }
 
 impl ButtonShaded {
-    pub fn new(id: u8, pos: Vec2, texture: Texture2D, tex_size_multiplier: f32) -> Self {
+    pub fn new(pos: Vec2, texture: Texture2D, tex_size_multiplier: f32) -> Self {
         Self {
-            id,
             transform: Transform::new(pos, 0.0),
             image: Imager::new(texture, tex_size_multiplier, true),
             eventer: Eventer::new(),
@@ -73,7 +71,7 @@ impl ButtonShaded {
             EventerEvent::MouseExited => {
                 self.state = ButtonState::Normal;
             }
-            _ => self.state = ButtonState::Normal,
+            _ => {}
         };
         false
     }

@@ -17,7 +17,6 @@ use super::texter::Texter;
 
 /// A button with drawn text and border. Always centered.
 pub struct ButtonText {
-    pub id: u8,
     pub transform: Transform,
     pub text: Texter,
     pub size: Vec2,
@@ -31,11 +30,10 @@ pub struct ButtonText {
 }
 
 impl ButtonText {
-    pub fn new(id: u8, pos: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
+    pub fn new(pos: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
         let text = Texter::new(pos, text, font, font_size, AlignH::Center, AlignV::Center);
 
         Self {
-            id,
             transform: Transform::new(pos, 0.0),
             text,
             size,

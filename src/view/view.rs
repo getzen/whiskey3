@@ -15,7 +15,9 @@ use super::{
     button_text::ButtonText,
     score_table::ScoreTable,
     sprite::Sprite,
+    sprite2::{self, Sprite2},
     texter::{AlignH, AlignV, Texter},
+    trans::Trans,
     trump_chooser::TrumpChooser,
     trump_marker::TrumpMarker,
     view_geom::{
@@ -37,6 +39,8 @@ pub struct View {
     trump_marker: TrumpMarker,
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
+
+    sprite: Sprite2,
 }
 
 impl View {
@@ -46,10 +50,14 @@ impl View {
         turn_marker.visible = false;
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
-        let mut play_button = ButtonShaded::new(0, PLAY_BUTTON_POS, play_button_tex, 0.5);
+        let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
         play_button.state = ButtonState::Hidden;
 
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+
+        let tex = load_texture("src/assets/cards/clb2.png").await.unwrap();
+        let mut sprite = Sprite2::new(tex, 0.3);
+        sprite.transform.translation = Vec2::new(200.0, 100.0);
 
         let message = Texter::new(
             MESSAGE_POS,
@@ -68,7 +76,6 @@ impl View {
         }
 
         let mut done_exchanging_button = ButtonText::new(
-            0,
             DONE_EXCHANGING_BUTTON_POS,
             "Done",
             font.clone(),
@@ -92,6 +99,8 @@ impl View {
             trump_marker: TrumpMarker::new(CENTER),
             sender,
             z_order_needs_update: false,
+
+            sprite,
         }
     }
 
@@ -141,6 +150,10 @@ impl View {
         }
 
         let mouse_pos: Vec2 = mouse_position().into();
+
+        let mut parent = Trans::from_translation(Vec2::new(100., 300.0));
+        parent.rotation = 0.8; //std::f32::consts::PI / 2.0;
+        self.sprite.process_events(Some(&parent), mouse_pos);
 
         if self.play_button.process_events(&mouse_pos) {
             self.play_button.state = ButtonState::Hidden;
@@ -407,38 +420,22 @@ impl View {
 
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
 
-        /*/
-        let mouse_pos = mouse_position();
-        let mouse_pt = vec2(mouse_pos.0, mouse_pos.1);
-        let circle_trans = Transform4::from_position_rotation(vec2(100.0, 100.0), 0.0);
-        let circle_matrix = circle_trans.matrix(None);
+        self.sprite.transform.rotation += 0.00;
 
-        let rect_trans = Transform4::from_position_rotation(vec2(50.0, 100.0), 0.2);
-        let rect_size = vec2(100., 100.0);
-        let rect_matrix = rect_trans.matrix(Some(rect_size));
+        let mut parent = Trans::from_translation(Vec2::new(100., 300.0));
+        parent.rotation = 0.8; //std::f32::consts::PI / 2.0;
 
-        let gl = unsafe { get_internal_gl().quad_gl };
-        gl.push_model_matrix(circle_matrix);
-        draw_circle(0.0, 0.0, 5.0, ORANGE);
-
-        gl.push_model_matrix(rect_matrix);
-        draw_rectangle(0.0, 0.0, rect_size.x, rect_size.y, ORANGE);
-        gl.pop_model_matrix();
-        gl.pop_model_matrix();
-
-        // There doesn't seem to be a way to get the current model_matrix.
-
-        let combined = circle_matrix * rect_matrix;
-        let combined_trans = Transform4::from_matrix(combined);
-        let contains = combined_trans.contains_point(mouse_pt, rect_size, false);
-        let color = match contains {
+        let (x, y) = mouse_position();
+        let combined = Trans::combine(&parent, &self.sprite.transform);
+        let color = match combined.contains_point(vec2(x, y)) {
             true => GREEN,
             false => RED,
         };
-        draw_circle(mouse_pt.x, mouse_pt.y, 3.0, color);
-        */
+
+        self.sprite.color = color;
+        self.sprite.draw(Some(&parent));
+        // draw_circle(mouse_pt.x, mouse_pt.y, 3.0, color);
+
         next_frame().await;
     }
-
-    
 }

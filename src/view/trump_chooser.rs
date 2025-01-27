@@ -25,16 +25,16 @@ impl TrumpChooser {
         let tex_mult = 0.3333;
 
         let tex = load_texture("src/assets/club.png").await.unwrap();
-        let club_button = ButtonShaded::new(0, position + vec2(-90.0, 0.), tex, tex_mult);
+        let club_button = ButtonShaded::new(position + vec2(-90.0, 0.), tex, tex_mult);
 
         let tex = load_texture("src/assets/diamond.png").await.unwrap();
-        let diamond_button = ButtonShaded::new(0, position + vec2(-30.0, 0.), tex, tex_mult);
+        let diamond_button = ButtonShaded::new(position + vec2(-30.0, 0.), tex, tex_mult);
 
         let tex = load_texture("src/assets/heart.png").await.unwrap();
-        let heart_button = ButtonShaded::new(0, position + vec2(30.0, 0.), tex, tex_mult);
+        let heart_button = ButtonShaded::new(position + vec2(30.0, 0.), tex, tex_mult);
 
         let tex = load_texture("src/assets/spade.png").await.unwrap();
-        let spade_button = ButtonShaded::new(0, position + vec2(90.0, 0.), tex, tex_mult);
+        let spade_button = ButtonShaded::new(position + vec2(90.0, 0.), tex, tex_mult);
 
         Self {
             visible: false,

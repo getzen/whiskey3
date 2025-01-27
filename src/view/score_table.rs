@@ -1,9 +1,5 @@
 use array2d::Array2D;
-use macroquad::{
-    math::Vec2,
-    shapes::draw_rectangle,
-    text::Font,
-};
+use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 
 use crate::{game::POINTS_TO_WIN, scoring::Scoring};
 
@@ -26,7 +22,18 @@ impl ScoreTable {
             texters[(0, col)].text = col_headings[col].to_string();
         }
 
-        let row_headings = ["", "Taken", "Last Trick", "Nest", "", "Total/Bid", "Bonus", "", "Hand", "Game/Win"];
+        let row_headings = [
+            "",
+            "Taken",
+            "Last Trick",
+            "Nest",
+            "",
+            "Total/Bid",
+            "Bonus",
+            "",
+            "Hand",
+            "Game/Win",
+        ];
         for row in 0..row_headings.len() {
             texters[(row, 0)].text = row_headings[row].to_string();
             texters[(row, 0)].align_h = AlignH::Left;
@@ -42,7 +49,7 @@ impl ScoreTable {
 
                 // Row position
                 pos.y += row as f32 * line_spacing;
-    
+
                 // Column position
                 pos.x += column_x[col];
 

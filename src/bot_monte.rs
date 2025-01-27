@@ -13,32 +13,6 @@ impl BotMonte {
         Self {}
     }
 
-    pub fn get_bid2(&self, game: &Game, min: Points, max: Points, sender: Sender<PlayerAction>) {
-        let mut bid = Bid::Pass;
-        let mut bid_pts = 50;
-        let cards = game.active_hand();
-        for card in cards {
-            if card.is_joker {
-                bid_pts += 20;
-            }
-            match card.rank {
-                14 => bid_pts += 20,
-                13 => bid_pts += 15,
-                _ => {}
-            }
-        }
-
-        if bid_pts >= min {
-            // bid_pts is the max we should bid. Let's bid half-way between
-            // the min and bid_pts. Add a random factor?
-            let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
-            adj_bid = adj_bid.min(max);
-            bid = Bid::Points(adj_bid);
-        }
-
-        sender.send(PlayerAction::Bid(bid)).expect("send error");
-    }
-
     fn best_suit(&self, cards: &[Card]) -> Suit {
         const SUITS: [Suit; 4] = [Suit::Club, Suit::Diamond, Suit::Heart, Suit::Spade];
         let mut best_suit_score = 0;
@@ -107,13 +81,20 @@ impl BotMonte {
             .expect("send error");
     }
 
-    pub fn get_bid(&self, min: Points, max: Points, game: &Game, simulations: usize, sender: Sender<PlayerAction>) {
+    pub fn get_bid(
+        &self,
+        min: Points,
+        max: Points,
+        game: &Game,
+        simulations: usize,
+        sender: Sender<PlayerAction>,
+    ) {
         let mut sim_game = game.clone();
         let cards = sim_game.active_hand();
         let suit = self.best_suit(cards);
         sim_game.maker = Some(sim_game.active);
         sim_game.set_trump_suit(suit);
-        
+
         sim_game.active = game.active;
 
         let (_id, _best_score, mut all_scores) = self.run_simulations(&mut sim_game, simulations);
@@ -122,7 +103,7 @@ impl BotMonte {
 
         // 0.0 means choose the lowest score produced in all simulations.
         // 1.0 means choose the highest score produced in a simulations.
-        let aggressiveness = 0.55;
+        let aggressiveness = 0.50;
 
         let index = (all_scores.len() as f64 * aggressiveness) as usize - 1;
 
@@ -151,12 +132,7 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn run_simulations(
-        &self,
-        game: &mut Game,
-        simulations: usize,
-    ) -> (u8, Points, Vec<usize>) {
-
+    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (u8, Points, Vec<usize>) {
         let monte_player = game.active;
         let team = game.team_index(game.active);
         //let opp_team = game.opponent_index(game.active);
@@ -164,7 +140,6 @@ impl BotMonte {
         let legal_card_ids = game.get_playable_card_ids();
         let mut best_score = 0; //i32::MIN;
         let mut all_scores = Vec::with_capacity(simulations * legal_card_ids.len());
-        
 
         let legal_card_ids = game.get_playable_card_ids();
         let mut best_card_id = &legal_card_ids[0];
@@ -231,7 +206,9 @@ impl BotMonte {
                 sim_game.complete_hand();
 
                 // Manually calc score to exclude SUCCESS_BONUS.
-                let this_sim_score = sim_game.scoring.taken[team] + sim_game.scoring.nest[team] + sim_game.scoring.last_trick[team];
+                let this_sim_score = sim_game.scoring.taken[team]
+                    + sim_game.scoring.nest[team]
+                    + sim_game.scoring.last_trick[team];
                 all_scores.push(this_sim_score);
                 sim_score += this_sim_score;
             }

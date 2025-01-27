@@ -1,7 +1,6 @@
 use std::sync::mpsc::Sender;
 
 use macroquad::{
-    color::WHITE,
     math::{vec2, Vec2},
     text::load_ttf_font,
 };
@@ -44,7 +43,6 @@ impl BidPanel {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
         let bid_button = ButtonText::new(
-            0,
             position + vec2(-5.0, 0.0),
             "Bid",
             font.clone(),
@@ -53,7 +51,6 @@ impl BidPanel {
         );
 
         let pass_button = ButtonText::new(
-            0,
             position + vec2(100.0, 0.0),
             "Pass",
             font.clone(),
@@ -62,7 +59,6 @@ impl BidPanel {
         );
 
         let plus_button = ButtonText::new(
-            0,
             position + vec2(-70.0, -12.0),
             "+",
             font.clone(),
@@ -71,7 +67,6 @@ impl BidPanel {
         );
 
         let minus_button = ButtonText::new(
-            0,
             position + vec2(-70.0, 12.0),
             "-",
             font.clone(),
