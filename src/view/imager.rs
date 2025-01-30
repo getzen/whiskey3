@@ -1,54 +1,51 @@
 use macroquad::prelude::*;
 
-use crate::view::transform::Transform;
+use crate::view::trans::Trans;
 
 pub struct Imager {
     pub visible: bool,
-    pub centered: bool,
+    pub transform: Trans,
     pub texture: Texture2D,
-    pub tex_size_multiplier: f32,
+    pub color: Color,
     pub z_order: usize,
 }
 
 impl Imager {
-    pub fn new(texture: Texture2D, tex_size_multiplier: f32, centered: bool) -> Self {
-        let sprite = Self {
+    pub fn new(texture: Texture2D, size_multiplier: f32, centered: bool) -> Self {
+        let size = vec2(texture.width() * size_multiplier, texture.height() * size_multiplier);
+        let mut transform = Trans::new();
+        match centered {
+            true => transform.center_with_size(size),
+            false => transform.size = size,
+        }
+
+        Self {
             visible: true,
-            centered,
+            transform,
             texture,
-            tex_size_multiplier,
+            color: WHITE,
             z_order: 0,
-        };
-        sprite
+        }
     }
 
-    pub fn draw_size(&self) -> Vec2 {
-        vec2(
-            self.texture.width() * self.tex_size_multiplier,
-            self.texture.height() * self.tex_size_multiplier,
-        )
-    }
-
-    pub fn draw(&self, transform: &Transform, color: Option<Color>) {
+    pub fn draw(&self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
 
-        let size = self.draw_size();
-        let (mut pos, rotation) = transform.combined_pos_rot();
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
 
-        if self.centered {
-            pos.x -= size.x / 2.0;
-            pos.y -= size.y / 2.0;
-        }
+        let (pos, rot) = transform.drawable_position_rotation();
 
         let params = DrawTextureParams {
-            dest_size: Some(size),
-            rotation,
+            dest_size: Some(transform.size),
+            rotation: rot,
             ..Default::default()
         };
 
-        let draw_color = color.unwrap_or(WHITE);
-        draw_texture_ex(&self.texture, pos.x, pos.y, draw_color, params);
+        draw_texture_ex(&self.texture, pos.x, pos.y, self.color, params);
     }
 }

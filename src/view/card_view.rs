@@ -1,24 +1,24 @@
 use std::sync::mpsc::Sender;
 
+use macroquad::color::WHITE;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 
 use crate::game::PlayerAction;
-use crate::view::eventer::Eventer;
-use crate::view::eventer::EventerEvent;
 use crate::view::imager::Imager;
-use crate::view::transform::Transform;
 
 use crate::view::animators::TranslationAnimator;
 
 use super::animators::RotationAnimator;
+use super::eventer2::Eventer2;
+use super::trans::Trans;
 
 pub struct CardView {
     pub id: u8, // must match Card id
-    pub transform: Transform,
+    pub transform: Trans,
     pub card_image: Imager,
-    pub eventer: Eventer,
+    pub eventer: Eventer2,
 
     pub face_texture: Texture2D,
     pub back_texture: Texture2D,
@@ -30,16 +30,16 @@ pub struct CardView {
     pub angle_anim: Option<RotationAnimator>,
 
     sender: Sender<PlayerAction>,
-    pub player_action: Option<PlayerAction>,
+    pub action: Option<PlayerAction>,
 }
 
 impl CardView {
     pub fn new(id: u8, face: Texture2D, back: Texture2D, sender: Sender<PlayerAction>) -> Self {
         Self {
             id,
-            transform: Transform::new(Vec2::ZERO, 0.0),
+            transform: Trans::new(),
             card_image: Imager::new(face.clone(), 0.3333, true),
-            eventer: Eventer::new(),
+            eventer: Eventer2::new(),
             face_texture: face,
             back_texture: back,
             dimmed_color: Color::from_rgba(200, 200, 200, 255),
@@ -47,7 +47,7 @@ impl CardView {
             trans_anim: None,
             angle_anim: None,
             sender,
-            player_action: None,
+            action: None,
         }
     }
 
@@ -60,7 +60,7 @@ impl CardView {
 
     pub fn move_to(&mut self, end_position: Vec2, velocity: f32) {
         self.trans_anim = Some(TranslationAnimator::new(
-            self.transform.position,
+            self.transform.translation,
             end_position,
             velocity,
         ));
@@ -76,7 +76,7 @@ impl CardView {
 
     pub fn update(&mut self, time_delta: f32) {
         if let Some(translator) = &mut self.trans_anim {
-            self.transform.position = translator.update(time_delta);
+            self.transform.translation = translator.update(time_delta);
             if translator.completed {
                 self.trans_anim = None;
             }
@@ -90,48 +90,29 @@ impl CardView {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn contains_point(&self, point: &Vec2) -> bool {
-        let size = self.card_image.draw_size();
-        let centered = self.card_image.centered;
-        self.eventer
-            .contains_point(point, &self.transform, size, centered)
-    }
+    /// Returns true if the sprite is visible and transform contains the mouse_pos.
+    pub fn process_events(&mut self, parent_transform: Option<&Trans>, mouse_pos: Vec2) -> bool {
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
 
-    /// Returns true if event found.
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
-        let size = self.card_image.draw_size();
-        let centered = self.card_image.centered;
+        let mouse_over = self.eventer.process_events(transform, mouse_pos);
 
-        match self
-            .eventer
-            .process_events(mouse_pos, &self.transform, size, centered)
-        {
-            Some(event) => {
-                match event {
-                    EventerEvent::LeftMouseReleased => {
-                        // Send action if one exists. Dimmed cards should not have actions.
-                        if let Some(action) = &self.player_action {
-                            self.sender.send(action.clone()).expect("Send error");
-                        }
-                    }
-                    _ => {}
-                }
-                // Regardless, card contained mouse_pos, so return true.
-                return true;
-            }
-            None => {
-                return false;
+        if self.eventer.left_mouse_released {
+            // Send action if sender and action exist.
+            if let Some(action) = &self.action {
+                self.sender.send(action.clone()).expect("Send error");
             }
         }
+        mouse_over
     }
 
     pub fn draw(&mut self) {
-        if self.dimmed {
-            self.card_image
-                .draw(&self.transform, Some(self.dimmed_color));
-        } else {
-            self.card_image.draw(&self.transform, None);
-        }
+        self.card_image.color = match self.dimmed {
+            true => self.dimmed_color,
+            false => WHITE,
+        };
+        self.card_image.draw(Some(&self.transform));
     }
 }

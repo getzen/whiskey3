@@ -112,7 +112,7 @@ impl View {
         let face = self.texture_for(card).await;
 
         let mut view = CardView::new(card.id, face, back.clone(), self.sender.clone());
-        view.transform.position = view_geom::DECK_POS;
+        view.move_to(view_geom::DECK_POS, 100.0);
         self.card_views.push(view);
     }
 
@@ -172,10 +172,10 @@ impl View {
 
         // Cards
         for card_view in self.card_views.iter_mut().rev() {
-            if card_view.process_events(&mouse_pos) {
+            if card_view.process_events(None, mouse_pos) {
                 return;
             }
-        }
+        }s
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -302,7 +302,7 @@ impl View {
         for card in cards {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
                 view.dimmed = false;
-                view.player_action = None;
+                view.action = None;
             }
         }
     }
@@ -331,7 +331,7 @@ impl View {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
                 view.dimmed = !card.eligible;
                 if card.eligible {
-                    view.player_action = Some(PlayerAction::Exchange(card.id));
+                    view.action = Some(PlayerAction::Exchange(card.id));
                 }
             }
         }
@@ -357,7 +357,7 @@ impl View {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
                 view.dimmed = !card.eligible;
                 if card.eligible {
-                    view.player_action = Some(PlayerAction::PlayCard(card.id));
+                    view.action = Some(PlayerAction::PlayCard(card.id));
                 }
             }
         }
