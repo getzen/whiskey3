@@ -15,7 +15,6 @@ use super::{
     button_text::ButtonText,
     score_table::ScoreTable,
     sprite::Sprite,
-    sprite2::{self, Sprite2},
     texter::{AlignH, AlignV, Texter},
     trans::Trans,
     trump_chooser::TrumpChooser,
@@ -40,14 +39,13 @@ pub struct View {
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
 
-    sprite: Sprite2,
+    sprite: Sprite,
 }
 
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
-        let turn_tex = load_texture("src/assets/circle.png").await.unwrap();
-        let mut turn_marker = Sprite::new(turn_tex, 0.4);
-        turn_marker.visible = false;
+        let texture = load_texture("src/assets/circle.png").await.unwrap();
+        let turn_marker = Sprite::new(texture, 0.4);
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
         let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
@@ -56,7 +54,7 @@ impl View {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
         let tex = load_texture("src/assets/cards/clb2.png").await.unwrap();
-        let mut sprite = Sprite2::new(tex, 0.3);
+        let mut sprite = Sprite::new(tex, 0.3);
         sprite.transform.translation = Vec2::new(200.0, 100.0);
 
         let message = Texter::new(
