@@ -7,111 +7,103 @@ use macroquad::text::Font;
 
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
-use crate::view::eventer::Eventer;
-use crate::view::eventer::EventerEvent;
-use crate::view::transform::Transform;
+use crate::view::eventer2::Eventer2;
 
 use super::texter::AlignH;
 use super::texter::AlignV;
 use super::texter::Texter;
+use super::trans::Trans;
 
 /// A button with drawn text and border. Always centered.
 pub struct ButtonText {
-    pub transform: Transform,
+    pub transform: Trans,
     pub text: Texter,
     pub size: Vec2,
-    pub eventer: Eventer,
+    pub eventer: Eventer2,
     pub state: ButtonState,
     pub normal_color: Color,
     pub highlighted_color: Color,
     pub disabled_color: Color,
     pub sender: Option<Sender<PlayerAction>>,
-    pub player_action: Option<PlayerAction>,
+    pub action: Option<PlayerAction>,
 }
 
 impl ButtonText {
-    pub fn new(pos: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
-        let text = Texter::new(pos, text, font, font_size, AlignH::Center, AlignV::Center);
+    pub fn new(position: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
+        let text = Texter::new(position, text, font, font_size, AlignH::Center, AlignV::Center);
+
+        let mut transform = Trans::from_translation(position);
+        transform.center_with_size(size);
 
         Self {
-            transform: Transform::new(pos, 0.0),
+            transform,
             text,
             size,
-            eventer: Eventer::new(),
+            eventer: Eventer2::new(),
             state: ButtonState::Normal,
             normal_color: Color::from_rgba(220, 220, 220, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
             disabled_color: Color::from_rgba(150, 150, 150, 255),
             sender: None,
-            player_action: None,
+            action: None,
         }
     }
 
-    #[allow(dead_code)]
-    pub fn contains_point(&self, point: &Vec2) -> bool {
-        self.eventer
-            .contains_point(point, &self.transform, self.size, true)
-    }
+    /// Returns true if the sprite is visible and transform contains the mouse_pos.
+    pub fn process_events(&mut self, parent_transform: Option<&Trans>, mouse_pos: Vec2) -> bool {
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
 
-    /// Check if event occurred, handle internally, and return true if clicked.
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
-        if self.state == ButtonState::Disabled || self.state == ButtonState::Hidden {
-            return false;
-        }
-        let event = self
-            .eventer
-            .process_events(mouse_pos, &self.transform, self.size, true);
+        let mouse_over = self.eventer.process_events(transform, mouse_pos);
 
-        if event.is_none() {
-            return false;
+        if self.eventer.mouse_entered {
+            self.state = ButtonState::Highlighted;
         }
 
-        // Handle possible state change before returning event.
-        match event.as_ref().unwrap() {
-            EventerEvent::MouseEntered => {
-                self.state = ButtonState::Highlighted;
-            }
-            EventerEvent::LeftMousePressed => {
-                self.state = ButtonState::Normal;
-            }
-            EventerEvent::LeftMouseReleased => {
-                self.state = ButtonState::Highlighted;
-                // Send action if sender and action exist.
-                if let Some(sender) = &self.sender {
-                    if let Some(action) = &self.player_action {
-                        sender.send(action.clone()).expect("Send error");
-                    }
+        if self.eventer.mouse_exited {
+            self.state = ButtonState::Normal;
+        }
+
+        if self.eventer.left_mouse_pressed {
+            self.state = ButtonState::Highlighted;
+        }
+
+        if self.eventer.left_mouse_released {
+            self.state = ButtonState::Normal;
+
+            // Send action if sender and action exist.
+            if let Some(sender) = &self.sender {
+                if let Some(action) = &self.action {
+                    sender.send(action.clone()).expect("Send error");
                 }
-                return true;
-            }
-            _ => {
-                self.state = ButtonState::Normal;
             }
         }
-        false
+        mouse_over
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
         if self.state == ButtonState::Hidden {
             return;
         }
-        let color = match &self.state {
-            ButtonState::Normal => Some(self.normal_color),
-            ButtonState::Highlighted => Some(self.highlighted_color),
-            ButtonState::Disabled => Some(self.disabled_color),
-            _ => None,
+
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
         };
 
-        if color.is_none() {
-            return;
-        }
+        let color = match &self.state {
+            ButtonState::Highlighted => self.highlighted_color,
+            ButtonState::Disabled => self.disabled_color,
+            _ => self.normal_color,
+        };
 
-        let pos = self.transform.centered_position(self.size);
+        let (pos, _rot) = transform.drawable_position_rotation();
 
-        draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color.unwrap());
+        draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color);
 
-        // Text is already centered vert and horiz.
-        self.text.color = color.unwrap();
-        self.text.draw();
+        self.text.color = color;
+        self.text.draw(Some(transform));
     }
 }

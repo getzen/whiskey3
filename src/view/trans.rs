@@ -1,5 +1,6 @@
 use macroquad::math::{Affine2, Mat4, Quat, Vec2, Vec3};
 
+#[derive(Clone)]
 pub struct Trans {
     pub translation: Vec2,
     pub rotation: f32,

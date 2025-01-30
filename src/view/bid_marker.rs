@@ -9,12 +9,12 @@ use crate::game::Bid;
 
 use super::{
     texter::{AlignH, AlignV, Texter},
-    transform::Transform,
+    trans::Trans,
 };
 
 pub struct BidMarker {
     pub visible: bool,
-    transform: Transform,
+    transform: Trans,
     radius: f32,
     text: Texter,
 
@@ -30,7 +30,7 @@ impl BidMarker {
 
         Self {
             visible: false,
-            transform: Transform::new(position, 0.0),
+            transform: Trans::from_translation(position),
             radius: 30.0,
             text,
 
@@ -77,17 +77,21 @@ impl BidMarker {
         self.color = WHITE;
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
 
-        let pos = self.transform.position;
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+        let (pos, _rot) = self.transform.drawable_position_rotation();
 
         // Circles are already centered.
         draw_circle_lines(pos.x, pos.y, self.radius, 3.0, self.color);
 
         // Text is already centered vert and horiz.
-        self.text.draw();
+        self.text.draw(Some(transform));
     }
 }

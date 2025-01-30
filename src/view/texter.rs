@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use crate::view::transform::Transform;
+use crate::view::trans::Trans;
 
 #[allow(unused)]
 #[derive(Clone)]
@@ -21,7 +21,7 @@ pub enum AlignV {
 #[derive(Clone)]
 pub struct Texter {
     pub visible: bool,
-    pub transform: Transform,
+    pub transform: Trans,
     pub text: String,
     pub font: Font,
     pub font_size: u16,
@@ -42,7 +42,7 @@ impl Texter {
     ) -> Self {
         Self {
             visible: true,
-            transform: Transform::new(position, 0.0),
+            transform: Trans::from_translation(position),
             text: text.to_string(),
             font,
             font_size,
@@ -53,11 +53,18 @@ impl Texter {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
-        let mut pos = self.transform.position;
+
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+
+        let (mut pos, _rot) = transform.drawable_position_rotation();
+
         // Is this function slow?
         let dimensions = measure_text(
             &self.text,

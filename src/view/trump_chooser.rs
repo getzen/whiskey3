@@ -7,12 +7,12 @@ use macroquad::{
 
 use crate::{card::Suit, game::PlayerAction};
 
-use super::{button_shaded::ButtonShaded, transform::Transform};
+use super::{button_shaded::ButtonShaded, trans::Trans};
 
 pub struct TrumpChooser {
     pub visible: bool,
     size: Vec2,
-    transform: Transform,
+    transform: Trans,
     club_button: ButtonShaded,
     diamond_button: ButtonShaded,
     heart_button: ButtonShaded,
@@ -25,21 +25,29 @@ impl TrumpChooser {
         let tex_mult = 0.3333;
 
         let tex = load_texture("src/assets/club.png").await.unwrap();
-        let club_button = ButtonShaded::new(position + vec2(-90.0, 0.), tex, tex_mult);
+        let mut club_button = ButtonShaded::new(position + vec2(-90.0, 0.), tex, tex_mult);
+        club_button.sender = Some(sender.clone());
+        club_button.action = Some(PlayerAction::ChooseTrump(Suit::Club));
 
         let tex = load_texture("src/assets/diamond.png").await.unwrap();
-        let diamond_button = ButtonShaded::new(position + vec2(-30.0, 0.), tex, tex_mult);
+        let mut diamond_button = ButtonShaded::new(position + vec2(-30.0, 0.), tex, tex_mult);
+        diamond_button.sender = Some(sender.clone());
+        diamond_button.action = Some(PlayerAction::ChooseTrump(Suit::Diamond));
 
         let tex = load_texture("src/assets/heart.png").await.unwrap();
-        let heart_button = ButtonShaded::new(position + vec2(30.0, 0.), tex, tex_mult);
+        let mut heart_button = ButtonShaded::new(position + vec2(30.0, 0.), tex, tex_mult);
+        heart_button.sender = Some(sender.clone());
+        heart_button.action = Some(PlayerAction::ChooseTrump(Suit::Heart));
 
         let tex = load_texture("src/assets/spade.png").await.unwrap();
-        let spade_button = ButtonShaded::new(position + vec2(90.0, 0.), tex, tex_mult);
+        let mut spade_button = ButtonShaded::new(position + vec2(90.0, 0.), tex, tex_mult);
+        spade_button.sender = Some(sender.clone());
+        spade_button.action = Some(PlayerAction::ChooseTrump(Suit::Spade));
 
         Self {
             visible: false,
             size: vec2(250.0, 100.0),
-            transform: Transform::new(position, 0.0),
+            transform: Trans::from_translation(position),
             club_button,
             diamond_button,
             heart_button,
@@ -49,55 +57,32 @@ impl TrumpChooser {
     }
 
     /// Returns true if event found.
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
+    pub fn process_events(&mut self, mouse_pos: Vec2) -> bool {
         if !self.visible {
             return false;
         }
 
-        if self.club_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::ChooseTrump(Suit::Club))
-                .expect("Send error");
-            return true;
-        }
+        let mouse_over0 = self.club_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over1 = self.diamond_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over2 = self.heart_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over3 = self.spade_button.process_events(Some(&self.transform), mouse_pos);
 
-        if self.diamond_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::ChooseTrump(Suit::Diamond))
-                .expect("Send error");
-            return true;
-        }
-
-        if self.heart_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::ChooseTrump(Suit::Heart))
-                .expect("Send error");
-            return true;
-        }
-
-        if self.spade_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::ChooseTrump(Suit::Spade))
-                .expect("Send error");
-        }
-        false
+        mouse_over0 || mouse_over1 || mouse_over2 || mouse_over3
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
 
-        let (mut pos, _rot) = self.transform.combined_pos_rot();
-        pos.x -= self.size.x / 2.0;
-        pos.y -= self.size.y / 2.0;
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
 
-        //draw_rectangle(pos.x, pos.y, self.size.x, self.size.y, );
-        //draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, GREEN);
-
-        self.club_button.draw();
-        self.diamond_button.draw();
-        self.heart_button.draw();
-        self.spade_button.draw();
+        self.club_button.draw(Some(transform));
+        self.diamond_button.draw(Some(transform));
+        self.heart_button.draw(Some(&transform));
+        self.spade_button.draw(Some(&transform));
     }
 }

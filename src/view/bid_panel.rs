@@ -13,7 +13,7 @@ use crate::{
 use super::{
     button_text::ButtonText,
     texter::{AlignH, AlignV, Texter},
-    transform::Transform,
+    trans::Trans,
 };
 
 pub struct BidPanel {
@@ -24,7 +24,7 @@ pub struct BidPanel {
 
     pub visible: bool,
     size: Vec2,
-    transform: Transform,
+    transform: Trans,
     bid_button: ButtonText,
     pass_button: ButtonText,
     plus_button: ButtonText,
@@ -42,21 +42,25 @@ impl BidPanel {
     ) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
-        let bid_button = ButtonText::new(
+        let mut bid_button = ButtonText::new(
             position + vec2(-5.0, 0.0),
             "Bid",
             font.clone(),
             18,
             vec2(80.0, 40.0),
         );
+        bid_button.sender = Some(sender.clone());
+        bid_button.action = Some(PlayerAction::Bid(Bid::Points(min_bid)));
 
-        let pass_button = ButtonText::new(
+        let mut pass_button = ButtonText::new(
             position + vec2(100.0, 0.0),
             "Pass",
             font.clone(),
             18,
             vec2(80.0, 40.0),
         );
+        pass_button.sender = Some(sender.clone());
+        pass_button.action = Some(PlayerAction::Bid(Bid::Pass));
 
         let plus_button = ButtonText::new(
             position + vec2(-70.0, -12.0),
@@ -92,7 +96,7 @@ impl BidPanel {
             bid_increment: 5,
             visible: false,
             size: vec2(250.0, 100.0),
-            transform: Transform::new(position, 0.0),
+            transform: Trans::from_translation(position),
             bid_button,
             pass_button,
             plus_button,
@@ -105,57 +109,47 @@ impl BidPanel {
     pub fn update_bid_amount(&mut self, new_amount: Points) {
         self.current_bid = new_amount;
         self.bid_text.text = format!("{}", new_amount);
+        self.bid_button.action = Some(PlayerAction::Bid(Bid::Points(new_amount)));
     }
 
     /// Returns true if event found.
-    pub fn process_events(&mut self, mouse_pos: &Vec2) -> bool {
+    pub fn process_events(&mut self, mouse_pos: Vec2) -> bool {  // ADD PARENT TRANS HERE AND FOR OTHER STRUCTS
         if !self.visible {
             return false;
         }
 
-        if self.bid_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::Bid(Bid::Points(self.current_bid)))
-                .expect("Send error");
-            return true;
-        }
+        let mouse_over0 = self.bid_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over1 = self.pass_button.process_events(Some(&self.transform), mouse_pos);
 
-        if self.pass_button.process_events(mouse_pos) {
-            self.sender
-                .send(PlayerAction::Bid(Bid::Pass))
-                .expect("Send error");
-            return true;
-        }
-
-        if self.plus_button.process_events(mouse_pos) {
+        let mouse_over2 = self.plus_button.process_events(Some(&self.transform), mouse_pos);
+        if self.plus_button.eventer.left_mouse_released {
             let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
             self.update_bid_amount(new_amount);
-            return true;
         }
-
-        if self.minus_button.process_events(mouse_pos) {
+        
+        let mouse_over3 = self.minus_button.process_events(Some(&self.transform), mouse_pos);
+        if self.minus_button.eventer.left_mouse_released {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);
         }
-        true
+ 
+        mouse_over0 || mouse_over1 || mouse_over2 || mouse_over3
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
 
-        let (mut pos, _rot) = self.transform.combined_pos_rot();
-        pos.x -= self.size.x / 2.0;
-        pos.y -= self.size.y / 2.0;
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
 
-        //draw_rectangle(pos.x, pos.y, self.size.x, self.size.y, );
-        //draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, GREEN);
-
-        self.bid_button.draw();
-        self.pass_button.draw();
-        self.bid_text.draw();
-        self.plus_button.draw();
-        self.minus_button.draw();
+        self.bid_button.draw(Some(transform));
+        self.pass_button.draw(Some(transform));
+        self.bid_text.draw(Some(transform));
+        self.plus_button.draw(Some(transform));
+        self.minus_button.draw(Some(transform));
     }
 }

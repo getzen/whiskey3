@@ -3,16 +3,19 @@ use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 
 use crate::{game::POINTS_TO_WIN, scoring::Scoring};
 
-use super::texter::{AlignH, AlignV, Texter};
+use super::{texter::{AlignH, AlignV, Texter}, trans::Trans};
 
 pub struct ScoreTable {
     pub visible: bool,
+    transform: Trans,
     position: Vec2,
     texters: Array2D<Texter>,
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
+        let transform = Trans::from_translation(position);
+
         let def_texter = Texter::new(position, "----", font, 14, AlignH::Center, AlignV::Center);
 
         let mut texters = Array2D::filled_with(def_texter, 10, 3);
@@ -53,12 +56,13 @@ impl ScoreTable {
                 // Column position
                 pos.x += column_x[col];
 
-                texters[(row, col)].transform.position = pos;
+                texters[(row, col)].transform.translation = pos;
             }
         }
 
         Self {
             visible: false,
+            transform,
             position,
             texters,
         }
@@ -93,13 +97,19 @@ impl ScoreTable {
         self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, parent_transform: Option<&Trans>) {
         if !self.visible {
             return;
         }
 
+        let transform = match parent_transform {
+            Some(parent) => &Trans::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+        let (pos, _rot) = transform.drawable_position_rotation();
+
         draw_rectangle(
-            self.position.x - 14.0,
+            pos.x - 14.0,
             0.0,
             400.0,
             210.0,
@@ -107,7 +117,7 @@ impl ScoreTable {
         );
 
         for texter in self.texters.as_row_major() {
-            texter.draw();
+            texter.draw(Some(transform));
         }
     }
 }

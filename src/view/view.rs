@@ -9,25 +9,15 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_shaded::ButtonShaded,
-    button_text::ButtonText,
-    score_table::ScoreTable,
-    sprite::Sprite,
-    texter::{AlignH, AlignV, Texter},
-    trans::Trans,
-    trump_chooser::TrumpChooser,
-    trump_marker::TrumpMarker,
-    view_geom::{
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::{AlignH, AlignV, Texter}, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
         self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
-        PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, TURN_MARKER_SPEED,
-    },
+        PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
+    }
 };
 
 pub struct View {
     card_views: Vec<CardView>,
-    turn_marker: Sprite,
+    turn_marker: Imager,
     message: Texter,
     score_table: ScoreTable,
     play_button: ButtonShaded,
@@ -38,24 +28,18 @@ pub struct View {
     trump_marker: TrumpMarker,
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
-
-    sprite: Sprite,
 }
 
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
         let texture = load_texture("src/assets/circle.png").await.unwrap();
-        let turn_marker = Sprite::new(texture, 0.4);
+        let turn_marker = Imager::new(texture, 0.4, true);
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
         let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
         play_button.state = ButtonState::Hidden;
 
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
-
-        let tex = load_texture("src/assets/cards/clb2.png").await.unwrap();
-        let mut sprite = Sprite::new(tex, 0.3);
-        sprite.transform.translation = Vec2::new(200.0, 100.0);
 
         let message = Texter::new(
             MESSAGE_POS,
@@ -81,7 +65,7 @@ impl View {
             vec2(80.0, 40.0),
         );
         done_exchanging_button.sender = Some(sender.clone());
-        done_exchanging_button.player_action = Some(PlayerAction::DoneExchanging);
+        done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.state = ButtonState::Hidden;
 
         Self {
@@ -97,8 +81,6 @@ impl View {
             trump_marker: TrumpMarker::new(CENTER),
             sender,
             z_order_needs_update: false,
-
-            sprite,
         }
     }
 
@@ -149,24 +131,20 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
-        let mut parent = Trans::from_translation(Vec2::new(100., 300.0));
-        parent.rotation = 0.8; //std::f32::consts::PI / 2.0;
-        self.sprite.process_events(Some(&parent), mouse_pos);
-
-        if self.play_button.process_events(&mouse_pos) {
+        if self.play_button.process_events(None, mouse_pos) {
             self.play_button.state = ButtonState::Hidden;
             return;
         }
 
-        if self.bid_panel.process_events(&mouse_pos) {
+        if self.bid_panel.process_events(mouse_pos) {
             return;
         }
 
-        if self.done_exchanging_button.process_events(&mouse_pos) {
+        if self.done_exchanging_button.process_events(None, mouse_pos) {
             return;
         }
 
-        if self.trump_chooser.process_events(&mouse_pos) {
+        if self.trump_chooser.process_events(mouse_pos) {
             return;
         }
 
@@ -175,7 +153,7 @@ impl View {
             if card_view.process_events(None, mouse_pos) {
                 return;
             }
-        }s
+        }
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -186,7 +164,6 @@ impl View {
             self.sort_card_views_by_z_order();
             self.z_order_needs_update = false;
         }
-        self.turn_marker.update(time_delta);
 
         for bid_marker in &mut self.bid_markers {
             bid_marker.update(time_delta);
@@ -199,7 +176,7 @@ impl View {
 
         self.turn_marker.visible = true;
         let geom = view_geom::turn_marker_geom(game.active, game::PLAYERS);
-        self.turn_marker.move_to(geom.pos, TURN_MARKER_SPEED);
+        self.turn_marker.transform.translation = geom.pos;
     }
 
     pub fn update_message(&mut self, test: &str) {
@@ -400,39 +377,23 @@ impl View {
         self.trump_marker.draw();
 
         for marker in &mut self.bid_markers {
-            marker.draw();
+            marker.draw(None);
         }
 
         for view in &mut self.card_views {
             view.draw();
         }
 
-        self.message.draw();
+        self.message.draw(None);
 
-        self.score_table.draw();
+        self.score_table.draw(None);
 
-        self.play_button.draw();
-        self.bid_panel.draw();
-        self.done_exchanging_button.draw();
-        self.trump_chooser.draw();
+        self.play_button.draw(None);
+        self.bid_panel.draw(None);
+        self.done_exchanging_button.draw(None);
+        self.trump_chooser.draw(None);
 
         //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
-
-        self.sprite.transform.rotation += 0.00;
-
-        let mut parent = Trans::from_translation(Vec2::new(100., 300.0));
-        parent.rotation = 0.8; //std::f32::consts::PI / 2.0;
-
-        let (x, y) = mouse_position();
-        let combined = Trans::combine(&parent, &self.sprite.transform);
-        let color = match combined.contains_point(vec2(x, y)) {
-            true => GREEN,
-            false => RED,
-        };
-
-        self.sprite.color = color;
-        self.sprite.draw(Some(&parent));
-        // draw_circle(mouse_pt.x, mouse_pt.y, 3.0, color);
 
         next_frame().await;
     }
