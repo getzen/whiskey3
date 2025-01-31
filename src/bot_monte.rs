@@ -41,7 +41,7 @@ impl BotMonte {
 
         for card in cards {
             // Note: this will exclude point cards.
-            if !card.is_trump(&trump) && card.rank < lowest_rank && card.points == 0 {
+            if !card.is_trump(trump) && card.rank < lowest_rank && card.points == 0 {
                 lowest_rank = card.rank;
                 lowest_id = card.id;
             }
@@ -75,7 +75,7 @@ impl BotMonte {
 
     pub fn choose_trump(&self, game: &Game, sender: Sender<PlayerAction>) {
         let cards = game.active_hand();
-        let suit = self.best_suit(&cards);
+        let suit = self.best_suit(cards);
         sender
             .send(PlayerAction::ChooseTrump(suit))
             .expect("send error");

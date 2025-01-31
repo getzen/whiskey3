@@ -89,7 +89,7 @@ impl TrumpChooser {
 
         self.club_button.draw(Some(transform));
         self.diamond_button.draw(Some(transform));
-        self.heart_button.draw(Some(&transform));
-        self.spade_button.draw(Some(&transform));
+        self.heart_button.draw(Some(transform));
+        self.spade_button.draw(Some(transform));
     }
 }

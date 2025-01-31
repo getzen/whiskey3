@@ -22,6 +22,7 @@ impl Default for Transform {
 }
 
 impl Transform {
+    #[allow(unused)]
     pub fn new() -> Self {
         Transform::default()
     }

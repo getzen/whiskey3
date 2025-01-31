@@ -26,10 +26,7 @@ pub struct Card {
 
 impl Card {
     pub fn new(id: u8, suit: Suit, rank: Rank, points: Points) -> Self {
-        let is_joker = match suit {
-            Suit::Joker => true,
-            _ => false,
-        };
+        let is_joker = matches!(suit, Suit::Joker);
         Self {
             id,
             suit,
@@ -77,7 +74,7 @@ impl Card {
             Suit::Diamond => format!("dia{}", rank),
             Suit::Heart => format!("hrt{}", rank),
             Suit::Spade => format!("spd{}", rank),
-            Suit::Joker => format!("joker"),
+            Suit::Joker => "joker".to_string(),
         }
     }
 }

@@ -56,19 +56,15 @@ impl Trick {
                     if card.is_trump(trump_suit) {
                         self.winner = Some(player);
                     } else {
-                        if card.suit == winning_card.suit {
-                            if card.rank > winning_card.rank {
-                                self.winner = Some(player);
-                            }
+                        if card.suit == winning_card.suit && card.rank > winning_card.rank {
+                            self.winner = Some(player);
                         }
                     }
                 }
             } else {
                 // Hand does not have a trump suit.
-                if card.suit == winning_card.suit {
-                    if card.rank > winning_card.rank {
-                        self.winner = Some(player);
-                    }
+                if card.suit == winning_card.suit && card.rank > winning_card.rank {
+                    self.winner = Some(player);
                 }
             }
         }

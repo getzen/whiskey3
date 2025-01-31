@@ -27,7 +27,7 @@ pub enum GameAction {
     AwardTrick,
     AwardNest,
     PresentScore,
-    Exit,
+    //Exit,
 }
 
 pub struct Controller {
@@ -314,8 +314,7 @@ impl Controller {
                             self.game.complete_hand();
 
                             self.view.update_info(&self.game);
-                        }
-                        GameAction::Exit => todo!(),
+                        } //GameAction::Exit => todo!(),
                     }
                 }
             }
@@ -331,11 +330,11 @@ impl Controller {
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(min_bid, MAX_BID, &mut game_clone, 100, sender);
+            bot.get_bid(min_bid, MAX_BID, &game_clone, 100, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(min_bid, MAX_BID, &mut game_clone, 100, sender);
+                bot.get_bid(min_bid, MAX_BID, &game_clone, 100, sender);
             });
         }
     }

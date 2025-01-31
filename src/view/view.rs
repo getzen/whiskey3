@@ -117,12 +117,7 @@ impl View {
     // }
 
     fn find_card_view_mut(&mut self, card_id: u8) -> Option<&mut CardView> {
-        for card_view in &mut self.card_views {
-            if card_view.id == card_id {
-                return Some(card_view);
-            }
-        }
-        None
+        self.card_views.iter_mut().find(|card_view| card_view.id == card_id)
     }
 
     fn sort_card_views_by_z_order(&mut self) {

@@ -40,41 +40,21 @@ impl BidPanel {
     ) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
-        let mut bid_button = ButtonText::new(
-            vec2(-5.0, 0.0),
-            "Bid",
-            font.clone(),
-            18,
-            vec2(80.0, 40.0),
-        );
+        let mut bid_button =
+            ButtonText::new(vec2(-5.0, 0.0), "Bid", font.clone(), 18, vec2(80.0, 40.0));
         bid_button.sender = Some(sender.clone());
         bid_button.action = Some(PlayerAction::Bid(Bid::Points(min_bid)));
 
-        let mut pass_button = ButtonText::new(
-            vec2(100.0, 0.0),
-            "Pass",
-            font.clone(),
-            18,
-            vec2(80.0, 40.0),
-        );
+        let mut pass_button =
+            ButtonText::new(vec2(100.0, 0.0), "Pass", font.clone(), 18, vec2(80.0, 40.0));
         pass_button.sender = Some(sender.clone());
         pass_button.action = Some(PlayerAction::Bid(Bid::Pass));
 
-        let plus_button = ButtonText::new(
-            vec2(-70.0, -12.0),
-            "+",
-            font.clone(),
-            18,
-            vec2(20.0, 20.0),
-        );
+        let plus_button =
+            ButtonText::new(vec2(-70.0, -12.0), "+", font.clone(), 18, vec2(20.0, 20.0));
 
-        let minus_button = ButtonText::new(
-            vec2(-70.0, 12.0),
-            "-",
-            font.clone(),
-            18,
-            vec2(20.0, 20.0),
-        );
+        let minus_button =
+            ButtonText::new(vec2(-70.0, 12.0), "-", font.clone(), 18, vec2(20.0, 20.0));
 
         let min_text = min_bid.to_string();
         let bid_text = Texter::new(

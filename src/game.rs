@@ -87,7 +87,7 @@ pub enum Bid {
 
 #[derive(Clone)]
 pub struct Game {
-    pub bot_players: [bool; PLAYERS as usize],
+    pub bot_players: [bool; PLAYERS],
 
     pub scoring: Scoring,
     pub deck: Vec<Card>,
@@ -176,9 +176,9 @@ impl Game {
         for (p, hand) in self.hands.iter().enumerate() {
             print!("{p}: ");
             for card in hand {
-                print!("{} ", card.to_string());
+                print!("{} ", card);
             }
-            println!("");
+            println!();
         }
     }
 
@@ -217,7 +217,7 @@ impl Game {
     pub fn reset_for_new_hand(&mut self) {
         // If a game is over, all the cards are now in "taken."
         for p in 0..PLAYERS {
-            if self.taken[p].len() > 0 {
+            if !self.taken[p].is_empty() {
                 self.deck.append(&mut self.taken[p]);
             }
             self.bids[p] = None;
@@ -293,13 +293,10 @@ impl Game {
     }
 
     pub fn make_bid(&mut self, bid: Bid) {
-        match bid {
-            Bid::Points(p) => {
-                self.high_bid = p;
-                self.maker = Some(self.active);
-                self.scoring.update_bids(self.team_index(self.active), p);
-            }
-            _ => {}
+        if let Bid::Points(p) = bid {
+            self.high_bid = p;
+            self.maker = Some(self.active);
+            self.scoring.update_bids(self.team_index(self.active), p);
         }
         self.bids[self.active] = Some(bid);
         self.active = self.next_bidding_player();
@@ -510,7 +507,7 @@ impl Game {
         self.scoring.update_game_scores();
     }
 
-    pub fn complete_game(&mut self) {
-        // If both scores exceed the requirement, the maker's team wins.
-    }
+    // pub fn complete_game(&mut self) {
+    //     // If both scores exceed the requirement, the maker's team wins.
+    // }
 }
