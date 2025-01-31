@@ -136,7 +136,7 @@ impl View {
             return;
         }
 
-        if self.bid_panel.process_events(mouse_pos) {
+        if self.bid_panel.process_events(None, mouse_pos) {
             return;
         }
 
@@ -144,7 +144,7 @@ impl View {
             return;
         }
 
-        if self.trump_chooser.process_events(mouse_pos) {
+        if self.trump_chooser.process_events(None, mouse_pos) {
             return;
         }
 

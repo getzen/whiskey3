@@ -1,10 +1,10 @@
 use macroquad::prelude::*;
 
-use crate::view::trans::Trans;
+use crate::view::transform::Transform;
 
 pub struct Imager {
     pub visible: bool,
-    pub transform: Trans,
+    pub transform: Transform,
     pub texture: Texture2D,
     pub color: Color,
     pub z_order: usize,
@@ -13,7 +13,7 @@ pub struct Imager {
 impl Imager {
     pub fn new(texture: Texture2D, size_multiplier: f32, centered: bool) -> Self {
         let size = vec2(texture.width() * size_multiplier, texture.height() * size_multiplier);
-        let mut transform = Trans::new();
+        let mut transform = Transform::new();
         match centered {
             true => transform.center_with_size(size),
             false => transform.size = size,
@@ -28,13 +28,13 @@ impl Imager {
         }
     }
 
-    pub fn draw(&self, parent_transform: Option<&Trans>) {
+    pub fn draw(&self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

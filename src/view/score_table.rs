@@ -3,18 +3,18 @@ use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 
 use crate::{game::POINTS_TO_WIN, scoring::Scoring};
 
-use super::{texter::{AlignH, AlignV, Texter}, trans::Trans};
+use super::{texter::{AlignH, AlignV, Texter}, transform::Transform};
 
 pub struct ScoreTable {
     pub visible: bool,
-    transform: Trans,
+    transform: Transform,
     position: Vec2,
     texters: Array2D<Texter>,
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
-        let transform = Trans::from_translation(position);
+        let transform = Transform::from_translation(position);
 
         let def_texter = Texter::new(position, "----", font, 14, AlignH::Center, AlignV::Center);
 
@@ -97,13 +97,13 @@ impl ScoreTable {
         self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
     }
 
-    pub fn draw(&self, parent_transform: Option<&Trans>) {
+    pub fn draw(&self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
         let (pos, _rot) = transform.drawable_position_rotation();

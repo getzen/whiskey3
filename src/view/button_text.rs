@@ -7,19 +7,19 @@ use macroquad::text::Font;
 
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
-use crate::view::eventer2::Eventer2;
+use crate::view::eventer::Eventer;
 
 use super::texter::AlignH;
 use super::texter::AlignV;
 use super::texter::Texter;
-use super::trans::Trans;
+use super::transform::Transform;
 
 /// A button with drawn text and border. Always centered.
 pub struct ButtonText {
-    pub transform: Trans,
+    pub transform: Transform,
     pub text: Texter,
     pub size: Vec2,
-    pub eventer: Eventer2,
+    pub eventer: Eventer,
     pub state: ButtonState,
     pub normal_color: Color,
     pub highlighted_color: Color,
@@ -32,14 +32,14 @@ impl ButtonText {
     pub fn new(position: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
         let text = Texter::new(position, text, font, font_size, AlignH::Center, AlignV::Center);
 
-        let mut transform = Trans::from_translation(position);
+        let mut transform = Transform::from_translation(position);
         transform.center_with_size(size);
 
         Self {
             transform,
             text,
             size,
-            eventer: Eventer2::new(),
+            eventer: Eventer::new(),
             state: ButtonState::Normal,
             normal_color: Color::from_rgba(220, 220, 220, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
@@ -50,9 +50,9 @@ impl ButtonText {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Trans>, mouse_pos: Vec2) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 
@@ -83,13 +83,13 @@ impl ButtonText {
         mouse_over
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if self.state == ButtonState::Hidden {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

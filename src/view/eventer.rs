@@ -1,23 +1,33 @@
 use macroquad::prelude::*;
 
-use crate::view::transform::Transform;
+use super::transform::Transform;
 
-#[derive(Debug)]
-pub enum EventerEvent {
-    MouseEntered,
-    MouseExited,
-    LeftMousePressed,
-    LeftMouseReleased,
-    // Right
-    DragStarted,
-}
+// #[derive(Debug)]
+// pub enum EventerEvent {
+//     MouseEntered,
+//     MouseExited,
+//     LeftMousePressed,
+//     LeftMouseReleased,
+//     // Right
+//     DragStarted
+// }
 
 pub struct Eventer {
+    /// Will check for events. If false, process_events() always returns false.
     pub enabled: bool,
+    /// The mouse just entered.
+    pub mouse_entered: bool,
+    /// The mouse is currently over.
     pub mouse_over: bool,
+    /// The mouse just exited.
+    pub mouse_exited: bool,
+    /// The left mouse was just pressed and mouse_over is true.
+    pub left_mouse_pressed: bool,
+    /// The left mouse is currently down and mouse_over is true.
     pub left_mouse_down: bool,
+    /// The left mouse was just released and mouse_over is true.
+    pub left_mouse_released: bool,
     // right_
-    pub dragging: bool,
     // dragging: bool, drag_start_pos, drag_pos_now
 }
 
@@ -25,81 +35,50 @@ impl Eventer {
     pub fn new() -> Self {
         Self {
             enabled: true,
+            mouse_entered: false,
             mouse_over: false,
+            mouse_exited: false,
+            left_mouse_pressed: false,
             left_mouse_down: false,
-            dragging: false,
+            left_mouse_released: false,
+            //dragging: false,
         }
     }
 
-    /// Test whether the point lies in the texture rectangle, considering rotation.
-    /// Note: Macroquad's mouse_position() gives the physical location of the mouse.
-    pub fn contains_point(
-        &self,
-        point: &Vec2,
-        transform: &Transform,
-        size: Vec2,
-        centered: bool,
-    ) -> bool {
-        let (pos, rot) = transform.combined_pos_rot();
-
-        // Get the net test point relative to the sprite's position.
-        let net_x = point.x - pos.x;
-        let net_y = point.y - pos.y;
-        // Rotate the point clockwise (the same direction as Macroquad's rotation). This is a
-        // little different than the standard rotation formulas.
-        let theta = rot;
-        let rot_x = net_x * f32::cos(theta) + net_y * f32::sin(theta);
-        let rot_y = -net_x * f32::sin(theta) + net_y * f32::cos(theta);
-        // See if the rotated point is in the unrotated sprite rectangle.
-        if centered {
-            f32::abs(rot_x) <= size.x / 2.0 && f32::abs(rot_y) <= size.y / 2.0
-        } else {
-            rot_x >= 0.0 && rot_x <= size.x && rot_y >= 0.0 && rot_y <= size.y
-        }
-    }
-
-    pub fn process_events(
-        &mut self,
-        mouse_pos: &Vec2,
-        transform: &Transform,
-        size: Vec2,
-        centered: bool,
-    ) -> Option<EventerEvent> {
+    pub fn process_events(&mut self, transform: &Transform, mouse_pos: Vec2) -> bool {
         if !self.enabled {
-            return None;
+            return false;
         }
 
-        let mouse_over = self.contains_point(mouse_pos, transform, size, centered);
+        // These are reset each update:
+        self.mouse_entered = false;
+        self.mouse_exited = false;
+        self.left_mouse_pressed = false;
+        self.left_mouse_released = false;
 
+        // Mouse over
+        let mouse_over = transform.contains_point(mouse_pos);
         if mouse_over && !self.mouse_over {
-            self.mouse_over = true;
-            return Some(EventerEvent::MouseEntered);
+            self.mouse_entered = true;
         }
-
         if !mouse_over && self.mouse_over {
-            self.mouse_over = false;
-            return Some(EventerEvent::MouseExited);
+            self.mouse_exited = true;
+        }
+        self.mouse_over = mouse_over;
+
+        // Left button
+        if mouse_over {
+            let left_mouse_down = is_mouse_button_down(MouseButton::Left);
+            if left_mouse_down && !self.left_mouse_down {
+                self.left_mouse_pressed = true;
+            } else if !left_mouse_down && self.left_mouse_down {
+                self.left_mouse_released = true;
+            }
+            self.left_mouse_down = left_mouse_down;
+        } else {
+            self.left_mouse_down = false;
         }
 
-        let left_mouse_down = is_mouse_button_down(MouseButton::Left);
-
-        if mouse_over && self.left_mouse_down && !self.dragging {
-            self.dragging = true;
-            return Some(EventerEvent::DragStarted);
-        }
-
-        if mouse_over && left_mouse_down && !self.left_mouse_down {
-            self.left_mouse_down = true;
-            return Some(EventerEvent::LeftMousePressed);
-        }
-        self.left_mouse_down = false;
-        self.dragging = false;
-
-        if mouse_over && is_mouse_button_released(MouseButton::Left) {
-            self.dragging = false;
-            return Some(EventerEvent::LeftMouseReleased);
-        }
-
-        None
+        mouse_over
     }
 }

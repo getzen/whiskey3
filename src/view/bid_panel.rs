@@ -13,7 +13,7 @@ use crate::{
 use super::{
     button_text::ButtonText,
     texter::{AlignH, AlignV, Texter},
-    trans::Trans,
+    transform::Transform,
 };
 
 pub struct BidPanel {
@@ -24,7 +24,7 @@ pub struct BidPanel {
 
     pub visible: bool,
     size: Vec2,
-    transform: Trans,
+    transform: Transform,
     bid_button: ButtonText,
     pass_button: ButtonText,
     plus_button: ButtonText,
@@ -96,7 +96,7 @@ impl BidPanel {
             bid_increment: 5,
             visible: false,
             size: vec2(250.0, 100.0),
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             bid_button,
             pass_button,
             plus_button,
@@ -113,21 +113,26 @@ impl BidPanel {
     }
 
     /// Returns true if event found.
-    pub fn process_events(&mut self, mouse_pos: Vec2) -> bool {  // ADD PARENT TRANS HERE AND FOR OTHER STRUCTS
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {  // ADD PARENT TRANS HERE AND FOR OTHER STRUCTS
         if !self.visible {
             return false;
         }
 
-        let mouse_over0 = self.bid_button.process_events(Some(&self.transform), mouse_pos);
-        let mouse_over1 = self.pass_button.process_events(Some(&self.transform), mouse_pos);
+        let transform = match parent_transform {
+            Some(parent) => Transform::combine(parent, &self.transform),
+            None => self.transform.clone(),
+        };
 
-        let mouse_over2 = self.plus_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over0 = self.bid_button.process_events(Some(&transform), mouse_pos);
+        let mouse_over1 = self.pass_button.process_events(Some(&transform), mouse_pos);
+
+        let mouse_over2 = self.plus_button.process_events(Some(&transform), mouse_pos);
         if self.plus_button.eventer.left_mouse_released {
             let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
             self.update_bid_amount(new_amount);
         }
         
-        let mouse_over3 = self.minus_button.process_events(Some(&self.transform), mouse_pos);
+        let mouse_over3 = self.minus_button.process_events(Some(&transform), mouse_pos);
         if self.minus_button.eventer.left_mouse_released {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);
@@ -136,13 +141,13 @@ impl BidPanel {
         mouse_over0 || mouse_over1 || mouse_over2 || mouse_over3
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

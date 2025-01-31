@@ -6,15 +6,15 @@ use macroquad::prelude::Texture2D;
 
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
-use crate::view::eventer2::Eventer2;
+use crate::view::eventer::Eventer;
 use crate::view::imager::Imager;
-use crate::view::trans::Trans;
+use crate::view::transform::Transform;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
-    pub transform: Trans,
+    pub transform: Transform,
     pub image: Imager,
-    pub eventer: Eventer2,
+    pub eventer: Eventer,
     pub state: ButtonState,
     pub normal_color: Color,
     pub highlighted_color: Color,
@@ -26,9 +26,9 @@ pub struct ButtonShaded {
 impl ButtonShaded {
     pub fn new(position: Vec2, texture: Texture2D, tex_size_multiplier: f32) -> Self {
         Self {
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             image: Imager::new(texture, tex_size_multiplier, true),
-            eventer: Eventer2::new(),
+            eventer: Eventer::new(),
             state: ButtonState::Normal,
             normal_color: Color::from_rgba(230, 230, 230, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
@@ -39,9 +39,9 @@ impl ButtonShaded {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Trans>, mouse_pos: Vec2) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 
@@ -74,13 +74,13 @@ impl ButtonShaded {
 
     
 
-    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if self.state == ButtonState::Hidden {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

@@ -11,14 +11,14 @@ use crate::view::imager::Imager;
 use crate::view::animators::TranslationAnimator;
 
 use super::animators::RotationAnimator;
-use super::eventer2::Eventer2;
-use super::trans::Trans;
+use super::eventer::Eventer;
+use super::transform::Transform;
 
 pub struct CardView {
     pub id: u8, // must match Card id
-    pub transform: Trans,
+    pub transform: Transform,
     pub card_image: Imager,
-    pub eventer: Eventer2,
+    pub eventer: Eventer,
 
     pub face_texture: Texture2D,
     pub back_texture: Texture2D,
@@ -37,9 +37,9 @@ impl CardView {
     pub fn new(id: u8, face: Texture2D, back: Texture2D, sender: Sender<PlayerAction>) -> Self {
         Self {
             id,
-            transform: Trans::new(),
+            transform: Transform::new(),
             card_image: Imager::new(face.clone(), 0.3333, true),
-            eventer: Eventer2::new(),
+            eventer: Eventer::new(),
             face_texture: face,
             back_texture: back,
             dimmed_color: Color::from_rgba(200, 200, 200, 255),
@@ -91,9 +91,9 @@ impl CardView {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Trans>, mouse_pos: Vec2) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

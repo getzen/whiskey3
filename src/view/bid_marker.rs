@@ -9,12 +9,12 @@ use crate::game::Bid;
 
 use super::{
     texter::{AlignH, AlignV, Texter},
-    trans::Trans,
+    transform::Transform,
 };
 
 pub struct BidMarker {
     pub visible: bool,
-    transform: Trans,
+    transform: Transform,
     radius: f32,
     text: Texter,
 
@@ -30,7 +30,7 @@ impl BidMarker {
 
         Self {
             visible: false,
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             radius: 30.0,
             text,
 
@@ -77,13 +77,13 @@ impl BidMarker {
         self.color = WHITE;
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
         let (pos, _rot) = self.transform.drawable_position_rotation();

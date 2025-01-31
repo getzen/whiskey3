@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use crate::view::trans::Trans;
+use crate::view::transform::Transform;
 
 #[allow(unused)]
 #[derive(Clone)]
@@ -21,7 +21,7 @@ pub enum AlignV {
 #[derive(Clone)]
 pub struct Texter {
     pub visible: bool,
-    pub transform: Trans,
+    pub transform: Transform,
     pub text: String,
     pub font: Font,
     pub font_size: u16,
@@ -42,7 +42,7 @@ impl Texter {
     ) -> Self {
         Self {
             visible: true,
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             text: text.to_string(),
             font,
             font_size,
@@ -53,13 +53,13 @@ impl Texter {
         }
     }
 
-    pub fn draw(&self, parent_transform: Option<&Trans>) {
+    pub fn draw(&self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

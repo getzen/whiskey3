@@ -7,17 +7,15 @@ use macroquad::{
 
 use crate::{card::Suit, game::PlayerAction};
 
-use super::{button_shaded::ButtonShaded, trans::Trans};
+use super::{button_shaded::ButtonShaded, transform::Transform};
 
 pub struct TrumpChooser {
     pub visible: bool,
-    size: Vec2,
-    transform: Trans,
+    transform: Transform,
     club_button: ButtonShaded,
     diamond_button: ButtonShaded,
     heart_button: ButtonShaded,
     spade_button: ButtonShaded,
-    sender: Sender<PlayerAction>,
 }
 
 impl TrumpChooser {
@@ -46,37 +44,40 @@ impl TrumpChooser {
 
         Self {
             visible: false,
-            size: vec2(250.0, 100.0),
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             club_button,
             diamond_button,
             heart_button,
             spade_button,
-            sender,
         }
     }
 
     /// Returns true if event found.
-    pub fn process_events(&mut self, mouse_pos: Vec2) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         if !self.visible {
             return false;
         }
 
-        let mouse_over0 = self.club_button.process_events(Some(&self.transform), mouse_pos);
-        let mouse_over1 = self.diamond_button.process_events(Some(&self.transform), mouse_pos);
-        let mouse_over2 = self.heart_button.process_events(Some(&self.transform), mouse_pos);
-        let mouse_over3 = self.spade_button.process_events(Some(&self.transform), mouse_pos);
+        let transform = match parent_transform {
+            Some(parent) => &Transform::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+
+        let mouse_over0 = self.club_button.process_events(Some(transform), mouse_pos);
+        let mouse_over1 = self.diamond_button.process_events(Some(transform), mouse_pos);
+        let mouse_over2 = self.heart_button.process_events(Some(transform), mouse_pos);
+        let mouse_over3 = self.spade_button.process_events(Some(transform), mouse_pos);
 
         mouse_over0 || mouse_over1 || mouse_over2 || mouse_over3
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Trans>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
 
         let transform = match parent_transform {
-            Some(parent) => &Trans::combine(parent, &self.transform),
+            Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 

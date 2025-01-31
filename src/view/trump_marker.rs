@@ -2,11 +2,11 @@ use macroquad::{math::Vec2, texture::load_texture};
 
 use crate::card::Suit;
 
-use super::{imager::Imager, trans::Trans};
+use super::{imager::Imager, transform::Transform};
 
 pub struct TrumpMarker {
     pub visible: bool,
-    transform: Trans,
+    transform: Transform,
     imager: Option<Imager>,
 }
 
@@ -14,7 +14,7 @@ impl TrumpMarker {
     pub fn new(position: Vec2) -> Self {
         Self {
             visible: true,
-            transform: Trans::from_translation(position),
+            transform: Transform::from_translation(position),
             imager: None,
         }
     }
