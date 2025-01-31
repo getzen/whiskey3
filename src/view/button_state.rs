@@ -3,5 +3,4 @@ pub enum ButtonState {
     Normal,
     Highlighted,
     Disabled,
-    Hidden,
 }

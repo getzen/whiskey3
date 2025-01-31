@@ -12,16 +12,14 @@ pub struct Imager {
 
 impl Imager {
     pub fn new(texture: Texture2D, size_multiplier: f32, centered: bool) -> Self {
-        let size = vec2(texture.width() * size_multiplier, texture.height() * size_multiplier);
-        let mut transform = Transform::new();
-        match centered {
-            true => transform.center_with_size(size),
-            false => transform.size = size,
-        }
+        let size = vec2(
+            texture.width() * size_multiplier,
+            texture.height() * size_multiplier,
+        );
 
         Self {
             visible: true,
-            transform,
+            transform: Transform::from_translation_size_centered(Vec2::ZERO, size, centered),
             texture,
             color: WHITE,
             z_order: 0,

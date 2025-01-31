@@ -1,6 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use macroquad::color::WHITE;
+use macroquad::math::vec2;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
@@ -35,10 +36,13 @@ pub struct CardView {
 
 impl CardView {
     pub fn new(id: u8, face: Texture2D, back: Texture2D, sender: Sender<PlayerAction>) -> Self {
+        let size_mult = 0.3333;
+        let size = vec2(face.width() * size_mult, face.height() * size_mult);
+
         Self {
             id,
-            transform: Transform::new(),
-            card_image: Imager::new(face.clone(), 0.3333, true),
+            transform: Transform::from_translation_size_centered(Vec2::ZERO, size, true),
+            card_image: Imager::new(face.clone(), size_mult, true),
             eventer: Eventer::new(),
             face_texture: face,
             back_texture: back,
@@ -91,7 +95,11 @@ impl CardView {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
+    pub fn process_events(
+        &mut self,
+        parent_transform: Option<&Transform>,
+        mouse_pos: Vec2,
+    ) -> bool {
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

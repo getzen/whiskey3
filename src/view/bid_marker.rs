@@ -26,7 +26,7 @@ pub struct BidMarker {
 impl BidMarker {
     pub async fn new(position: Vec2) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
-        let text = Texter::new(position, "?", font, 18, AlignH::Center, AlignV::Center);
+        let text = Texter::new(Vec2::ZERO, "?", font, 18, AlignH::Center, AlignV::Center);
 
         Self {
             visible: false,

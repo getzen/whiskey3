@@ -12,6 +12,7 @@ use crate::view::transform::Transform;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
+    pub visible: bool,
     pub transform: Transform,
     pub image: Imager,
     pub eventer: Eventer,
@@ -24,10 +25,12 @@ pub struct ButtonShaded {
 }
 
 impl ButtonShaded {
-    pub fn new(position: Vec2, texture: Texture2D, tex_size_multiplier: f32) -> Self {
+    pub fn new(position: Vec2, texture: Texture2D, size_mult: f32) -> Self {
+        let size = Vec2::new(texture.width() * size_mult, texture.height() * size_mult);
         Self {
-            transform: Transform::from_translation(position),
-            image: Imager::new(texture, tex_size_multiplier, true),
+            visible: true,
+            transform: Transform::from_translation_size_centered(position, size, true),
+            image: Imager::new(texture, size_mult, true),
             eventer: Eventer::new(),
             state: ButtonState::Normal,
             normal_color: Color::from_rgba(230, 230, 230, 255),
@@ -39,13 +42,21 @@ impl ButtonShaded {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
+    pub fn process_events(
+        &mut self,
+        parent_transform: Option<&Transform>,
+        mouse_pos: Vec2,
+    ) -> bool {
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
         };
 
         let mouse_over = self.eventer.process_events(transform, mouse_pos);
+
+        if self.state == ButtonState::Disabled {
+            return mouse_over;
+        }
 
         if self.eventer.mouse_entered {
             self.state = ButtonState::Highlighted;
@@ -72,10 +83,8 @@ impl ButtonShaded {
         mouse_over
     }
 
-    
-
     pub fn draw(&mut self, parent_transform: Option<&Transform>) {
-        if self.state == ButtonState::Hidden {
+        if !self.visible {
             return;
         }
 

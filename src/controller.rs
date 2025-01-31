@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use crate::bot_monte::BotMonte;
 use crate::card::Suit;
-use crate::game::{Bid, Game, PlayerAction, NEST_SIZE};
+use crate::game::{Bid, Game, PlayerAction, MAX_BID, NEST_SIZE};
 
 use crate::view::view::View;
 
@@ -328,15 +328,14 @@ impl Controller {
         let mut game_clone = self.game.clone();
         let sender = self.sender.clone();
         let min_bid = self.game.min_bid();
-        let max_bid = self.game.max_bid();
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(min_bid, max_bid, &mut game_clone, 100, sender);
+            bot.get_bid(min_bid, MAX_BID, &mut game_clone, 100, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(min_bid, max_bid, &mut game_clone, 100, sender);
+                bot.get_bid(min_bid, MAX_BID, &mut game_clone, 100, sender);
             });
         }
     }

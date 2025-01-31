@@ -26,12 +26,10 @@ pub struct Sprite {
 impl Sprite {
     pub fn new(texture: Texture2D, size_mult: f32) -> Self {
         let size = Vec2::new(texture.width() * size_mult, texture.height() * size_mult);
-        let mut transform = Trans::new();
-        transform.center_with_size(size);
 
         Self {
             visible: true,
-            transform,
+            transform: Transform::with_translation_size_centered(Vec2::ZERO, size, true),
             texture,
             color: WHITE,
             trans_anim: None,

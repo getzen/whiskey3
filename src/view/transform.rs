@@ -33,6 +33,20 @@ impl Transform {
         }
     }
 
+    pub fn from_translation_size_centered(translation: Vec2, size: Vec2, centered: bool) -> Self {
+        let offset = match centered {
+            true => Vec2::new(0.5, 0.5),
+            false => Vec2::ZERO,
+        };
+
+        Self {
+            translation,
+            size,
+            offset,
+            ..Default::default()
+        }
+    }
+
     /// Creates a new Transform by multiplying the parent and child affines to
     /// get the translation, rotation, and scale. Includes the child's size and offset.
     pub fn combine(parent: &Transform, child: &Transform) -> Self {
@@ -52,6 +66,7 @@ impl Transform {
     }
 
     /// A convenience method to center the Transform using the given size.
+    #[allow(unused)]
     pub fn center_with_size(&mut self, size: Vec2) {
         self.size = size;
         self.offset = Vec2::new(0.5, 0.5);

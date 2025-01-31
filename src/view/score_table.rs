@@ -3,12 +3,14 @@ use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 
 use crate::{game::POINTS_TO_WIN, scoring::Scoring};
 
-use super::{texter::{AlignH, AlignV, Texter}, transform::Transform};
+use super::{
+    texter::{AlignH, AlignV, Texter},
+    transform::Transform,
+};
 
 pub struct ScoreTable {
     pub visible: bool,
     transform: Transform,
-    position: Vec2,
     texters: Array2D<Texter>,
 }
 
@@ -48,7 +50,7 @@ impl ScoreTable {
 
         for row in 0..texters.num_rows() {
             for col in 0..texters.num_columns() {
-                let mut pos = position;
+                let mut pos = Vec2::ZERO;
 
                 // Row position
                 pos.y += row as f32 * line_spacing;
@@ -63,7 +65,6 @@ impl ScoreTable {
         Self {
             visible: false,
             transform,
-            position,
             texters,
         }
     }

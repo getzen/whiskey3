@@ -66,6 +66,7 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
 ];
 
 pub const MIN_BID: Points = 60;
+pub const MAX_BID: Points = 200;
 pub const LAST_TRICK_BONUS: Points = 20;
 pub const SUCCESS_BONUS: Points = 50;
 pub const POINTS_TO_WIN: Points = 400;
@@ -185,13 +186,13 @@ impl Game {
         (ALL_CARDS.len() - NEST_SIZE) / PLAYERS
     }
 
-    pub fn max_bid(&self) -> Points {
-        let mut bid = 0;
-        for (_suit, _rank, points) in &ALL_CARDS {
-            bid += points;
-        }
-        bid
-    }
+    // pub fn max_bid(&self) -> Points {
+    //     let mut bid = 0;
+    //     for (_suit, _rank, points) in &ALL_CARDS {
+    //         bid += points;
+    //     }
+    //     bid
+    // }
 
     fn create_card(&mut self, id: u8, suit: Suit, rank: Rank, points: Points) {
         let mut card = Card::new(id, suit, rank, points);

@@ -13,7 +13,7 @@ pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 220.);
 pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 140.0);
 pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 150.);
 
-pub const TURN_MARKER_SPEED: f32 = 600.0;
+//pub const TURN_MARKER_SPEED: f32 = 600.0;
 pub const CARD_SPEED: f32 = 800.0;
 pub const ROT_SPEED: f32 = 10.0;
 

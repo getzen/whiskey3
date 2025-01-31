@@ -63,7 +63,7 @@ impl Texter {
             None => &self.transform,
         };
 
-        let (mut pos, _rot) = transform.drawable_position_rotation();
+        let (mut pos, rot) = transform.drawable_position_rotation();
 
         // Is this function slow?
         let dimensions = measure_text(
@@ -90,7 +90,7 @@ impl Texter {
             font_size: self.font_size,
             font_scale: self.font_scale,
             font_scale_aspect: 1.0,
-            rotation: self.transform.rotation,
+            rotation: rot,
             color: self.color,
         };
         draw_text_ex(&self.text, pos.x, pos.y, params);

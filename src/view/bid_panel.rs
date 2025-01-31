@@ -23,14 +23,12 @@ pub struct BidPanel {
     bid_increment: Points,
 
     pub visible: bool,
-    size: Vec2,
     transform: Transform,
     bid_button: ButtonText,
     pass_button: ButtonText,
     plus_button: ButtonText,
     minus_button: ButtonText,
     bid_text: Texter,
-    sender: Sender<PlayerAction>,
 }
 
 impl BidPanel {
@@ -43,7 +41,7 @@ impl BidPanel {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
         let mut bid_button = ButtonText::new(
-            position + vec2(-5.0, 0.0),
+            vec2(-5.0, 0.0),
             "Bid",
             font.clone(),
             18,
@@ -53,7 +51,7 @@ impl BidPanel {
         bid_button.action = Some(PlayerAction::Bid(Bid::Points(min_bid)));
 
         let mut pass_button = ButtonText::new(
-            position + vec2(100.0, 0.0),
+            vec2(100.0, 0.0),
             "Pass",
             font.clone(),
             18,
@@ -63,7 +61,7 @@ impl BidPanel {
         pass_button.action = Some(PlayerAction::Bid(Bid::Pass));
 
         let plus_button = ButtonText::new(
-            position + vec2(-70.0, -12.0),
+            vec2(-70.0, -12.0),
             "+",
             font.clone(),
             18,
@@ -71,7 +69,7 @@ impl BidPanel {
         );
 
         let minus_button = ButtonText::new(
-            position + vec2(-70.0, 12.0),
+            vec2(-70.0, 12.0),
             "-",
             font.clone(),
             18,
@@ -79,9 +77,8 @@ impl BidPanel {
         );
 
         let min_text = min_bid.to_string();
-        let pos = position + vec2(-105.0, 0.0);
         let bid_text = Texter::new(
-            pos,
+            vec2(-105.0, 0.0),
             &min_text,
             font.clone(),
             18,
@@ -95,14 +92,12 @@ impl BidPanel {
             current_bid: min_bid,
             bid_increment: 5,
             visible: false,
-            size: vec2(250.0, 100.0),
             transform: Transform::from_translation(position),
             bid_button,
             pass_button,
             plus_button,
             minus_button,
             bid_text,
-            sender,
         }
     }
 
@@ -113,7 +108,11 @@ impl BidPanel {
     }
 
     /// Returns true if event found.
-    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {  // ADD PARENT TRANS HERE AND FOR OTHER STRUCTS
+    pub fn process_events(
+        &mut self,
+        parent_transform: Option<&Transform>,
+        mouse_pos: Vec2,
+    ) -> bool {
         if !self.visible {
             return false;
         }
@@ -131,13 +130,15 @@ impl BidPanel {
             let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
             self.update_bid_amount(new_amount);
         }
-        
-        let mouse_over3 = self.minus_button.process_events(Some(&transform), mouse_pos);
+
+        let mouse_over3 = self
+            .minus_button
+            .process_events(Some(&transform), mouse_pos);
         if self.minus_button.eventer.left_mouse_released {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);
         }
- 
+
         mouse_over0 || mouse_over1 || mouse_over2 || mouse_over3
     }
 

@@ -4,15 +4,24 @@ use macroquad::prelude::*;
 
 use crate::{
     card::{Card, Suit},
-    game::{self, Game, PlayerAction, NEST_SIZE, PLAYERS},
+    game::{self, Game, PlayerAction, MAX_BID, MIN_BID, NEST_SIZE, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::{AlignH, AlignV, Texter}, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_shaded::ButtonShaded,
+    button_text::ButtonText,
+    imager::Imager,
+    score_table::ScoreTable,
+    texter::{AlignH, AlignV, Texter},
+    trump_chooser::TrumpChooser,
+    trump_marker::TrumpMarker,
+    view_geom::{
         self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
         PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
-    }
+    },
 };
 
 pub struct View {
@@ -37,7 +46,7 @@ impl View {
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
         let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
-        play_button.state = ButtonState::Hidden;
+        play_button.visible = false;
 
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
 
@@ -66,7 +75,7 @@ impl View {
         );
         done_exchanging_button.sender = Some(sender.clone());
         done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
-        done_exchanging_button.state = ButtonState::Hidden;
+        done_exchanging_button.visible = false;
 
         Self {
             card_views: Vec::new(),
@@ -75,7 +84,7 @@ impl View {
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             play_button,
             bid_markers,
-            bid_panel: BidPanel::new(65, 120, BID_PANEL_POS, sender.clone()).await,
+            bid_panel: BidPanel::new(MIN_BID, MAX_BID, BID_PANEL_POS, sender.clone()).await,
             done_exchanging_button,
             trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
             trump_marker: TrumpMarker::new(CENTER),
@@ -132,7 +141,7 @@ impl View {
         let mouse_pos: Vec2 = mouse_position().into();
 
         if self.play_button.process_events(None, mouse_pos) {
-            self.play_button.state = ButtonState::Hidden;
+            self.play_button.visible = false;
             return;
         }
 
@@ -291,6 +300,7 @@ impl View {
     }
 
     pub fn show_done_exchanging_button(&mut self, enabled: bool) {
+        self.done_exchanging_button.visible = true;
         match enabled {
             true => self.done_exchanging_button.state = ButtonState::Normal,
             false => self.done_exchanging_button.state = ButtonState::Disabled,
@@ -298,7 +308,7 @@ impl View {
     }
 
     pub fn hide_done_exchanging_button(&mut self) {
-        self.done_exchanging_button.state = ButtonState::Hidden;
+        self.done_exchanging_button.visible = false;
     }
 
     pub fn set_discardable_hand_cards(&mut self, game: &Game) {
@@ -344,6 +354,7 @@ impl View {
         // Hide bid marker for human.
         self.bid_markers[game.active].visible = false;
 
+        self.bid_panel.min_bid = game.min_bid();
         self.bid_panel.update_bid_amount(game.min_bid());
         self.update_message("");
         self.bid_panel.visible = true;
