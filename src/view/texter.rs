@@ -57,13 +57,8 @@ impl Texter {
         if !self.visible {
             return;
         }
-
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
-
-        let (mut pos, rot) = transform.drawable_position_rotation();
+        // Determine the adjustment we need to make for h/v centering.
+        let mut adj_pos = Vec2::ZERO;
 
         // Is this function slow?
         let dimensions = measure_text(
@@ -73,17 +68,27 @@ impl Texter {
             self.font_scale,
         );
 
-        pos.x += match self.align_h {
+        adj_pos.x += match self.align_h {
             AlignH::Left => 0.0,
             AlignH::Center => -dimensions.width * 0.5,
             AlignH::Right => -dimensions.width,
         };
 
-        pos.y += match self.align_v {
+        adj_pos.y += match self.align_v {
             AlignV::Top => dimensions.offset_y,
             AlignV::Center => dimensions.offset_y * 0.5,
             AlignV::Bottom => 0.0,
         };
+
+        let adj_transform = Transform::from_translation(adj_pos);
+
+        let transform = match parent_transform {
+            Some(parent) => &Transform::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+        // Combine our adjustment transform.
+        let transform = Transform::combine(transform, &adj_transform);
+        let (pos, rot) = transform.drawable_position_rotation();
 
         let params = TextParams {
             font: Some(&self.font),

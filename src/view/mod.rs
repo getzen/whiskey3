@@ -9,6 +9,7 @@ pub mod eventer;
 pub mod imager;
 pub mod score_table;
 pub mod texter;
+pub mod texter_multi;
 pub mod transform;
 pub mod trump_chooser;
 pub mod trump_marker;

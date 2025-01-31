@@ -489,15 +489,13 @@ impl Game {
 
         let maker_total =
             self.scoring.taken[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
-        let maker_bid_total =
-            self.scoring.bid[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
         let opp_total =
             self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.last_trick[opp];
 
         if maker_total >= self.high_bid {
             self.scoring.bonus[team] = SUCCESS_BONUS;
             // Award bid points, not taken points.
-            self.scoring.hand[team] = maker_bid_total + self.scoring.bonus[team];
+            self.scoring.hand[team] = self.scoring.bid[team] + self.scoring.bonus[team];
             self.scoring.hand[opp] = opp_total;
         } else {
             // Defenders win.

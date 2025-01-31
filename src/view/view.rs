@@ -9,20 +9,16 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_shaded::ButtonShaded,
-    button_text::ButtonText,
-    imager::Imager,
-    score_table::ScoreTable,
-    texter::{AlignH, AlignV, Texter},
-    trump_chooser::TrumpChooser,
-    trump_marker::TrumpMarker,
-    view_geom::{
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::{AlignH, AlignV, Texter}, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
         self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
         PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
-    },
+    }
 };
+
+// Global variable, cretaed in new() below. To access:
+// let font = BODY_FONT.lock().unwrap().clone().unwrap();
+use std::sync::Mutex;
+pub static BODY_FONT: Mutex<Option<Font>> = Mutex::new(None);
 
 pub struct View {
     card_views: Vec<CardView>,
@@ -37,10 +33,16 @@ pub struct View {
     trump_marker: TrumpMarker,
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
+
+    texter_multi: TexterMulti,
 }
 
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
+        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+        let mut body_font = BODY_FONT.lock().unwrap();
+        *body_font = Some(font);
+
         let texture = load_texture("src/assets/circle.png").await.unwrap();
         let turn_marker = Imager::new(texture, 0.4, true);
 
@@ -90,6 +92,8 @@ impl View {
             trump_marker: TrumpMarker::new(CENTER),
             sender,
             z_order_needs_update: false,
+
+            texter_multi: TexterMulti::new(CENTER),
         }
     }
 
@@ -102,7 +106,7 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut view = CardView::new(card.id, face, back.clone(), self.sender.clone());
+        let mut view = CardView::new(card.id, face, back.clone(), card.points, self.sender.clone());
         view.move_to(view_geom::DECK_POS, 100.0);
         self.card_views.push(view);
     }
@@ -289,8 +293,12 @@ impl View {
     }
 
     pub fn get_human_exchanges(&mut self) {
-        let message = format!("Discard {} to the nest. \nAny point cards go to your opponents\nat the end of the hand.", NEST_SIZE);
-        self.update_message(&message);
+        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+        self.texter_multi.clear_lines();    
+        self.texter_multi.add_line("Discard to the nest.", font.clone(), 18, AlignH::Center, 20.0);
+        self.texter_multi.add_line("Any point cards go to your opponents", font.clone(), 18, AlignH::Center, 20.0);
+        self.texter_multi.add_line("at the end of the hand.", font.clone(), 18, AlignH::Center, 20.0);
+
         self.show_done_exchanging_button(false);
     }
 
@@ -399,7 +407,7 @@ impl View {
         self.done_exchanging_button.draw(None);
         self.trump_chooser.draw(None);
 
-        //draw_multiline_text_ex("Hello, \nWorld.", 300.0, 300.0, Some(1.0), TextParams::default());
+        self.texter_multi.draw(None);
 
         next_frame().await;
     }

@@ -1,11 +1,16 @@
 use std::sync::mpsc::Sender;
 
+use macroquad::color::BLACK;
+use macroquad::color::GRAY;
+use macroquad::color::RED;
 use macroquad::color::WHITE;
 use macroquad::math::vec2;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
+use macroquad::shapes::draw_circle;
 
+use crate::card::Points;
 use crate::game::PlayerAction;
 use crate::view::imager::Imager;
 
@@ -13,14 +18,20 @@ use crate::view::animators::TranslationAnimator;
 
 use super::animators::RotationAnimator;
 use super::eventer::Eventer;
+use super::texter::AlignH;
+use super::texter::AlignV;
+use super::texter::Texter;
 use super::transform::Transform;
+use super::view::BODY_FONT;
 
 pub struct CardView {
     pub id: u8, // must match Card id
     pub transform: Transform,
     pub card_image: Imager,
+    pub point_text: Option<Texter>,
     pub eventer: Eventer,
 
+    is_face_up: bool,
     pub face_texture: Texture2D,
     pub back_texture: Texture2D,
 
@@ -35,15 +46,29 @@ pub struct CardView {
 }
 
 impl CardView {
-    pub fn new(id: u8, face: Texture2D, back: Texture2D, sender: Sender<PlayerAction>) -> Self {
+    pub fn new(id: u8, face: Texture2D, back: Texture2D, points: Points, sender: Sender<PlayerAction>) -> Self {
         let size_mult = 0.3333;
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
+
+        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+        let text_pos = vec2(-22.0, 44.0);
+
+        let mut point_text = None;
+        if points > 0 {
+            let text = format!("{}", points);
+            let mut pt = Texter::new(text_pos, &text, font, 14, AlignH::Center, AlignV::Bottom);
+            pt.color = GRAY;
+            point_text = Some(pt);
+        }
+        
 
         Self {
             id,
             transform: Transform::from_translation_size_centered(Vec2::ZERO, size, true),
             card_image: Imager::new(face.clone(), size_mult, true),
+            point_text,
             eventer: Eventer::new(),
+            is_face_up: true,
             face_texture: face,
             back_texture: back,
             dimmed_color: Color::from_rgba(200, 200, 200, 255),
@@ -56,6 +81,7 @@ impl CardView {
     }
 
     pub fn set_face_up(&mut self, face_up: bool) {
+        self.is_face_up = face_up;
         self.card_image.texture = match face_up {
             true => self.face_texture.clone(),
             false => self.back_texture.clone(),
@@ -122,5 +148,15 @@ impl CardView {
             false => WHITE,
         };
         self.card_image.draw(Some(&self.transform));
+
+        if self.is_face_up {
+            if let Some(point_text) = &self.point_text {
+                point_text.draw(Some(&self.transform));
+
+                // let transform = Transform::combine(&self.transform, &point_text.transform);
+                // let (pos, _rot) = transform.drawable_position_rotation();
+                // draw_circle(pos.x, pos.y, 3., RED);
+            }
+        }
     }
 }

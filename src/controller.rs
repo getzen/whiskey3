@@ -324,7 +324,7 @@ impl Controller {
     }
 
     fn spawn_bid_bot(&self) {
-        let mut game_clone = self.game.clone();
+        let game_clone = self.game.clone();
         let sender = self.sender.clone();
         let min_bid = self.game.min_bid();
 
