@@ -63,7 +63,7 @@ impl Controller {
         loop {
             let time_delta = (macroquad::time::get_time() - last_time) as f32;
             last_time = macroquad::time::get_time();
-
+            
             // Update view animations and such.
             self.view.update(time_delta);
 
@@ -117,7 +117,7 @@ impl Controller {
                                 self.view.create_card_view(card).await;
                             }
                             self.view.update_deck(&self.game);
-                            self.view.update_message("Welcome to Whiskey");
+                            self.view.update_message(&["Welcome to Whiskey"]);
 
                             self.game_action = Some(GameAction::ResetForNewHand);
                         }
@@ -125,7 +125,6 @@ impl Controller {
                             self.game.reset_for_new_hand();
                             self.view.update_info(&self.game);
                             self.view.update_deck(&self.game);
-                            self.view.update_message("");
                             self.game_action = Some(GameAction::DealToHands);
                         }
                         GameAction::DealToHands => {
@@ -156,7 +155,6 @@ impl Controller {
                             if self.game.bot_is_active() {
                                 self.spawn_bid_bot();
                             } else {
-                                self.view.update_message("Your bid");
                                 self.view.get_human_bid(&self.game);
                             }
                             self.game_action = None;
@@ -166,7 +164,6 @@ impl Controller {
                             self.game.make_bid(bid.clone());
 
                             self.view.update_info(&self.game);
-                            self.view.update_message("");
                             self.view.update_bids(&self.game);
                             if !is_bot {
                                 self.view.end_human_bid(&self.game);
@@ -277,6 +274,7 @@ impl Controller {
                             self.view.reset_eligibility(&self.game.hands[player]);
                             self.view.update_hand(&self.game, player);
                             self.view.update_trick(&self.game);
+                            self.view.update_message(&[""]);
 
                             if self.game.trick_completed() {
                                 self.delay_before_game_action = 1.0;
@@ -303,7 +301,7 @@ impl Controller {
                             let points = self.game.award_nest_cards();
 
                             let message = format!("There were {} points in the nest.", points);
-                            self.view.update_message(&message);
+                            self.view.update_message(&[&message]);
                             self.view.update_info(&self.game);
                             self.view.update_nest(&self.game, false);
                             self.delay_before_game_action = 3.0;

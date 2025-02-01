@@ -6,12 +6,13 @@ pub const SCREEN: Vec2 = vec2(800., 800.);
 pub const CENTER: Vec2 = vec2(SCREEN.x * 0.5, SCREEN.y * 0.5);
 
 pub const DECK_POS: Vec2 = vec2(SCREEN.x - 80.0, SCREEN.y - 100.0);
-pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
+pub const NEST_EXCHANGE_POS: Vec2 = vec2(CENTER.x, CENTER.y - 30.0);
+pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 110.0);
 pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 260.0, 20.0);
 pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
 pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 220.);
-pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 140.0);
-pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 150.);
+pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 60.0);
+pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 70.);
 
 //pub const TURN_MARKER_SPEED: f32 = 600.0;
 pub const CARD_SPEED: f32 = 800.0;
@@ -66,7 +67,7 @@ pub fn nest_geom(index: usize, count: usize) -> ViewGeom {
 
     let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
     x_offset += index as f32 * x_spacing;
-    let pos = CENTER + vec2(x_offset, 0.0);
+    let pos = NEST_EXCHANGE_POS + vec2(x_offset, 0.0);
 
     ViewGeom {
         pos,
@@ -119,7 +120,7 @@ pub fn hand_card_geom(
 
     let max_width = match is_bot {
         true => 350.,
-        false => 450.,
+        false => 530.,
     };
     let max_spacing: f32 = 60.;
 

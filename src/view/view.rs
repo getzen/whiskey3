@@ -9,10 +9,20 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::{AlignH, AlignV, Texter}, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_geom::{
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_shaded::ButtonShaded,
+    button_text::ButtonText,
+    imager::Imager,
+    score_table::ScoreTable,
+    texter::{AlignH, AlignV, Texter},
+    texter_multi::TexterMulti,
+    trump_chooser::TrumpChooser,
+    trump_marker::TrumpMarker,
+    view_geom::{
         self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
         PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
-    }
+    },
 };
 
 // Global variable, cretaed in new() below. To access:
@@ -20,10 +30,10 @@ use super::{
 use std::sync::Mutex;
 pub static BODY_FONT: Mutex<Option<Font>> = Mutex::new(None);
 
+
 pub struct View {
     card_views: Vec<CardView>,
     turn_marker: Imager,
-    message: Texter,
     score_table: ScoreTable,
     play_button: ButtonShaded,
     bid_markers: Vec<BidMarker>,
@@ -34,15 +44,18 @@ pub struct View {
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
 
-    texter_multi: TexterMulti,
+    message: TexterMulti,
 }
 
 impl View {
     pub async fn new(sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
-        let mut body_font = BODY_FONT.lock().unwrap();
-        *body_font = Some(font);
-
+        {
+            // This is in a block so that body_font goes out of scope (and unlocked) after it's set.
+            let mut body_font = BODY_FONT.lock().unwrap();
+            *body_font = Some(font.clone());
+        }
+        
         let texture = load_texture("src/assets/circle.png").await.unwrap();
         let turn_marker = Imager::new(texture, 0.4, true);
 
@@ -50,23 +63,13 @@ impl View {
         let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
         play_button.visible = false;
 
-        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
-
-        let message = Texter::new(
-            MESSAGE_POS,
-            "Welcome to Whiskey",
-            font.clone(),
-            16,
-            AlignH::Center,
-            AlignV::Center,
-        );
-
         let mut bid_markers = Vec::new();
         for p in 0..PLAYERS {
             let geom = bid_marker_geom(p, PLAYERS);
-            let marker = BidMarker::new(geom.pos).await;
+            let marker = BidMarker::new(geom.pos);
             bid_markers.push(marker);
         }
+        
 
         let mut done_exchanging_button = ButtonText::new(
             DONE_EXCHANGING_BUTTON_POS,
@@ -78,22 +81,22 @@ impl View {
         done_exchanging_button.sender = Some(sender.clone());
         done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.visible = false;
+        
 
         Self {
             card_views: Vec::new(),
             turn_marker,
-            message,
+            //message,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             play_button,
             bid_markers,
-            bid_panel: BidPanel::new(MIN_BID, MAX_BID, BID_PANEL_POS, sender.clone()).await,
+            bid_panel: BidPanel::new(MIN_BID, MAX_BID, BID_PANEL_POS, sender.clone()),
             done_exchanging_button,
             trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
             trump_marker: TrumpMarker::new(CENTER),
             sender,
             z_order_needs_update: false,
-
-            texter_multi: TexterMulti::new(CENTER),
+            message: TexterMulti::new(MESSAGE_POS),
         }
     }
 
@@ -106,7 +109,13 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut view = CardView::new(card.id, face, back.clone(), card.points, self.sender.clone());
+        let mut view = CardView::new(
+            card.id,
+            face,
+            back.clone(),
+            card.points,
+            self.sender.clone(),
+        );
         view.move_to(view_geom::DECK_POS, 100.0);
         self.card_views.push(view);
     }
@@ -121,7 +130,9 @@ impl View {
     // }
 
     fn find_card_view_mut(&mut self, card_id: u8) -> Option<&mut CardView> {
-        self.card_views.iter_mut().find(|card_view| card_view.id == card_id)
+        self.card_views
+            .iter_mut()
+            .find(|card_view| card_view.id == card_id)
     }
 
     fn sort_card_views_by_z_order(&mut self) {
@@ -139,10 +150,10 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
-        if self.play_button.process_events(None, mouse_pos) {
-            self.play_button.visible = false;
-            return;
-        }
+        // if self.play_button.process_events(None, mouse_pos) {
+        //     self.play_button.visible = false;
+        //     return;
+        // }
 
         if self.bid_panel.process_events(None, mouse_pos) {
             return;
@@ -187,8 +198,22 @@ impl View {
         self.turn_marker.transform.translation = geom.pos;
     }
 
-    pub fn update_message(&mut self, test: &str) {
-        self.message.text = test.to_string();
+    pub fn update_message(&mut self, texts: &[&str]) {
+        //self.message.text = test.to_string();
+
+        self.message.clear_lines();
+        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+
+        for text in texts {
+            self.message.add_line(
+                text,
+                font.clone(),
+                18,
+                AlignH::Center,
+                20.0,
+            );
+        }
+        
     }
 
     pub fn update_deck(&mut self, game: &Game) {
@@ -293,12 +318,7 @@ impl View {
     }
 
     pub fn get_human_exchanges(&mut self) {
-        let font = BODY_FONT.lock().unwrap().clone().unwrap();
-        self.texter_multi.clear_lines();    
-        self.texter_multi.add_line("Discard to the nest.", font.clone(), 18, AlignH::Center, 20.0);
-        self.texter_multi.add_line("Any point cards go to your opponents", font.clone(), 18, AlignH::Center, 20.0);
-        self.texter_multi.add_line("at the end of the hand.", font.clone(), 18, AlignH::Center, 20.0);
-
+        self.update_message(&["Discard to the nest.", "Any point cards go to your opponents", "at the end of the hand"]);
         self.show_done_exchanging_button(false);
     }
 
@@ -329,12 +349,12 @@ impl View {
 
     pub fn show_trump_chooser(&mut self) {
         self.trump_chooser.visible = true;
-        self.message.text = "Select trump suit.".to_string();
+        self.update_message(&["Select trump suit."]);
     }
 
     pub fn hide_trump_chooser(&mut self) {
         self.trump_chooser.visible = false;
-        self.message.text = "".to_string();
+        self.update_message(&[""]);
     }
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
@@ -359,7 +379,7 @@ impl View {
 
         self.bid_panel.min_bid = game.min_bid();
         self.bid_panel.update_bid_amount(game.min_bid());
-        self.update_message("");
+        self.update_message(&["Your bid."]);
         self.bid_panel.visible = true;
     }
 
@@ -368,20 +388,20 @@ impl View {
     }
 
     pub fn get_bot_discards(&mut self, _game: &Game) {
-        self.update_message("Bot thinking.");
+        self.update_message(&["Bot thinking."]);
     }
 
     pub fn get_bot_trump(&mut self, _game: &Game) {
-        self.update_message("");
+        self.update_message(&[""]);
     }
 
     pub fn get_human_card_play(&mut self, game: &Game) {
         self.set_playable_hand_cards(game);
-        self.update_message("Play card.");
+        self.update_message(&["Play card."]);
     }
 
     pub fn get_bot_card_play(&mut self, _game: &Game) {
-        self.update_message("");
+        self.update_message(&[""]);
     }
 
     pub async fn draw(&mut self) {
@@ -398,8 +418,6 @@ impl View {
             view.draw();
         }
 
-        self.message.draw(None);
-
         self.score_table.draw(None);
 
         self.play_button.draw(None);
@@ -407,7 +425,7 @@ impl View {
         self.done_exchanging_button.draw(None);
         self.trump_chooser.draw(None);
 
-        self.texter_multi.draw(None);
+        self.message.draw(None);
 
         next_frame().await;
     }

@@ -61,6 +61,10 @@ impl ButtonText {
         parent_transform: Option<&Transform>,
         mouse_pos: Vec2,
     ) -> bool {
+        if !self.visible {
+            return false;
+        }
+        
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

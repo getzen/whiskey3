@@ -1,14 +1,11 @@
 use std::sync::mpsc::Sender;
 
-use macroquad::color::BLACK;
 use macroquad::color::GRAY;
-use macroquad::color::RED;
 use macroquad::color::WHITE;
 use macroquad::math::vec2;
 use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
-use macroquad::shapes::draw_circle;
 
 use crate::card::Points;
 use crate::game::PlayerAction;
@@ -46,7 +43,13 @@ pub struct CardView {
 }
 
 impl CardView {
-    pub fn new(id: u8, face: Texture2D, back: Texture2D, points: Points, sender: Sender<PlayerAction>) -> Self {
+    pub fn new(
+        id: u8,
+        face: Texture2D,
+        back: Texture2D,
+        points: Points,
+        sender: Sender<PlayerAction>,
+    ) -> Self {
         let size_mult = 0.3333;
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
 
@@ -60,7 +63,6 @@ impl CardView {
             pt.color = GRAY;
             point_text = Some(pt);
         }
-        
 
         Self {
             id,

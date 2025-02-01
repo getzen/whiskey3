@@ -2,14 +2,13 @@ use macroquad::{
     color::{Color, WHITE},
     math::{vec4, Vec2},
     shapes::draw_circle_lines,
-    text::load_ttf_font,
 };
 
 use crate::game::Bid;
 
 use super::{
     texter::{AlignH, AlignV, Texter},
-    transform::Transform,
+    transform::Transform, view::BODY_FONT,
 };
 
 pub struct BidMarker {
@@ -24,8 +23,8 @@ pub struct BidMarker {
 }
 
 impl BidMarker {
-    pub async fn new(position: Vec2) -> Self {
-        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+    pub fn new(position: Vec2) -> Self {
+        let font = BODY_FONT.lock().unwrap().clone().unwrap();
         let text = Texter::new(Vec2::ZERO, "?", font, 18, AlignH::Center, AlignV::Center);
 
         Self {

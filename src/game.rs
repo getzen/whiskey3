@@ -17,8 +17,10 @@ pub enum PlayerAction {
     ShouldExit,
 }
 
-pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
-    //(Suit::Club, 4, 0),
+pub const ALL_CARDS: [(Suit, Rank, Points); 53] = [
+    (Suit::Club, 2, 0),
+    (Suit::Club, 3, 0),
+    (Suit::Club, 4, 0),
     (Suit::Club, 5, 5),
     (Suit::Club, 6, 0),
     (Suit::Club, 7, 0),
@@ -29,7 +31,9 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Club, 12, 0),
     (Suit::Club, 13, 10),
     (Suit::Club, 14, 15),
-    //(Suit::Diamond, 4, 0),
+    (Suit::Diamond, 2, 0),
+    (Suit::Diamond, 3, 0),
+    (Suit::Diamond, 4, 0),
     (Suit::Diamond, 5, 5),
     (Suit::Diamond, 6, 0),
     (Suit::Diamond, 7, 0),
@@ -40,6 +44,8 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Diamond, 12, 0),
     (Suit::Diamond, 13, 10),
     (Suit::Diamond, 14, 15),
+    (Suit::Heart, 2, 0),
+    (Suit::Heart, 3, 0),
     (Suit::Heart, 4, 0),
     (Suit::Heart, 5, 5),
     (Suit::Heart, 6, 0),
@@ -51,6 +57,8 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Heart, 12, 0),
     (Suit::Heart, 13, 10),
     (Suit::Heart, 14, 15),
+    (Suit::Spade, 2, 0),
+    (Suit::Spade, 3, 0),
     (Suit::Spade, 4, 0),
     (Suit::Spade, 5, 5),
     (Suit::Spade, 6, 0),
@@ -65,17 +73,17 @@ pub const ALL_CARDS: [(Suit, Rank, Points); 43] = [
     (Suit::Joker, 1, 20),
 ];
 
-pub const MIN_BID: Points = 60;
-pub const MAX_BID: Points = 200;
-pub const LAST_TRICK_BONUS: Points = 20;
-pub const SUCCESS_BONUS: Points = 50;
+pub const MIN_BID: Points = 90;
+pub const MAX_BID: Points = 180;
+pub const LAST_TRICK_BONUS: Points = 0;
+pub const SUCCESS_BONUS: Points = 40;
 pub const POINTS_TO_WIN: Points = 400;
 
 /// The number of players in the game.
 pub const PLAYERS: usize = 4;
 /// Number of cards dealt to the nest. The remaining cards are dealt to the players
 /// and determine the value returned by self.hand_size().
-pub const NEST_SIZE: usize = 3;
+pub const NEST_SIZE: usize = 5;
 /// Number of nest card to deal face up.
 pub const NEST_CARDS_UP: u8 = 0;
 
@@ -202,7 +210,6 @@ impl Game {
 
     pub fn create_deck(&mut self) {
         let mut id = 0;
-
         for (suit, rank, points) in ALL_CARDS {
             self.create_card(id, suit, rank, points);
             id += 1;

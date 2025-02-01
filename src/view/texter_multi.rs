@@ -1,8 +1,9 @@
 use macroquad::{math::Vec2, text::Font};
 
-use super::{texter::{AlignH, AlignV, Texter}, transform::Transform};
-
-
+use super::{
+    texter::{AlignH, AlignV, Texter},
+    transform::Transform,
+};
 
 pub struct TexterMulti {
     pub visible: bool,
@@ -26,7 +27,14 @@ impl TexterMulti {
         self.spacings.clear();
     }
 
-    pub fn add_line(&mut self, text: &str, font: Font, font_size: u16, align_h: AlignH, spacing: f32) {
+    pub fn add_line(
+        &mut self,
+        text: &str,
+        font: Font,
+        font_size: u16,
+        align_h: AlignH,
+        spacing: f32,
+    ) {
         let mut pos = Vec2::ZERO;
         for spacing in &self.spacings {
             pos.y += spacing;

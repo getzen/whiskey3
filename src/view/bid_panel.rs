@@ -1,9 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use macroquad::{
-    math::{vec2, Vec2},
-    text::load_ttf_font,
-};
+use macroquad::math::{vec2, Vec2};
 
 use crate::{
     card::Points,
@@ -14,6 +11,7 @@ use super::{
     button_text::ButtonText,
     texter::{AlignH, AlignV, Texter},
     transform::Transform,
+    view::BODY_FONT,
 };
 
 pub struct BidPanel {
@@ -32,13 +30,13 @@ pub struct BidPanel {
 }
 
 impl BidPanel {
-    pub async fn new(
+    pub fn new(
         min_bid: Points,
         max_bid: Points,
         position: Vec2,
         sender: Sender<PlayerAction>,
     ) -> Self {
-        let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
+        let font = BODY_FONT.lock().unwrap().clone().unwrap();
 
         let mut bid_button =
             ButtonText::new(vec2(-5.0, 0.0), "Bid", font.clone(), 18, vec2(80.0, 40.0));
