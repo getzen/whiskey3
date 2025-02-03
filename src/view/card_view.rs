@@ -58,9 +58,10 @@ impl CardView {
 
         let mut point_text = None;
         if points > 0 {
-            let text = format!("{}", points);
-            let mut pt = Texter::new(text_pos, &text, font, 14, AlignH::Center, AlignV::Bottom);
+            let text = format!("{} pts", points);
+            let mut pt = Texter::new(text_pos, &text, font, 12, AlignH::Center, AlignV::Bottom);
             pt.color = GRAY;
+            pt.transform.rotation = -std::f32::consts::PI * 0.5;
             point_text = Some(pt);
         }
 

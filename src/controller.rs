@@ -63,7 +63,7 @@ impl Controller {
         loop {
             let time_delta = (macroquad::time::get_time() - last_time) as f32;
             last_time = macroquad::time::get_time();
-            
+
             // Update view animations and such.
             self.view.update(time_delta);
 
@@ -228,6 +228,9 @@ impl Controller {
                         GameAction::EndExchanging => {
                             let maker = self.game.maker.unwrap();
                             self.game.turn_nest_cards(false);
+
+                            // Experiment
+                            self.game.add_deck_cards_to_nest();
 
                             self.view.reset_eligibility(&self.game.hands[maker]);
                             self.view.reset_eligibility(&self.game.nest);

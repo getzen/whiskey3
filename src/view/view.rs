@@ -2,6 +2,8 @@ use std::sync::mpsc::Sender;
 
 use macroquad::prelude::*;
 
+// use foldhash::{HashMap, HashMapExt};
+
 use crate::{
     card::{Card, Suit},
     game::{self, Game, PlayerAction, MAX_BID, MIN_BID, NEST_SIZE, PLAYERS},
@@ -15,7 +17,7 @@ use super::{
     button_text::ButtonText,
     imager::Imager,
     score_table::ScoreTable,
-    texter::{AlignH, AlignV, Texter},
+    texter::AlignH,
     texter_multi::TexterMulti,
     trump_chooser::TrumpChooser,
     trump_marker::TrumpMarker,
@@ -25,11 +27,10 @@ use super::{
     },
 };
 
-// Global variable, cretaed in new() below. To access:
+// Global variable, created in new() below. To access:
 // let font = BODY_FONT.lock().unwrap().clone().unwrap();
 use std::sync::Mutex;
 pub static BODY_FONT: Mutex<Option<Font>> = Mutex::new(None);
-
 
 pub struct View {
     card_views: Vec<CardView>,
@@ -45,6 +46,7 @@ pub struct View {
     z_order_needs_update: bool,
 
     message: TexterMulti,
+    //trans_animators: HashMap<u8, TranslationAnimator>,
 }
 
 impl View {
@@ -55,7 +57,7 @@ impl View {
             let mut body_font = BODY_FONT.lock().unwrap();
             *body_font = Some(font.clone());
         }
-        
+
         let texture = load_texture("src/assets/circle.png").await.unwrap();
         let turn_marker = Imager::new(texture, 0.4, true);
 
@@ -69,7 +71,6 @@ impl View {
             let marker = BidMarker::new(geom.pos);
             bid_markers.push(marker);
         }
-        
 
         let mut done_exchanging_button = ButtonText::new(
             DONE_EXCHANGING_BUTTON_POS,
@@ -81,7 +82,6 @@ impl View {
         done_exchanging_button.sender = Some(sender.clone());
         done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.visible = false;
-        
 
         Self {
             card_views: Vec::new(),
@@ -97,6 +97,7 @@ impl View {
             sender,
             z_order_needs_update: false,
             message: TexterMulti::new(MESSAGE_POS),
+            //trans_animators: HashMap::new(),
         }
     }
 
@@ -176,6 +177,21 @@ impl View {
     }
 
     pub fn update(&mut self, time_delta: f32) {
+        // // Translation animators
+        // let mut completed_ids = Vec::new();
+        // for (card_id, anim) in &mut self.trans_animators {
+        //     if let Some(card_view) = self.card_views.iter_mut().find(|c| c.id == *card_id) {
+        //         card_view.transform.translation = anim.update(time_delta);
+        //     }
+        //     if anim.completed {
+        //         completed_ids.push(*card_id);
+        //     }
+        // }
+        // // Remove the completed animators.
+        // for card_id in completed_ids {
+        //     self.trans_animators.remove(&card_id);
+        // }
+
         for view in &mut self.card_views {
             view.update(time_delta);
         }
@@ -199,21 +215,13 @@ impl View {
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
-        //self.message.text = test.to_string();
-
         self.message.clear_lines();
         let font = BODY_FONT.lock().unwrap().clone().unwrap();
 
         for text in texts {
-            self.message.add_line(
-                text,
-                font.clone(),
-                18,
-                AlignH::Center,
-                20.0,
-            );
+            self.message
+                .add_line(text, font.clone(), 18, AlignH::Center, 20.0);
         }
-        
     }
 
     pub fn update_deck(&mut self, game: &Game) {
@@ -318,7 +326,11 @@ impl View {
     }
 
     pub fn get_human_exchanges(&mut self) {
-        self.update_message(&["Discard to the nest.", "Any point cards go to your opponents", "at the end of the hand"]);
+        self.update_message(&[
+            "Discard to the nest.",
+            "Any point cards go to your opponents",
+            "at the end of the hand",
+        ]);
         self.show_done_exchanging_button(false);
     }
 

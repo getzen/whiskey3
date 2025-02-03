@@ -8,7 +8,8 @@ use crate::game::Bid;
 
 use super::{
     texter::{AlignH, AlignV, Texter},
-    transform::Transform, view::BODY_FONT,
+    transform::Transform,
+    view::BODY_FONT,
 };
 
 pub struct BidMarker {

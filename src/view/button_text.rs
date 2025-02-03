@@ -64,7 +64,7 @@ impl ButtonText {
         if !self.visible {
             return false;
         }
-        
+
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

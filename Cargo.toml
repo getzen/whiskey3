@@ -7,4 +7,6 @@ edition = "2021"
 array2d = "0.3.2"
 fastrand = "2.1.1"
 macroquad = "0.4.13"
+serde = "1.0.217"
+serde_yaml = "0.9.34"
 
