@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    card::{Card, Points, Suit},
+    card::{Card, Id, Points, Suit},
     game::{Bid, Game, PlayerAction, PLAYERS},
 };
 
@@ -34,7 +34,7 @@ impl BotMonte {
         best_suit
     }
 
-    fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<Suit>) -> u8 {
+    fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<Suit>) -> Id {
         let mut lowest_rank = 99;
         // Just in case all cards are point cards and skipped below...
         let mut lowest_id = cards.first().unwrap().id;
@@ -132,7 +132,7 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (u8, Points, Vec<usize>) {
+    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<usize>) {
         let monte_player = game.active;
         let team = game.team_index(game.active);
         //let opp_team = game.opponent_index(game.active);

@@ -9,12 +9,13 @@ pub enum Suit {
     Joker,
 }
 
+pub type Id = u8;
 pub type Rank = u8;
 pub type Points = usize;
 
 #[derive(Clone, Debug)]
 pub struct Card {
-    pub id: u8,
+    pub id: Id,
     pub suit: Suit,
     pub rank: Rank,
     // Used to remember a card is a joker when its suit is changed to trump.
@@ -25,7 +26,7 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn new(id: u8, suit: Suit, rank: Rank, points: Points) -> Self {
+    pub fn new(id: Id, suit: Suit, rank: Rank, points: Points) -> Self {
         let is_joker = matches!(suit, Suit::Joker);
         Self {
             id,

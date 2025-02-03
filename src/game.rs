@@ -1,5 +1,5 @@
 use crate::{
-    card::{Card, Points, Rank, Suit},
+    card::{Card, Id, Points, Rank, Suit},
     scoring::Scoring,
     trick::Trick,
 };
@@ -9,11 +9,11 @@ pub const DEBUGGING: bool = false;
 #[derive(Clone)]
 pub enum PlayerAction {
     Bid(Bid),
-    Exchange(u8),     // human
-    Discard(Vec<u8>), // bot
+    Exchange(Id),     // human
+    Discard(Vec<Id>), // bot
     DoneExchanging,
     ChooseTrump(Suit),
-    PlayCard(u8),
+    PlayCard(Id),
     ShouldExit,
 }
 
@@ -214,7 +214,7 @@ impl Game {
     //     bid
     // }
 
-    fn create_card(&mut self, id: u8, suit: Suit, rank: Rank, points: Points) {
+    fn create_card(&mut self, id: Id, suit: Suit, rank: Rank, points: Points) {
         let mut card = Card::new(id, suit, rank, points);
         card.face_up = false;
         self.deck.push(card);
@@ -366,7 +366,7 @@ impl Game {
         self.sort_hand(maker);
     }
 
-    pub fn exchange_with_nest(&mut self, id: u8) {
+    pub fn exchange_with_nest(&mut self, id: Id) {
         let maker = self.maker.unwrap();
 
         // Check if hand card.
@@ -421,7 +421,7 @@ impl Game {
         false
     }
 
-    pub fn get_playable_card_ids(&mut self) -> Vec<u8> {
+    pub fn get_playable_card_ids(&mut self) -> Vec<Id> {
         let mut eligible_ids = Vec::new();
         let has_card_in_lead_suit = self.has_card_in_lead_suit();
 
@@ -448,7 +448,7 @@ impl Game {
         eligible_ids
     }
 
-    pub fn play_card_id(&mut self, card_id: u8) {
+    pub fn play_card_id(&mut self, card_id: Id) {
         let mut index = 0;
         let hand = self.active_hand_mut();
         for (idx, card) in hand.iter().enumerate() {

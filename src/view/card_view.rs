@@ -7,6 +7,7 @@ use macroquad::math::Vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 
+use crate::card::Id;
 use crate::card::Points;
 use crate::game::PlayerAction;
 use crate::view::imager::Imager;
@@ -22,7 +23,7 @@ use super::transform::Transform;
 use super::view::BODY_FONT;
 
 pub struct CardView {
-    pub id: u8, // must match Card id
+    pub id: Id, // must match Card id
     pub transform: Transform,
     pub card_image: Imager,
     pub point_text: Option<Texter>,
@@ -44,7 +45,7 @@ pub struct CardView {
 
 impl CardView {
     pub fn new(
-        id: u8,
+        id: Id,
         face: Texture2D,
         back: Texture2D,
         points: Points,

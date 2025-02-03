@@ -1,7 +1,7 @@
 use std::sync::mpsc::{self, Receiver, Sender};
 
 use crate::bot_monte::BotMonte;
-use crate::card::Suit;
+use crate::card::{Id, Suit};
 use crate::game::{Bid, Game, PlayerAction, MAX_BID, NEST_SIZE};
 
 use crate::view::view::View;
@@ -17,13 +17,13 @@ pub enum GameAction {
     EndBidding,
     MoveNestToMaker,
     GetExchanges,
-    Exchange(u8),
-    Discard(Vec<u8>),
+    Exchange(Id),
+    Discard(Vec<Id>),
     EndExchanging,
     GetTrump,
     ChooseTrump(Suit),
     GetCardPlay,
-    PlayCard(u8),
+    PlayCard(Id),
     AwardTrick,
     AwardNest,
     PresentScore,

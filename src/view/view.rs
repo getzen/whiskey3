@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 // use foldhash::{HashMap, HashMapExt};
 
 use crate::{
-    card::{Card, Suit},
+    card::{Card, Id, Suit},
     game::{self, Game, PlayerAction, MAX_BID, MIN_BID, NEST_SIZE, PLAYERS},
     view::{button_state::ButtonState, card_view::CardView},
 };
@@ -46,7 +46,7 @@ pub struct View {
     z_order_needs_update: bool,
 
     message: TexterMulti,
-    //trans_animators: HashMap<u8, TranslationAnimator>,
+    //trans_animators: HashMap<Id, TranslationAnimator>,
 }
 
 impl View {
@@ -121,7 +121,7 @@ impl View {
         self.card_views.push(view);
     }
 
-    // fn find_card_view(&self, card_id: u8) -> Option<&CardView> {
+    // fn find_card_view(&self, card_id: Id) -> Option<&CardView> {
     //     for card_view in &self.card_views {
     //         if card_view.id == card_id {
     //             return Some(card_view);
@@ -130,7 +130,7 @@ impl View {
     //     None
     // }
 
-    fn find_card_view_mut(&mut self, card_id: u8) -> Option<&mut CardView> {
+    fn find_card_view_mut(&mut self, card_id: Id) -> Option<&mut CardView> {
         self.card_views
             .iter_mut()
             .find(|card_view| card_view.id == card_id)

@@ -17,7 +17,7 @@ pub enum ButtonState {
 
 /// A button that uses individual textures to show the ButtonState.
 pub struct ButtonTextured {
-    pub id: u8,
+    pub id: Id,
     pub transform: Transform,
     pub image: Imager,
     pub eventer: Eventer,
@@ -33,7 +33,7 @@ pub struct ButtonTextured {
 }
 
 impl ButtonTextured {
-    pub fn new(id: u8, pos: Vec2, normal_tex: Texture2D, highlighted_tex: Option<Texture2D>, disabled_tex: Option<Texture2D>, tex_size_multiplier: f32) -> Self {
+    pub fn new(id: Id, pos: Vec2, normal_tex: Texture2D, highlighted_tex: Option<Texture2D>, disabled_tex: Option<Texture2D>, tex_size_multiplier: f32) -> Self {
         Self {
             id,
             transform: Transform::new(pos, 0.0),
