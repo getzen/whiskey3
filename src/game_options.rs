@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
 
-use crate::card::Points;
+use crate::card::{Points, Rank, Suit};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PartnerKind {
@@ -12,14 +12,40 @@ pub enum PartnerKind {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum PointsAwarded {
-    // assign separately to Makers and Defenders
-    Fixed(Points),
-    PointsTakenWithMultiplier(Points),
+pub enum LastTrick {
+    NestToWinner(Points), // Points are in addition to card points.
+    NestToOpponents,
+    FixedPoints(Points)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum BiddersWin {
+    PointsBid(Points), // Points = bonus for win.
+    PointsTaken(Points), // Points = bonus for win.
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum BiddersLose {
+    Zero,
+    MinusBid,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum DefendersWin {
+    PointsTaken(Points), // Points = bonus for win.
+    Zero,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum DefendersLose {
+    PointsTaken,
+    Zero,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GameOptions {
+    pub players: usize,
+
     pub hand_size: u8,
     /// This might be smaller than the number of cards left after dealing.
     /// If so, it becomes the effective exhange limit. Any remaining cards in
@@ -27,24 +53,89 @@ pub struct GameOptions {
     pub nest_size: u8,
     /// The number of nest cards presented face up.
     pub nest_face_up: u8,
-    pub makers_points_awarded_for_win: PointsAwarded,
-    pub makers_points_awarded_for_loss: PointsAwarded,
-    pub defenders_points_awarded_for_win: PointsAwarded,
-    pub defenders_points_awarded_for_loss: PointsAwarded,
-    pub nest_points_bonus: i16,
+    pub min_bid: Points,
+    pub max_bid: Points,
+    pub last_trick: LastTrick,
+    pub bidders_win: BiddersWin,
+    pub bidders_lose: BiddersLose,
+    pub defenders_win: DefendersWin,
+    pub defenders_lose: DefendersLose,
+    pub points_to_win_game: Points,
+
+    pub cards_in_deck: Vec<(Suit, Rank, Points)>,
 }
 
 impl GameOptions {
     pub fn new() -> Self {
         Self {
-            hand_size: 9,
-            nest_size: 2,
+            players: 4,
+            hand_size: 10,
+            nest_size: 4,
             nest_face_up: 0,
-            makers_points_awarded_for_win: PointsAwarded::PointsTakenWithMultiplier(1),
-            makers_points_awarded_for_loss: PointsAwarded::Fixed(0),
-            defenders_points_awarded_for_win: PointsAwarded::PointsTakenWithMultiplier(1),
-            defenders_points_awarded_for_loss: PointsAwarded::PointsTakenWithMultiplier(1),
-            nest_points_bonus: 10,
+            min_bid: 90,
+            max_bid: 180,
+            last_trick: LastTrick::NestToWinner(0),
+            bidders_win: BiddersWin::PointsBid(20),
+            bidders_lose: BiddersLose::Zero,
+            defenders_win: DefendersWin::PointsTaken(40),
+            defenders_lose: DefendersLose::PointsTaken,
+            points_to_win_game: 400,
+            cards_in_deck: vec![
+                //(Suit::Club, 2, 0),
+                //(Suit::Club, 3, 0),
+                (Suit::Club, 4, 0),
+                (Suit::Club, 5, 5),
+                (Suit::Club, 6, 0),
+                (Suit::Club, 7, 0),
+                (Suit::Club, 8, 0),
+                (Suit::Club, 9, 0),
+                (Suit::Club, 10, 10),
+                (Suit::Club, 11, 0),
+                (Suit::Club, 12, 0),
+                (Suit::Club, 13, 10),
+                (Suit::Club, 14, 15),
+                //(Suit::Diamond, 2, 0),
+                //(Suit::Diamond, 3, 0),
+                (Suit::Diamond, 4, 0),
+                (Suit::Diamond, 5, 5),
+                (Suit::Diamond, 6, 0),
+                (Suit::Diamond, 7, 0),
+                (Suit::Diamond, 8, 0),
+                (Suit::Diamond, 9, 0),
+                (Suit::Diamond, 10, 10),
+                (Suit::Diamond, 11, 0),
+                (Suit::Diamond, 12, 0),
+                (Suit::Diamond, 13, 10),
+                (Suit::Diamond, 14, 15),
+                //(Suit::Heart, 2, 0),
+                //(Suit::Heart, 3, 0),
+                (Suit::Heart, 4, 0),
+                (Suit::Heart, 5, 5),
+                (Suit::Heart, 6, 0),
+                (Suit::Heart, 7, 0),
+                (Suit::Heart, 8, 0),
+                (Suit::Heart, 9, 0),
+                (Suit::Heart, 10, 10),
+                (Suit::Heart, 11, 0),
+                (Suit::Heart, 12, 0),
+                (Suit::Heart, 13, 10),
+                (Suit::Heart, 14, 15),
+                //(Suit::Spade, 2, 0),
+                //(Suit::Spade, 3, 0),
+                (Suit::Spade, 4, 0),
+                (Suit::Spade, 5, 5),
+                (Suit::Spade, 6, 0),
+                (Suit::Spade, 7, 0),
+                (Suit::Spade, 8, 0),
+                (Suit::Spade, 9, 0),
+                (Suit::Spade, 10, 10),
+                (Suit::Spade, 11, 0),
+                (Suit::Spade, 12, 0),
+                (Suit::Spade, 13, 10),
+                (Suit::Spade, 14, 15),
+                (Suit::Joker, 15, 0),
+                (Suit::Joker, 15, 0),
+            ],
         }
     }
 

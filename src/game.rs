@@ -1,7 +1,5 @@
 use crate::{
-    card::{Card, Id, Points, Rank, Suit},
-    scoring::Scoring,
-    trick::Trick,
+    card::{Card, Id, Points, Rank, Suit}, game_options::GameOptions, scoring::Scoring, trick::Trick
 };
 
 pub const DEBUGGING: bool = false;
@@ -131,15 +129,13 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
+        // Write over the defaults, if needed.
+        let options = GameOptions::new();
+        options.write_to_yaml("default.txt");
 
-        // // Write over the defaults, if needed.
-        // let options = GameOptions::new();
-        // options.write_to_yaml("default.txt");
-
-        // // Read as normal.
-        // let options = GameOptions::read_from_yaml("default.txt");
-        // let player_count = 4;
-
+        // Read as normal.
+        let options = GameOptions::read_from_yaml("default.txt");
+        let player_count = options.players;
 
         let mut hands = Vec::new();
         for _ in 0..PLAYERS {

@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum Suit {
     Club,
     Diamond,
