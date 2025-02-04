@@ -6,7 +6,7 @@ use macroquad::prelude::*;
 
 use crate::{
     card::{Card, Id, Suit},
-    game::{self, Game, PlayerAction, MAX_BID, MIN_BID, NEST_SIZE, PLAYERS},
+    game::{Game, PlayerAction},
     view::{button_state::ButtonState, card_view::CardView},
 };
 
@@ -50,7 +50,7 @@ pub struct View {
 }
 
 impl View {
-    pub async fn new(sender: Sender<PlayerAction>) -> Self {
+    pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         {
             // This is in a block so that body_font goes out of scope (and unlocked) after it's set.
@@ -66,8 +66,8 @@ impl View {
         play_button.visible = false;
 
         let mut bid_markers = Vec::new();
-        for p in 0..PLAYERS {
-            let geom = bid_marker_geom(p, PLAYERS);
+        for p in 0..players {
+            let geom = bid_marker_geom(p, players);
             let marker = BidMarker::new(geom.pos);
             bid_markers.push(marker);
         }
@@ -90,7 +90,7 @@ impl View {
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             play_button,
             bid_markers,
-            bid_panel: BidPanel::new(MIN_BID, MAX_BID, BID_PANEL_POS, sender.clone()),
+            bid_panel: BidPanel::new(0, 0, BID_PANEL_POS, sender.clone()),
             done_exchanging_button,
             trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
             trump_marker: TrumpMarker::new(CENTER),
@@ -207,10 +207,10 @@ impl View {
 
     pub fn update_info(&mut self, game: &Game) {
         self.score_table.visible = true;
-        self.score_table.update(&game.scoring);
+        self.score_table.update(&game);
 
         self.turn_marker.visible = true;
-        let geom = view_geom::turn_marker_geom(game.active, game::PLAYERS);
+        let geom = view_geom::turn_marker_geom(game.active, game.options.players);
         self.turn_marker.transform.translation = geom.pos;
     }
 
@@ -260,7 +260,7 @@ impl View {
     }
 
     pub fn hide_bids_except_maker(&mut self, game: &Game) {
-        for p in 0..game::PLAYERS {
+        for p in 0..game.options.players {
             if game.maker.unwrap() == p {
                 continue;
             }
@@ -275,7 +275,7 @@ impl View {
         for (idx, card) in hand.iter().enumerate() {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
                 let geom =
-                    view_geom::hand_card_geom(player, idx, hand.len(), game::PLAYERS, is_bot);
+                    view_geom::hand_card_geom(player, idx, hand.len(), game.options.players, is_bot);
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
@@ -290,7 +290,7 @@ impl View {
         for (idx, opt_card) in game.trick.cards.iter().enumerate() {
             if let Some(card) = opt_card {
                 if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom = view_geom::trick_card_geom(idx, game::PLAYERS);
+                    let geom = view_geom::trick_card_geom(idx, game.options.players);
                     view.move_to(geom.pos, view_geom::CARD_SPEED);
                     view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                     view.card_image.z_order = geom.z;
@@ -302,10 +302,10 @@ impl View {
     }
 
     pub fn update_taken(&mut self, game: &Game) {
-        for p in 0..PLAYERS {
+        for p in 0..game.options.players {
             for card in &game.taken[p] {
                 if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom = view_geom::taken_geom(p, PLAYERS);
+                    let geom = view_geom::taken_geom(p, game.options.players);
                     view.move_to(geom.pos, view_geom::CARD_SPEED);
                     view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                     view.card_image.z_order = geom.z;
@@ -389,8 +389,9 @@ impl View {
         // Hide bid marker for human.
         self.bid_markers[game.active].visible = false;
 
-        self.bid_panel.min_bid = game.min_bid();
-        self.bid_panel.update_bid_amount(game.min_bid());
+        self.bid_panel.min_bid = game.min_current_bid();
+        self.bid_panel.update_bid_amount(game.min_current_bid());
+        self.bid_panel.max_bid = game.options.max_bid;
         self.update_message(&["Your bid."]);
         self.bid_panel.visible = true;
     }

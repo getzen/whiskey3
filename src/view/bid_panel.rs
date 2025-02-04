@@ -16,7 +16,7 @@ use super::{
 
 pub struct BidPanel {
     pub min_bid: Points,
-    max_bid: Points,
+    pub max_bid: Points,
     current_bid: Points,
     bid_increment: Points,
 

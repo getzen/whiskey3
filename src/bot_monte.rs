@@ -2,7 +2,7 @@ use std::sync::mpsc::Sender;
 
 use crate::{
     card::{Card, Id, Points, Suit},
-    game::{Bid, Game, PlayerAction, PLAYERS},
+    game::{Bid, Game, PlayerAction},
 };
 
 #[derive(Clone)]
@@ -115,7 +115,7 @@ impl BotMonte {
         if bid_pts >= min {
             // bid_pts is the max we should bid. Let's bid half-way between
             // the min and bid_pts to allow room to raise. Add a random factor?
-            let mut adj_bid = ((bid_pts + min) / 2).next_multiple_of(5);
+            let mut adj_bid = ((bid_pts + min) / 2) % 5;
             adj_bid = adj_bid.min(max);
             bid = Bid::Points(adj_bid);
         }
@@ -132,7 +132,7 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<usize>) {
+    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<Points>) {
         let monte_player = game.active;
         let team = game.team_index(game.active);
         //let opp_team = game.opponent_index(game.active);
@@ -147,7 +147,7 @@ impl BotMonte {
         // Create a vec with all the cards we don't know about.
         let mut hidden_cards = Vec::new();
 
-        for p in 0..PLAYERS {
+        for p in 0..game.options.players {
             if p == game.active {
                 continue;
             }
@@ -174,7 +174,7 @@ impl BotMonte {
                 // Assign random cards to all players but the active player.
                 fastrand::shuffle(&mut hidden_cards);
                 let mut hidden_cards_idx = 0;
-                for p in 0..PLAYERS {
+                for p in 0..game.options.players {
                     if p == monte_player {
                         continue;
                     }
@@ -205,7 +205,7 @@ impl BotMonte {
                 let _ = sim_game.award_nest_cards();
                 sim_game.complete_hand();
 
-                // Manually calc score to exclude SUCCESS_BONUS.
+                // Manually calc score to exclude success bonus.
                 let this_sim_score = sim_game.scoring.taken[team]
                     + sim_game.scoring.nest[team]
                     + sim_game.scoring.last_trick[team];

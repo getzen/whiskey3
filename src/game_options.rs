@@ -12,11 +12,17 @@ pub enum PartnerKind {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum LastTrick {
-    NestToWinner(Points), // Points are in addition to card points.
-    NestToOpponents,
-    FixedPoints(Points)
+pub enum Nest {
+    ToLastTrickWinner,
+    ToDefenders,
 }
+
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// pub enum LastTrick {
+//     NestToWinner(Points), // Points are in addition to card points.
+//     NestToOpponents,
+//     FixedPoints(Points)
+// }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum BiddersWin {
@@ -33,7 +39,7 @@ pub enum BiddersLose {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DefendersWin {
     PointsTaken(Points), // Points = bonus for win.
-    Zero,
+    // other?
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,16 +52,17 @@ pub enum DefendersLose {
 pub struct GameOptions {
     pub players: usize,
 
-    pub hand_size: u8,
+    pub hand_size: usize,
     /// This might be smaller than the number of cards left after dealing.
     /// If so, it becomes the effective exhange limit. Any remaining cards in
     /// the deck are added to the nest after the exchange.
-    pub nest_size: u8,
+    pub nest_size: usize,
     /// The number of nest cards presented face up.
-    pub nest_face_up: u8,
+    pub nest_face_up: usize,
     pub min_bid: Points,
     pub max_bid: Points,
-    pub last_trick: LastTrick,
+    pub nest: Nest,
+    pub last_trick_pts: Points,
     pub bidders_win: BiddersWin,
     pub bidders_lose: BiddersLose,
     pub defenders_win: DefendersWin,
@@ -74,7 +81,8 @@ impl GameOptions {
             nest_face_up: 0,
             min_bid: 90,
             max_bid: 180,
-            last_trick: LastTrick::NestToWinner(0),
+            nest: Nest::ToLastTrickWinner,
+            last_trick_pts: 0,
             bidders_win: BiddersWin::PointsBid(20),
             bidders_lose: BiddersLose::Zero,
             defenders_win: DefendersWin::PointsTaken(40),

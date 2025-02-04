@@ -1,7 +1,7 @@
 use array2d::Array2D;
 use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 
-use crate::{game::POINTS_TO_WIN, scoring::Scoring};
+use crate::game::Game;
 
 use super::{
     texter::{AlignH, AlignV, Texter},
@@ -69,7 +69,8 @@ impl ScoreTable {
         }
     }
 
-    pub fn update(&mut self, scoring: &Scoring) {
+    pub fn update(&mut self, game: &Game) {
+        let scoring = &game.scoring;
         self.texters[(1, 1)].text = scoring.taken[0].to_string();
         self.texters[(1, 2)].text = scoring.taken[1].to_string();
 
@@ -94,8 +95,8 @@ impl ScoreTable {
         self.texters[(8, 1)].text = scoring.hand[0].to_string();
         self.texters[(8, 2)].text = scoring.hand[1].to_string();
 
-        self.texters[(9, 1)].text = format!("{}/{}", scoring.game[0], POINTS_TO_WIN);
-        self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], POINTS_TO_WIN);
+        self.texters[(9, 1)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
+        self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
     }
 
     pub fn draw(&self, parent_transform: Option<&Transform>) {

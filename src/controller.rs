@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use crate::bot_monte::BotMonte;
 use crate::card::{Id, Suit};
-use crate::game::{Bid, Game, PlayerAction, MAX_BID, NEST_SIZE};
+use crate::game::{Bid, Game, PlayerAction};
 
 use crate::view::view::View;
 
@@ -44,10 +44,12 @@ pub struct Controller {
 impl Controller {
     pub async fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
+        let game = Game::new();
+        let players = game.options.players;
 
         Self {
-            game: Game::new(),
-            view: View::new(sender.clone()).await,
+            game,
+            view: View::new(players, sender.clone()).await,
             sender,
             receiver,
             game_action: None,
@@ -327,15 +329,16 @@ impl Controller {
     fn spawn_bid_bot(&self) {
         let game_clone = self.game.clone();
         let sender = self.sender.clone();
-        let min_bid = self.game.min_bid();
+        let min_bid = self.game.min_current_bid();
+        let max_bid = self.game.options.max_bid;
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(min_bid, MAX_BID, &game_clone, 100, sender);
+            bot.get_bid(min_bid, max_bid, &game_clone, 100, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(min_bid, MAX_BID, &game_clone, 100, sender);
+                bot.get_bid(min_bid, max_bid, &game_clone, 100, sender);
             });
         }
     }
@@ -343,14 +346,15 @@ impl Controller {
     fn spawn_discard_bot(&self) {
         let game_clone = self.game.clone();
         let sender = self.sender.clone();
+        let nest_size = self.game.options.nest_size;
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.choose_discards(&game_clone, NEST_SIZE, sender);
+            bot.choose_discards(&game_clone, nest_size, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.choose_discards(&game_clone, NEST_SIZE, sender);
+                bot.choose_discards(&game_clone, nest_size, sender);
             });
         }
     }
