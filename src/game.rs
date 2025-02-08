@@ -1,7 +1,8 @@
 use crate::{
     card::{Card, Id, Points, Rank, Suit},
     game_options::{
-        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer, GameOptions, MajorityTricksTie, NestAwarded
+        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer,
+        GameOptions, MajorityTricksTie, NestAwarded,
     },
     scoring::Scoring,
     trick::Trick,
@@ -363,12 +364,12 @@ impl Game {
                     if face_up && card.points > 0 {
                         card.face_up = true;
                     }
-                },
+                }
                 DiscardedPointCards::OnlyWhenForced(face_up) => {
                     if face_up && card.points > 0 {
                         card.face_up = true;
                     }
-                },
+                }
             }
         }
     }
@@ -462,9 +463,9 @@ impl Game {
         self.trick.completed()
     }
 
-    pub fn tricks_played(&self) -> u8 {
-        self.scoring.trick_count[0] + self.scoring.trick_count[1]
-    }
+    // pub fn tricks_played(&self) -> u8 {
+    //     self.scoring.trick_count[0] + self.scoring.trick_count[1]
+    // }
 
     pub fn award_trick(&mut self) {
         self.last_trick_winner = self.trick.winner.unwrap();
@@ -562,9 +563,8 @@ impl Game {
                 DefendersLose::PointsTaken => {
                     self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team]
                 }
-               
+
                 DefendersLose::Zero => self.scoring.hand_final[defen_team] = 0,
-                
             }
         } else {
             // Defenders win

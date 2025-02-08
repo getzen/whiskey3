@@ -350,9 +350,7 @@ impl View {
     pub fn get_human_exchanges(&mut self, game: &Game) {
         let count = game.options.exchange_size - game.exchange.len();
         let text = format!("Discard {} cards", count);
-        self.update_message(&[
-            &text,
-        ]);
+        self.update_message(&[&text]);
         self.show_done_exchanging_button(false);
     }
 

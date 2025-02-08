@@ -50,7 +50,7 @@ pub fn bid_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     }
 }
 
-pub fn deck_geom(dealer: Option<usize>, player_count: usize, index: usize) -> ViewGeom {
+pub fn deck_geom(dealer: Option<usize>, player_count: usize, _index: usize) -> ViewGeom {
     if let Some(dealer) = dealer {
         let rad = player_radians_from_center(dealer, player_count);
         ViewGeom {
@@ -58,12 +58,11 @@ pub fn deck_geom(dealer: Option<usize>, player_count: usize, index: usize) -> Vi
             rot: player_rotation(dealer, player_count),
             ..Default::default()
         }
-    }
-    else {
+    } else {
         ViewGeom {
             pos: SCREEN + vec2(100.0, 100.0),
             ..Default::default()
-        }        
+        }
     }
 }
 
@@ -85,10 +84,10 @@ pub fn nest_exchange_geom(index: usize, count: usize) -> ViewGeom {
     }
 }
 
-pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
-    let max_width = 150.;
+pub fn nest_aside_geom(index: usize, _count: usize) -> ViewGeom {
     let max_spacing: f32 = 30.;
 
+    // let max_width = 150.;
     // let computed_width = max_width / count as f32;
     // let x_spacing = max_spacing.min(computed_width);
 

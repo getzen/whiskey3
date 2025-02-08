@@ -105,9 +105,9 @@ impl GameOptions {
         Self {
             players: 4,
             hand_size: 10,
-            exchange_size: 3,
-            exchange_face_up: 0,
-            nest_size: 2,
+            exchange_size: 5,
+            exchange_face_up: 1,
+            nest_size: 0,
             nest_face_up: 2,
             min_bid: 80,
             max_bid: 160,

@@ -94,11 +94,11 @@ impl ScoreTable {
         self.texters[(row, 1)].text = scoring.last_trick[0].to_string();
         self.texters[(row, 2)].text = scoring.last_trick[1].to_string();
         row += 1;
-        
+
         self.texters[(row, 1)].text = scoring.nest[0].to_string();
         self.texters[(row, 2)].text = scoring.nest[1].to_string();
         row += 1;
-        
+
         self.texters[(row, 1)].text = scoring.trick_count[0].to_string();
         self.texters[(row, 2)].text = scoring.trick_count[1].to_string();
         row += 1;
@@ -106,7 +106,7 @@ impl ScoreTable {
         self.texters[(row, 1)].text = scoring.majority_tricks[0].to_string();
         self.texters[(row, 2)].text = scoring.majority_tricks[1].to_string();
         row += 1;
-        
+
         // Dividing line.
         row += 1;
 
@@ -115,7 +115,7 @@ impl ScoreTable {
         self.texters[(row, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
         self.texters[(row, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
         row += 1;
-        
+
         self.texters[(row, 1)].text = scoring.bonus[0].to_string();
         self.texters[(row, 2)].text = scoring.bonus[1].to_string();
         row += 1;
