@@ -49,7 +49,7 @@ impl BotMonte {
         lowest_id
     }
 
-    pub fn choose_discards(&self, game: &Game, nest_size: usize, sender: Sender<PlayerAction>) {
+    pub fn choose_discards(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
         // Super basic: dump the three lowest non-trump cards.
 
         // Make a copy of the hand cards.
@@ -61,7 +61,7 @@ impl BotMonte {
 
         let trump = self.best_suit(&cards_copy);
 
-        while discards.len() < nest_size {
+        while discards.len() < exchange_size {
             let lowest_card_id = self.lowest_non_trump_card(&cards_copy, &Some(trump));
             discards.push(lowest_card_id);
             if let Some(idx) = cards_copy.iter().position(|c| c.id == lowest_card_id) {

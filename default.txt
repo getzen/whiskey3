@@ -1,27 +1,24 @@
 players: 4
-hand_size: 13
-nest_size: 1
-nest_face_up: 0
-min_bid: 75
-max_bid: 200
+hand_size: 10
+exchange_size: 3
+exchange_face_up: 0
+nest_size: 2
+nest_face_up: 2
+min_bid: 80
+max_bid: 160
+discard_point_cards: !OnlyWhenForced true
 nest_awarded: ToLastTrickWinner
 first_player: LeftOfBidder
-last_trick_pts: 20
-majority_of_tricks_pts: 20
-majority_tricks_tie: ToDefenders
+last_trick_pts: 0
+majority_of_tricks_pts: 0
+majority_tricks_tie: NoPoints
 bidders_win: !PointsBid 20
 bidders_lose: Zero
-defenders_win: !PointsTaken 40
+defenders_win: !PointsTakenWithCap 80
 defenders_lose: PointsTaken
-points_to_win_game: 400
+points_to_win_game: 300
 cards_in_deck:
 - - Club
-  - 2
-  - 0
-- - Club
-  - 3
-  - 0
-- - Club
   - 4
   - 0
 - - Club
@@ -54,12 +51,6 @@ cards_in_deck:
 - - Club
   - 14
   - 15
-- - Diamond
-  - 2
-  - 0
-- - Diamond
-  - 3
-  - 0
 - - Diamond
   - 4
   - 0
@@ -94,12 +85,6 @@ cards_in_deck:
   - 14
   - 15
 - - Heart
-  - 2
-  - 0
-- - Heart
-  - 3
-  - 0
-- - Heart
   - 4
   - 0
 - - Heart
@@ -132,12 +117,6 @@ cards_in_deck:
 - - Heart
   - 14
   - 15
-- - Spade
-  - 2
-  - 0
-- - Spade
-  - 3
-  - 0
 - - Spade
   - 4
   - 0
@@ -172,5 +151,5 @@ cards_in_deck:
   - 14
   - 15
 - - Joker
-  - 1
-  - 20
+  - 15
+  - 0

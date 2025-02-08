@@ -1,8 +1,7 @@
 use crate::{
     card::{Card, Id, Points, Rank, Suit},
     game_options::{
-        BiddersLose, BiddersWin, DefendersLose, DefendersWin, FirstPlayer, GameOptions,
-        MajorityTricksTie, NestAwarded,
+        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer, GameOptions, MajorityTricksTie, NestAwarded
     },
     scoring::Scoring,
     trick::Trick,
@@ -34,6 +33,7 @@ pub struct Game {
 
     pub scoring: Scoring,
     pub deck: Vec<Card>,
+    pub exchange: Vec<Card>,
     pub nest: Vec<Card>,
     pub hands: Vec<Vec<Card>>,
     pub bids: Vec<Option<Bid>>,
@@ -43,6 +43,7 @@ pub struct Game {
     pub dealer: usize,
     /// The active player.
     pub active: usize,
+    exchange_face_up_count: usize,
     nest_face_up_count: usize,
 
     /// The high bidder.
@@ -53,17 +54,18 @@ pub struct Game {
     pub trump_suit: Option<Suit>,
     /// The current trick
     pub trick: Trick,
-    //pub tricks_played: usize,
     pub last_trick_winner: usize,
 
     pub hand_cards_to_deal: usize,
+    pub exchange_cards_to_deal: usize,
     pub nest_cards_to_deal: usize,
 }
 
 impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
-        let options = GameOptions::one_high_partnership();
+        let options = GameOptions::whiskey_4();
+        // let options = GameOptions::one_high_partnership();
         // let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
 
@@ -94,21 +96,23 @@ impl Game {
             bot_players,
             scoring: Scoring::new(),
             deck: Vec::new(),
+            exchange: Vec::new(),
             nest: Vec::new(),
             hands,
             bids,
             taken,
             dealer,
             active: dealer,
+            exchange_face_up_count: 0,
             nest_face_up_count: 0,
             maker: None,
             high_bid: 0,
             trump_suit: None,
             trick: Trick::new(players),
-            //tricks_played: 0,
             last_trick_winner: 0,
 
             hand_cards_to_deal: 0,
+            exchange_cards_to_deal: 0,
             nest_cards_to_deal: 0,
         }
     }
@@ -192,12 +196,14 @@ impl Game {
 
         self.dealer = (self.dealer + 1) % self.options.players;
         self.active = self.dealer;
+        self.exchange_face_up_count = 0;
         self.nest_face_up_count = 0;
         self.maker = None;
         self.high_bid = 0;
         self.set_joker_suit(Suit::Joker);
 
         self.hand_cards_to_deal = self.options.hand_size * self.options.players;
+        self.exchange_cards_to_deal = self.options.exchange_size;
         self.nest_cards_to_deal = self.options.nest_size;
     }
 
@@ -237,6 +243,15 @@ impl Game {
         self.next_player();
     }
 
+    pub fn deal_card_to_exchange(&mut self) {
+        let mut card = self.deck.pop().unwrap();
+        if self.exchange_face_up_count < self.options.exchange_face_up {
+            card.face_up = true;
+            self.exchange_face_up_count += 1;
+        }
+        self.exchange.push(card);
+    }
+
     pub fn deal_card_to_nest(&mut self) {
         let mut card = self.deck.pop().unwrap();
         if self.nest_face_up_count < self.options.nest_face_up {
@@ -244,6 +259,11 @@ impl Game {
             self.nest_face_up_count += 1;
         }
         self.nest.push(card);
+    }
+
+    pub fn set_active_player_after_deal(&mut self) {
+        self.active = self.dealer;
+        self.next_player();
     }
 
     pub fn sort_hand(&mut self, p: usize) {
@@ -298,11 +318,11 @@ impl Game {
         bids == 1 && (bids + passes) == self.options.players
     }
 
-    pub fn move_nest_cards_to_maker(&mut self) {
+    pub fn move_exchange_cards_to_maker(&mut self) {
         let maker = self.maker.unwrap();
         let is_human = !self.bot_players[maker];
-        while !self.nest.is_empty() {
-            if let Some(mut card) = self.nest.pop() {
+        while !self.exchange.is_empty() {
+            if let Some(mut card) = self.exchange.pop() {
                 card.face_up = is_human || DEBUGGING;
                 self.hands[maker].push(card);
             }
@@ -313,40 +333,58 @@ impl Game {
         self.sort_hand(maker);
     }
 
-    pub fn exchange_with_nest(&mut self, id: Id) {
+    pub fn swap_with_exchange(&mut self, id: Id) {
         let maker = self.maker.unwrap();
 
         // Check if hand card.
         if let Some(idx) = self.hands[maker].iter().position(|c| c.id == id) {
-            if !self.nest_is_full() {
+            if !self.exchange_is_full() {
                 let card = self.hands[maker].remove(idx);
-                self.nest.push(card);
+                self.exchange.push(card);
             }
         }
         // Check if nest card.
-        else if let Some(idx) = self.nest.iter().position(|c| c.id == id) {
-            let card = self.nest.remove(idx);
+        else if let Some(idx) = self.exchange.iter().position(|c| c.id == id) {
+            let card = self.exchange.remove(idx);
             self.hands[maker].push(card);
             self.sort_hand(maker);
         }
     }
 
-    pub fn nest_is_full(&self) -> bool {
-        self.nest.len() == self.options.nest_size
+    pub fn exchange_is_full(&self) -> bool {
+        self.exchange.len() == self.options.exchange_size
     }
 
-    /// Experiment
-    pub fn add_deck_cards_to_nest(&mut self) {
-        while !self.deck.is_empty() {
-            self.nest.push(self.deck.pop().unwrap());
+    pub fn turn_exchange_cards(&mut self) {
+        for card in &mut self.exchange {
+            card.face_up = false; // default
+            match self.options.discard_point_cards {
+                DiscardedPointCards::Allowed(face_up) => {
+                    if face_up && card.points > 0 {
+                        card.face_up = true;
+                    }
+                },
+                DiscardedPointCards::OnlyWhenForced(face_up) => {
+                    if face_up && card.points > 0 {
+                        card.face_up = true;
+                    }
+                },
+            }
         }
     }
 
-    pub fn turn_nest_cards(&mut self, face_up: bool) {
-        for card in &mut self.nest {
-            card.face_up = face_up || DEBUGGING;
+    pub fn add_exchange_cards_to_nest(&mut self) {
+        while !self.exchange.is_empty() {
+            self.nest.push(self.exchange.pop().unwrap());
         }
+        self.nest.sort_by(|a, b| a.face_up.cmp(&b.face_up));
     }
+
+    // pub fn turn_nest_cards(&mut self, face_up: bool) {
+    //     for card in &mut self.nest {
+    //         card.face_up = face_up || DEBUGGING;
+    //     }
+    // }
 
     pub fn set_trump_suit(&mut self, suit: Suit) {
         self.trump_suit = Some(suit);
@@ -524,7 +562,9 @@ impl Game {
                 DefendersLose::PointsTaken => {
                     self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team]
                 }
+               
                 DefendersLose::Zero => self.scoring.hand_final[defen_team] = 0,
+                
             }
         } else {
             // Defenders win
@@ -539,6 +579,10 @@ impl Game {
                     self.scoring.bonus[defen_team] = bonus;
                     self.scoring.hand_final[defen_team] =
                         self.scoring.hand_subtotal[defen_team] + self.scoring.bonus[defen_team];
+                }
+                DefendersWin::PointsTakenWithCap(cap) => {
+                    let capped_pts = self.scoring.hand_subtotal[defen_team].min(cap);
+                    self.scoring.hand_final[defen_team] = capped_pts;
                 }
             }
         }

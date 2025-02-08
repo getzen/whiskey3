@@ -231,11 +231,24 @@ impl View {
     pub fn update_deck(&mut self, game: &Game) {
         for (idx, card) in game.deck.iter().enumerate() {
             if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::deck_geom(idx);
+                let geom = view_geom::deck_geom(Some(game.dealer), game.options.players, idx);
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;
                 view.set_face_up(false)
+            }
+        }
+        self.z_order_needs_update = true;
+    }
+
+    pub fn update_exchange(&mut self, game: &Game) {
+        for (idx, card) in game.exchange.iter().enumerate() {
+            if let Some(view) = self.find_card_view_mut(card.id) {
+                let geom = view_geom::nest_exchange_geom(idx, game.exchange.len());
+                view.move_to(geom.pos, view_geom::CARD_SPEED);
+                view.rotate_to(geom.rot, view_geom::ROT_SPEED);
+                view.card_image.z_order = geom.z;
+                view.set_face_up(card.face_up);
             }
         }
         self.z_order_needs_update = true;
@@ -246,7 +259,7 @@ impl View {
             if let Some(view) = self.find_card_view_mut(card.id) {
                 let geom = match aside {
                     true => view_geom::nest_aside_geom(idx, game.nest.len()),
-                    false => view_geom::nest_geom(idx, game.nest.len()),
+                    false => view_geom::nest_exchange_geom(idx, game.nest.len()),
                 };
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
@@ -334,11 +347,11 @@ impl View {
         }
     }
 
-    pub fn get_human_exchanges(&mut self) {
+    pub fn get_human_exchanges(&mut self, game: &Game) {
+        let count = game.options.exchange_size - game.exchange.len();
+        let text = format!("Discard {} cards", count);
         self.update_message(&[
-            "Discard to the nest.",
-            "Any point cards go to your opponents",
-            "at the end of the hand",
+            &text,
         ]);
         self.show_done_exchanging_button(false);
     }

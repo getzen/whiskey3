@@ -11,6 +11,7 @@ pub enum GameAction {
     Setup,
     ResetForNewHand,
     DealToHands,
+    DealToExchange,
     DealToNest,
     GetBid,
     MakeBid(Bid),
@@ -136,6 +137,17 @@ impl Controller {
                                 self.game.deal_card_to_hand();
                                 self.view.update_hand(&self.game, player);
                             } else {
+                                self.game_action = Some(GameAction::DealToExchange);
+                            }
+                        }
+                        GameAction::DealToExchange => {
+                            if self.game.exchange_cards_to_deal > 0 {
+                                self.game.exchange_cards_to_deal -= 1;
+                                self.game.deal_card_to_exchange();
+                                self.view.update_exchange(&self.game);
+                                self.delay_before_game_action = 0.5;
+                            } else {
+                                self.delay_before_game_action = 0.5;
                                 self.game_action = Some(GameAction::DealToNest);
                             }
                         }
@@ -143,9 +155,10 @@ impl Controller {
                             if self.game.nest_cards_to_deal > 0 {
                                 self.game.nest_cards_to_deal -= 1;
                                 self.game.deal_card_to_nest();
-                                self.view.update_nest(&self.game, false);
+                                self.view.update_nest(&self.game, true);
                                 self.delay_before_game_action = 0.5;
                             } else {
+                                self.game.set_active_player_after_deal();
                                 self.delay_before_game_action = 1.0;
                                 self.game_action = Some(GameAction::GetBid);
                             }
@@ -184,7 +197,7 @@ impl Controller {
                             self.game_action = Some(GameAction::MoveNestToMaker);
                         }
                         GameAction::MoveNestToMaker => {
-                            self.game.move_nest_cards_to_maker();
+                            self.game.move_exchange_cards_to_maker();
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
                             self.view.set_discardable_hand_cards(&self.game);
@@ -195,22 +208,22 @@ impl Controller {
                                 self.view.get_bot_discards(&self.game);
                                 self.spawn_discard_bot();
                             } else {
-                                self.view.get_human_exchanges();
+                                self.view.get_human_exchanges(&self.game);
                             }
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
                         }
                         GameAction::Exchange(id) => {
                             // human
-                            self.game.exchange_with_nest(*id);
+                            self.game.swap_with_exchange(*id);
 
                             // Disable Done button if nest is full.
                             self.view
-                                .show_done_exchanging_button(self.game.nest_is_full());
+                                .show_done_exchanging_button(self.game.exchange_is_full());
 
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
-                            self.view.update_nest(&self.game, false);
+                            self.view.update_exchange(&self.game);
 
                             self.game_action = None;
                         }
@@ -218,25 +231,24 @@ impl Controller {
                             // bot
                             for id in ids {
                                 // The cards will already be face down.
-                                self.game.exchange_with_nest(*id);
+                                self.game.swap_with_exchange(*id);
 
                                 let maker = self.game.maker.unwrap();
                                 self.view.update_hand(&self.game, maker);
-                                self.view.update_nest(&self.game, false);
+                                self.view.update_exchange(&self.game);
                             }
                             self.delay_before_game_action = 1.5;
                             self.game_action = Some(GameAction::EndExchanging);
                         }
                         GameAction::EndExchanging => {
                             let maker = self.game.maker.unwrap();
-                            self.game.turn_nest_cards(false);
-
-                            // Experiment
-                            self.game.add_deck_cards_to_nest();
+                            self.game.turn_exchange_cards();
+                            self.game.add_exchange_cards_to_nest();
 
                             self.view.reset_eligibility(&self.game.hands[maker]);
                             self.view.reset_eligibility(&self.game.nest);
                             self.view.hide_done_exchanging_button();
+                            self.view.update_exchange(&self.game);
                             self.view.update_nest(&self.game, true); // true == aside
 
                             self.game_action = Some(GameAction::GetTrump);
@@ -346,15 +358,15 @@ impl Controller {
     fn spawn_discard_bot(&self) {
         let game_clone = self.game.clone();
         let sender = self.sender.clone();
-        let nest_size = self.game.options.nest_size;
+        let exchange_size = self.game.options.exchange_size;
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.choose_discards(&game_clone, nest_size, sender);
+            bot.choose_discards(&game_clone, exchange_size, sender);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.choose_discards(&game_clone, nest_size, sender);
+                bot.choose_discards(&game_clone, exchange_size, sender);
             });
         }
     }
