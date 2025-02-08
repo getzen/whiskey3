@@ -1,5 +1,11 @@
 use crate::{
-    card::{Card, Id, Points, Rank, Suit}, game_options::{BiddersLose, BiddersWin, DefendersLose, DefendersWin, GameOptions, Nest}, scoring::Scoring, trick::Trick
+    card::{Card, Id, Points, Rank, Suit},
+    game_options::{
+        BiddersLose, BiddersWin, DefendersLose, DefendersWin, FirstPlayer, GameOptions,
+        MajorityTricksTie, NestAwarded,
+    },
+    scoring::Scoring,
+    trick::Trick,
 };
 
 pub const DEBUGGING: bool = false;
@@ -47,7 +53,7 @@ pub struct Game {
     pub trump_suit: Option<Suit>,
     /// The current trick
     pub trick: Trick,
-    pub tricks_played: usize,
+    //pub tricks_played: usize,
     pub last_trick_winner: usize,
 
     pub hand_cards_to_deal: usize,
@@ -57,7 +63,8 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
-        let options = GameOptions::new();
+        let options = GameOptions::one_high_partnership();
+        // let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
 
         // Read as normal.
@@ -80,8 +87,7 @@ impl Game {
             taken.push(Vec::new());
         }
 
-        let dealer = fastrand::usize(0..4);
-
+        let dealer = fastrand::usize(0..players);
 
         Self {
             options,
@@ -99,7 +105,7 @@ impl Game {
             high_bid: 0,
             trump_suit: None,
             trick: Trick::new(players),
-            tricks_played: 0,
+            //tricks_played: 0,
             last_trick_winner: 0,
 
             hand_cards_to_deal: 0,
@@ -138,18 +144,6 @@ impl Game {
         }
     }
 
-    // pub fn hand_size(&self) -> usize {
-    //     (ALL_CARDS.len() - NEST_SIZE) / PLAYERS
-    // }
-
-    // pub fn max_bid(&self) -> Points {
-    //     let mut bid = 0;
-    //     for (_suit, _rank, points) in &ALL_CARDS {
-    //         bid += points;
-    //     }
-    //     bid
-    // }
-
     fn create_card(&mut self, id: Id, suit: Suit, rank: Rank, points: Points) {
         let mut card = Card::new(id, suit, rank, points);
         card.face_up = false;
@@ -158,12 +152,23 @@ impl Game {
 
     pub fn create_deck(&mut self) {
         let mut id = 0;
+        let mut hand_points = 0;
         let cards_in_deck = self.options.cards_in_deck.clone();
         for (suit, rank, points) in cards_in_deck {
             self.create_card(id, suit, rank, points);
             id += 1;
+            hand_points += points;
         }
-        println!("cards created: {}", self.deck.len());
+
+        // Hand points hould equal max bid.
+        hand_points += self.options.last_trick_pts;
+        hand_points += self.options.majority_of_tricks_pts;
+        println!(
+            "cards created: {}, max_bid: {}, pts_found: {}",
+            self.deck.len(),
+            self.options.max_bid,
+            hand_points
+        );
     }
 
     fn next_player(&mut self) {
@@ -171,6 +176,8 @@ impl Game {
     }
 
     pub fn reset_for_new_hand(&mut self) {
+        self.scoring = self.scoring.new_for_next_hand();
+
         // If a game is over, all the cards are now in "taken."
         for p in 0..self.options.players {
             if !self.taken[p].is_empty() {
@@ -188,7 +195,6 @@ impl Game {
         self.nest_face_up_count = 0;
         self.maker = None;
         self.high_bid = 0;
-        self.tricks_played = 0;
         self.set_joker_suit(Suit::Joker);
 
         self.hand_cards_to_deal = self.options.hand_size * self.options.players;
@@ -245,7 +251,11 @@ impl Game {
     }
 
     pub fn min_current_bid(&self) -> Points {
-        self.options.min_bid.max(self.high_bid + 5)
+        if self.high_bid == 0 {
+            self.options.min_bid
+        } else {
+            self.high_bid + 5
+        }
     }
 
     pub fn make_bid(&mut self, bid: Bid) {
@@ -342,8 +352,18 @@ impl Game {
         self.trump_suit = Some(suit);
         self.set_joker_suit(suit);
         self.sort_hand(0);
-        // The first trick begins with the player after the winning bidder.
-        self.next_player();
+
+        // Who starts the first trick?
+        match self.options.first_player {
+            FirstPlayer::LeftOfBidder => {
+                self.active = self.maker.unwrap();
+                self.next_player();
+            }
+            FirstPlayer::LeftOfDealer => {
+                self.active = self.dealer;
+                self.next_player();
+            }
+        }
     }
 
     fn has_card_in_lead_suit(&self) -> bool {
@@ -404,12 +424,17 @@ impl Game {
         self.trick.completed()
     }
 
+    pub fn tricks_played(&self) -> u8 {
+        self.scoring.trick_count[0] + self.scoring.trick_count[1]
+    }
+
     pub fn award_trick(&mut self) {
         self.last_trick_winner = self.trick.winner.unwrap();
 
         let team = self.team_index(self.last_trick_winner);
-        self.scoring.taken[team] += self.trick.points;
-        self.tricks_played += 1;
+        self.scoring.points_taken[team] += self.trick.points;
+        self.scoring.trick_count[team] += 1;
+        self.scoring.update_hand_subtotals();
 
         for opt_card in &mut self.trick.cards {
             let card = opt_card.take().unwrap();
@@ -428,71 +453,94 @@ impl Game {
 
     pub fn award_nest_cards(&mut self) -> Points {
         let mut points = 0;
-        
+
         for card in &mut self.nest {
             card.face_up = true;
             points += card.points;
         }
         // Who gets the nest points?
-        match self.options.nest {
-            Nest::ToLastTrickWinner => {
+        match self.options.nest_awarded {
+            NestAwarded::ToLastTrickWinner => {
                 let winner = self.trick.winner.unwrap();
                 let team = self.team_index(winner);
                 self.scoring.nest[team] = points;
-            },
-            Nest::ToDefenders => {
+            }
+            NestAwarded::ToDefenders => {
                 let opp = self.opponent_index(self.maker.unwrap());
                 self.scoring.nest[opp] = points;
-            },
+            }
         }
+        self.scoring.update_hand_subtotals();
         points
     }
 
     pub fn complete_hand(&mut self) {
         let maker = self.maker.unwrap();
-        let team = self.team_index(maker);
-        let opp = self.opponent_index(maker);
+        let maker_team = self.team_index(maker);
+        let defen_team = self.opponent_index(maker);
 
-        // Last trick bonus
+        // Award last trick bonus
         let last_trick_team = self.team_index(self.last_trick_winner);
         self.scoring.last_trick[last_trick_team] = self.options.last_trick_pts;
 
-        let maker_total =
-            self.scoring.taken[team] + self.scoring.nest[team] + self.scoring.last_trick[team];
-        let opp_total =
-            self.scoring.taken[opp] + self.scoring.nest[opp] + self.scoring.last_trick[opp];
+        // Award points for taking the majority of tricks
+        if self.scoring.trick_count[maker_team] > self.scoring.trick_count[defen_team] {
+            self.scoring.majority_tricks[maker_team] = self.options.majority_of_tricks_pts;
+        } else if self.scoring.trick_count[defen_team] > self.scoring.trick_count[maker_team] {
+            self.scoring.majority_tricks[defen_team] = self.options.majority_of_tricks_pts;
+        } else {
+            // It's a tie
+            match self.options.majority_tricks_tie {
+                MajorityTricksTie::ToDefenders => {
+                    self.scoring.majority_tricks[defen_team] = self.options.majority_of_tricks_pts;
+                }
+                MajorityTricksTie::SplitBetween => {
+                    self.scoring.majority_tricks[maker_team] =
+                        self.options.majority_of_tricks_pts / 2;
+                    self.scoring.majority_tricks[defen_team] =
+                        self.options.majority_of_tricks_pts / 2;
+                }
+                MajorityTricksTie::NoPoints => {}
+            }
+        }
 
-        
-        if maker_total >= self.high_bid {
+        self.scoring.update_hand_subtotals();
+
+        let maker_subtotal = self.scoring.hand_subtotal[maker_team];
+
+        if maker_subtotal >= self.high_bid {
             // Success by makers
             match self.options.bidders_win {
                 BiddersWin::PointsBid(bonus) => {
-                    self.scoring.bonus[team] = bonus;
-                    self.scoring.hand[team] = self.scoring.bid[team] + bonus;
-                },
+                    self.scoring.bonus[maker_team] = bonus;
+                    self.scoring.hand_final[maker_team] = self.scoring.bid[maker_team] + bonus;
+                }
                 BiddersWin::PointsTaken(bonus) => {
-                    self.scoring.bonus[team] = bonus;
-                    self.scoring.hand[team] = self.scoring.taken[team] + bonus;
-                },
+                    self.scoring.bonus[maker_team] = bonus;
+                    self.scoring.hand_final[maker_team] = maker_subtotal + bonus;
+                }
             }
             match self.options.defenders_lose {
-                DefendersLose::PointsTaken => self.scoring.hand[opp] = opp_total,
-                DefendersLose::Zero => self.scoring.hand[opp] = 0,
+                DefendersLose::PointsTaken => {
+                    self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team]
+                }
+                DefendersLose::Zero => self.scoring.hand_final[defen_team] = 0,
             }
-            
         } else {
             // Defenders win
             match self.options.bidders_lose {
-                BiddersLose::Zero => self.scoring.hand[team] = 0,
-                BiddersLose::MinusBid => self.scoring.hand[team] = -self.scoring.bid[team],
+                BiddersLose::Zero => self.scoring.hand_final[maker_team] = 0,
+                BiddersLose::MinusBid => {
+                    self.scoring.hand_final[maker_team] = -self.scoring.bid[maker_team]
+                }
             }
             match self.options.defenders_win {
                 DefendersWin::PointsTaken(bonus) => {
-                    self.scoring.bonus[opp] = bonus;
-                    self.scoring.hand[opp] = opp_total + self.scoring.bonus[opp];
-                },
+                    self.scoring.bonus[defen_team] = bonus;
+                    self.scoring.hand_final[defen_team] =
+                        self.scoring.hand_subtotal[defen_team] + self.scoring.bonus[defen_team];
+                }
             }
-            
         }
         self.scoring.update_game_scores();
     }

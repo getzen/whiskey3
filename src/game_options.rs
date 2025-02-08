@@ -12,21 +12,27 @@ pub enum PartnerKind {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Nest {
+pub enum NestAwarded {
     ToLastTrickWinner,
     ToDefenders,
 }
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
-// pub enum LastTrick {
-//     NestToWinner(Points), // Points are in addition to card points.
-//     NestToOpponents,
-//     FixedPoints(Points)
-// }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum MajorityTricksTie {
+    ToDefenders,
+    SplitBetween,
+    NoPoints,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum FirstPlayer {
+    LeftOfBidder,
+    LeftOfDealer,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum BiddersWin {
-    PointsBid(Points), // Points = bonus for win.
+    PointsBid(Points),   // Points = bonus for win.
     PointsTaken(Points), // Points = bonus for win.
 }
 
@@ -39,7 +45,7 @@ pub enum BiddersLose {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DefendersWin {
     PointsTaken(Points), // Points = bonus for win.
-    // other?
+                         // other?
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -61,8 +67,12 @@ pub struct GameOptions {
     pub nest_face_up: usize,
     pub min_bid: Points,
     pub max_bid: Points,
-    pub nest: Nest,
+    pub nest_awarded: NestAwarded,
+    // TODO: added PointsAllowedInNest
+    pub first_player: FirstPlayer,
     pub last_trick_pts: Points,
+    pub majority_of_tricks_pts: Points,
+    pub majority_tricks_tie: MajorityTricksTie,
     pub bidders_win: BiddersWin,
     pub bidders_lose: BiddersLose,
     pub defenders_win: DefendersWin,
@@ -73,24 +83,91 @@ pub struct GameOptions {
 }
 
 impl GameOptions {
-    pub fn new() -> Self {
+    pub fn whiskey_4() -> Self {
         Self {
             players: 4,
-            hand_size: 10,
-            nest_size: 4,
+            hand_size: 9,
+            nest_size: 5,
             nest_face_up: 0,
-            min_bid: 90,
-            max_bid: 180,
-            nest: Nest::ToLastTrickWinner,
+            min_bid: 50, // "official" is 70
+            max_bid: 100,
+            nest_awarded: NestAwarded::ToLastTrickWinner,
+            first_player: FirstPlayer::LeftOfDealer,
             last_trick_pts: 0,
-            bidders_win: BiddersWin::PointsBid(20),
-            bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(40),
+            majority_of_tricks_pts: 0,
+            majority_tricks_tie: MajorityTricksTie::NoPoints,
+            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_lose: BiddersLose::MinusBid,
+            defenders_win: DefendersWin::PointsTaken(0),
+            defenders_lose: DefendersLose::PointsTaken,
+            points_to_win_game: 200,
+            cards_in_deck: vec![
+                (Suit::Club, 5, 5),
+                (Suit::Club, 6, 0),
+                (Suit::Club, 7, 0),
+                (Suit::Club, 8, 0),
+                (Suit::Club, 9, 0),
+                (Suit::Club, 10, 10),
+                (Suit::Club, 11, 0),
+                (Suit::Club, 12, 0),
+                (Suit::Club, 13, 0),
+                (Suit::Club, 14, 10),
+                (Suit::Diamond, 5, 5),
+                (Suit::Diamond, 6, 0),
+                (Suit::Diamond, 7, 0),
+                (Suit::Diamond, 8, 0),
+                (Suit::Diamond, 9, 0),
+                (Suit::Diamond, 10, 10),
+                (Suit::Diamond, 11, 0),
+                (Suit::Diamond, 12, 0),
+                (Suit::Diamond, 13, 0),
+                (Suit::Diamond, 14, 10),
+                (Suit::Heart, 5, 5),
+                (Suit::Heart, 6, 0),
+                (Suit::Heart, 7, 0),
+                (Suit::Heart, 8, 0),
+                (Suit::Heart, 9, 0),
+                (Suit::Heart, 10, 10),
+                (Suit::Heart, 11, 0),
+                (Suit::Heart, 12, 0),
+                (Suit::Heart, 13, 0),
+                (Suit::Heart, 14, 10),
+                (Suit::Spade, 5, 5),
+                (Suit::Spade, 6, 0),
+                (Suit::Spade, 7, 0),
+                (Suit::Spade, 8, 0),
+                (Suit::Spade, 9, 0),
+                (Suit::Spade, 10, 10),
+                (Suit::Spade, 11, 0),
+                (Suit::Spade, 12, 0),
+                (Suit::Spade, 13, 0),
+                (Suit::Spade, 14, 10),
+                (Suit::Joker, 15, 0),
+            ],
+        }
+    }
+
+    pub fn one_high_partnership() -> Self {
+        Self {
+            players: 4,
+            hand_size: 13,
+            nest_size: 1,
+            nest_face_up: 0,
+            min_bid: 75,
+            max_bid: 200,
+            nest_awarded: NestAwarded::ToLastTrickWinner,
+            first_player: FirstPlayer::LeftOfBidder,
+            last_trick_pts: 0,
+            majority_of_tricks_pts: 20,
+            majority_tricks_tie: MajorityTricksTie::ToDefenders,
+            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_lose: BiddersLose::MinusBid,
+            defenders_win: DefendersWin::PointsTaken(0),
             defenders_lose: DefendersLose::PointsTaken,
             points_to_win_game: 400,
             cards_in_deck: vec![
-                //(Suit::Club, 2, 0),
-                //(Suit::Club, 3, 0),
+                (Suit::Club, 2, 0),
+                (Suit::Club, 3, 0),
                 (Suit::Club, 4, 0),
                 (Suit::Club, 5, 5),
                 (Suit::Club, 6, 0),
@@ -102,8 +179,8 @@ impl GameOptions {
                 (Suit::Club, 12, 0),
                 (Suit::Club, 13, 10),
                 (Suit::Club, 14, 15),
-                //(Suit::Diamond, 2, 0),
-                //(Suit::Diamond, 3, 0),
+                (Suit::Diamond, 2, 0),
+                (Suit::Diamond, 3, 0),
                 (Suit::Diamond, 4, 0),
                 (Suit::Diamond, 5, 5),
                 (Suit::Diamond, 6, 0),
@@ -115,8 +192,8 @@ impl GameOptions {
                 (Suit::Diamond, 12, 0),
                 (Suit::Diamond, 13, 10),
                 (Suit::Diamond, 14, 15),
-                //(Suit::Heart, 2, 0),
-                //(Suit::Heart, 3, 0),
+                (Suit::Heart, 2, 0),
+                (Suit::Heart, 3, 0),
                 (Suit::Heart, 4, 0),
                 (Suit::Heart, 5, 5),
                 (Suit::Heart, 6, 0),
@@ -128,8 +205,8 @@ impl GameOptions {
                 (Suit::Heart, 12, 0),
                 (Suit::Heart, 13, 10),
                 (Suit::Heart, 14, 15),
-                //(Suit::Spade, 2, 0),
-                //(Suit::Spade, 3, 0),
+                (Suit::Spade, 2, 0),
+                (Suit::Spade, 3, 0),
                 (Suit::Spade, 4, 0),
                 (Suit::Spade, 5, 5),
                 (Suit::Spade, 6, 0),
@@ -141,7 +218,70 @@ impl GameOptions {
                 (Suit::Spade, 12, 0),
                 (Suit::Spade, 13, 10),
                 (Suit::Spade, 14, 15),
-                (Suit::Joker, 15, 0),
+                (Suit::Joker, 1, 20),
+            ],
+        }
+    }
+
+    pub fn kentucky_discard() -> Self {
+        Self {
+            players: 4,
+            hand_size: 9,
+            nest_size: 5,
+            nest_face_up: 0,
+            min_bid: 50, // "official" is 70
+            max_bid: 100,
+            nest_awarded: NestAwarded::ToLastTrickWinner,
+            first_player: FirstPlayer::LeftOfDealer,
+            last_trick_pts: 0,
+            majority_of_tricks_pts: 0,
+            majority_tricks_tie: MajorityTricksTie::NoPoints,
+            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_lose: BiddersLose::MinusBid,
+            defenders_win: DefendersWin::PointsTaken(0),
+            defenders_lose: DefendersLose::PointsTaken,
+            points_to_win_game: 200,
+            cards_in_deck: vec![
+                (Suit::Club, 5, 5),
+                (Suit::Club, 6, 0),
+                (Suit::Club, 7, 0),
+                (Suit::Club, 8, 0),
+                (Suit::Club, 9, 0),
+                (Suit::Club, 10, 10),
+                (Suit::Club, 11, 0),
+                (Suit::Club, 12, 0),
+                (Suit::Club, 13, 0),
+                (Suit::Club, 14, 10),
+                (Suit::Diamond, 5, 5),
+                (Suit::Diamond, 6, 0),
+                (Suit::Diamond, 7, 0),
+                (Suit::Diamond, 8, 0),
+                (Suit::Diamond, 9, 0),
+                (Suit::Diamond, 10, 10),
+                (Suit::Diamond, 11, 0),
+                (Suit::Diamond, 12, 0),
+                (Suit::Diamond, 13, 0),
+                (Suit::Diamond, 14, 10),
+                (Suit::Heart, 5, 5),
+                (Suit::Heart, 6, 0),
+                (Suit::Heart, 7, 0),
+                (Suit::Heart, 8, 0),
+                (Suit::Heart, 9, 0),
+                (Suit::Heart, 10, 10),
+                (Suit::Heart, 11, 0),
+                (Suit::Heart, 12, 0),
+                (Suit::Heart, 13, 0),
+                (Suit::Heart, 14, 10),
+                (Suit::Spade, 5, 5),
+                (Suit::Spade, 6, 0),
+                (Suit::Spade, 7, 0),
+                (Suit::Spade, 8, 0),
+                (Suit::Spade, 9, 0),
+                (Suit::Spade, 10, 10),
+                (Suit::Spade, 11, 0),
+                (Suit::Spade, 12, 0),
+                (Suit::Spade, 13, 0),
+                (Suit::Spade, 14, 10),
                 (Suit::Joker, 15, 0),
             ],
         }

@@ -156,6 +156,8 @@ impl View {
         //     return;
         // }
 
+        self.score_table.process_events(None, mouse_pos);
+
         if self.bid_panel.process_events(None, mouse_pos) {
             return;
         }
@@ -203,11 +205,13 @@ impl View {
         for bid_marker in &mut self.bid_markers {
             bid_marker.update(time_delta);
         }
+
+        self.score_table.update(time_delta);
     }
 
     pub fn update_info(&mut self, game: &Game) {
         self.score_table.visible = true;
-        self.score_table.update(&game);
+        self.score_table.update_scoring(&game);
 
         self.turn_marker.visible = true;
         let geom = view_geom::turn_marker_geom(game.active, game.options.players);
@@ -274,8 +278,13 @@ impl View {
 
         for (idx, card) in hand.iter().enumerate() {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                let geom =
-                    view_geom::hand_card_geom(player, idx, hand.len(), game.options.players, is_bot);
+                let geom = view_geom::hand_card_geom(
+                    player,
+                    idx,
+                    hand.len(),
+                    game.options.players,
+                    is_bot,
+                );
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;

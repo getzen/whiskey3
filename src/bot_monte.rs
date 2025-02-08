@@ -115,7 +115,8 @@ impl BotMonte {
         if bid_pts >= min {
             // bid_pts is the max we should bid. Let's bid half-way between
             // the min and bid_pts to allow room to raise. Add a random factor?
-            let mut adj_bid = ((bid_pts + min) / 2) % 5;
+            // let mut adj_bid = ((bid_pts + min) / 2) % 5;
+            let mut adj_bid = (bid_pts + min) / 2 / 5 * 5;
             adj_bid = adj_bid.min(max);
             bid = Bid::Points(adj_bid);
         }
@@ -132,7 +133,11 @@ impl BotMonte {
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<Points>) {
+    pub fn run_simulations(
+        &self,
+        game: &mut Game,
+        simulations: usize,
+    ) -> (Id, Points, Vec<Points>) {
         let monte_player = game.active;
         let team = game.team_index(game.active);
         //let opp_team = game.opponent_index(game.active);
@@ -206,7 +211,7 @@ impl BotMonte {
                 sim_game.complete_hand();
 
                 // Manually calc score to exclude success bonus.
-                let this_sim_score = sim_game.scoring.taken[team]
+                let this_sim_score = sim_game.scoring.points_taken[team]
                     + sim_game.scoring.nest[team]
                     + sim_game.scoring.last_trick[team];
                 all_scores.push(this_sim_score);

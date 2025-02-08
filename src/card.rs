@@ -13,7 +13,7 @@ pub enum Suit {
 
 pub type Id = u8;
 pub type Rank = u8;
-pub type Points = i16;
+pub type Points = isize;
 
 #[derive(Clone, Debug)]
 pub struct Card {

@@ -4,23 +4,33 @@ use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
 use crate::game::Game;
 
 use super::{
+    animators::TranslationAnimator,
+    eventer::Eventer,
     texter::{AlignH, AlignV, Texter},
     transform::Transform,
+    view_geom::SCORE_TABLE_POS,
 };
 
 pub struct ScoreTable {
     pub visible: bool,
+    size: Vec2,
     transform: Transform,
+    eventer: Eventer,
+    trans_anim: Option<TranslationAnimator>,
     texters: Array2D<Texter>,
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
-        let transform = Transform::from_translation(position);
+        let size = Vec2::new(400.0, 250.0);
+        let mut transform = Transform::from_translation(position);
+        transform.size = size;
 
-        let def_texter = Texter::new(position, "----", font, 14, AlignH::Center, AlignV::Center);
+        let texter_pos = Vec2::new(0.0, 17.0);
 
-        let mut texters = Array2D::filled_with(def_texter, 10, 3);
+        let def_texter = Texter::new(texter_pos, "----", font, 14, AlignH::Center, AlignV::Center);
+
+        let mut texters = Array2D::filled_with(def_texter, 12, 3);
 
         let col_headings = ["", "We", "They"];
         for col in 0..col_headings.len() {
@@ -32,6 +42,8 @@ impl ScoreTable {
             "Taken",
             "Last Trick",
             "Nest",
+            "Tricks Taken",
+            "Majority",
             "",
             "Total/Bid",
             "Bonus",
@@ -50,7 +62,7 @@ impl ScoreTable {
 
         for row in 0..texters.num_rows() {
             for col in 0..texters.num_columns() {
-                let mut pos = Vec2::ZERO;
+                let mut pos = texter_pos;
 
                 // Row position
                 pos.y += row as f32 * line_spacing;
@@ -64,39 +76,102 @@ impl ScoreTable {
 
         Self {
             visible: false,
+            size,
             transform,
+            eventer: Eventer::new(),
+            trans_anim: None,
             texters,
         }
     }
 
-    pub fn update(&mut self, game: &Game) {
+    pub fn update_scoring(&mut self, game: &Game) {
         let scoring = &game.scoring;
-        self.texters[(1, 1)].text = scoring.taken[0].to_string();
-        self.texters[(1, 2)].text = scoring.taken[1].to_string();
+        let mut row = 1;
+        self.texters[(row, 1)].text = scoring.points_taken[0].to_string();
+        self.texters[(row, 2)].text = scoring.points_taken[1].to_string();
+        row += 1;
 
-        self.texters[(2, 1)].text = scoring.last_trick[0].to_string();
-        self.texters[(2, 2)].text = scoring.last_trick[1].to_string();
+        self.texters[(row, 1)].text = scoring.last_trick[0].to_string();
+        self.texters[(row, 2)].text = scoring.last_trick[1].to_string();
+        row += 1;
+        
+        self.texters[(row, 1)].text = scoring.nest[0].to_string();
+        self.texters[(row, 2)].text = scoring.nest[1].to_string();
+        row += 1;
+        
+        self.texters[(row, 1)].text = scoring.trick_count[0].to_string();
+        self.texters[(row, 2)].text = scoring.trick_count[1].to_string();
+        row += 1;
 
-        self.texters[(3, 1)].text = scoring.nest[0].to_string();
-        self.texters[(3, 2)].text = scoring.nest[1].to_string();
+        self.texters[(row, 1)].text = scoring.majority_tricks[0].to_string();
+        self.texters[(row, 2)].text = scoring.majority_tricks[1].to_string();
+        row += 1;
+        
+        // Dividing line.
+        row += 1;
 
-        // Dividing line is row 4.
+        let total0 = scoring.hand_subtotal[0];
+        let total1 = scoring.hand_subtotal[1];
+        self.texters[(row, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
+        self.texters[(row, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
+        row += 1;
+        
+        self.texters[(row, 1)].text = scoring.bonus[0].to_string();
+        self.texters[(row, 2)].text = scoring.bonus[1].to_string();
+        row += 1;
 
-        let total0 = scoring.taken[0] + scoring.last_trick[0] + scoring.nest[0];
-        let total1 = scoring.taken[1] + scoring.last_trick[1] + scoring.nest[1];
-        self.texters[(5, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
-        self.texters[(5, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
+        // Dividing line.
+        row += 1;
 
-        self.texters[(6, 1)].text = scoring.bonus[0].to_string();
-        self.texters[(6, 2)].text = scoring.bonus[1].to_string();
+        self.texters[(row, 1)].text = scoring.hand_final[0].to_string();
+        self.texters[(row, 2)].text = scoring.hand_final[1].to_string();
+        row += 1;
 
-        // Dividing line is row 7.
+        self.texters[(row, 1)].text =
+            format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
+        self.texters[(row, 2)].text =
+            format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+    }
 
-        self.texters[(8, 1)].text = scoring.hand[0].to_string();
-        self.texters[(8, 2)].text = scoring.hand[1].to_string();
+    pub fn update(&mut self, time_delta: f32) {
+        if let Some(translator) = &mut self.trans_anim {
+            self.transform.translation = translator.update(time_delta);
+            if translator.completed {
+                self.trans_anim = None;
+            }
+        }
+    }
 
-        self.texters[(9, 1)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
-        self.texters[(9, 2)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+    /// Returns true if the sprite is visible and transform contains the mouse_pos.
+    pub fn process_events(
+        &mut self,
+        parent_transform: Option<&Transform>,
+        mouse_pos: Vec2,
+    ) -> bool {
+        let transform = match parent_transform {
+            Some(parent) => &Transform::combine(parent, &self.transform),
+            None => &self.transform,
+        };
+
+        let _mouse_over = self.eventer.process_events(transform, mouse_pos);
+
+        if self.eventer.mouse_entered {
+            let drop_down_pos = SCORE_TABLE_POS + Vec2::new(0.0, -SCORE_TABLE_POS.y);
+            self.trans_anim = Some(TranslationAnimator::new(
+                self.transform.translation,
+                drop_down_pos,
+                400.0,
+            ));
+        }
+
+        if self.eventer.mouse_exited {
+            self.trans_anim = Some(TranslationAnimator::new(
+                self.transform.translation,
+                SCORE_TABLE_POS,
+                400.0,
+            ));
+        }
+        false
     }
 
     pub fn draw(&self, parent_transform: Option<&Transform>) {
@@ -112,9 +187,9 @@ impl ScoreTable {
 
         draw_rectangle(
             pos.x - 14.0,
-            0.0,
-            400.0,
-            210.0,
+            pos.y,
+            self.size.x,
+            self.size.y,
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 
