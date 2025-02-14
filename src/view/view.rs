@@ -16,7 +16,7 @@ use super::{
     button_shaded::ButtonShaded,
     button_text::ButtonText,
     imager::Imager,
-    score_table::ScoreTable,
+    score_table_old::ScoreTable,
     texter::AlignH,
     texter_multi::TexterMulti,
     trump_chooser::TrumpChooser,

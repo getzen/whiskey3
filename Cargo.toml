@@ -5,9 +5,12 @@ edition = "2021"
 
 [dependencies]
 array2d = "0.3.2"
+combination = "0.2.2"
 fastrand = "2.1.1"
+foldhash = "0.1.4"
 macroquad = "0.4.13"
 #serde = "1.0.217"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_yaml = "0.9.34"
+web-time = "1.1.0"
 

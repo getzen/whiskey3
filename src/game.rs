@@ -8,7 +8,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = false;
+pub const DEBUGGING: bool = true;
 
 #[derive(Clone)]
 pub enum PlayerAction {
@@ -66,6 +66,7 @@ impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
         let options = GameOptions::whiskey_4();
+        // let options = GameOptions::dixie();
         // let options = GameOptions::one_high_partnership();
         // let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
@@ -286,22 +287,25 @@ impl Game {
             self.scoring.update_bids(self.team_index(self.active), p);
         }
         self.bids[self.active] = Some(bid);
-        self.active = self.next_bidding_player();
     }
 
-    pub fn next_bidding_player(&self) -> usize {
-        let mut p = self.active;
+    pub fn next_bidding_player(&mut self) {
         loop {
-            p = (p + 1) % self.options.players;
-            match &self.bids[p] {
+            self.next_player();
+            if self.options.bid_after_passing {
+                break;
+            }
+
+            match &self.bids[self.active] {
                 None => break,
                 Some(bid) => match bid {
-                    Bid::Pass => continue,
+                    Bid::Pass => {
+                        continue;
+                    }
                     Bid::Points(_) => break,
                 },
             }
         }
-        p
     }
 
     pub fn bidding_completed(&self) -> bool {
@@ -319,6 +323,10 @@ impl Game {
         bids == 1 && (bids + passes) == self.options.players
     }
 
+    pub fn end_bidding(&mut self) {
+        self.active = self.maker.unwrap();
+    }
+
     pub fn move_exchange_cards_to_maker(&mut self) {
         let maker = self.maker.unwrap();
         let is_human = !self.bot_players[maker];
@@ -328,10 +336,58 @@ impl Game {
                 self.hands[maker].push(card);
             }
         }
-        for card in &mut self.hands[maker] {
-            card.eligible = true;
-        }
         self.sort_hand(maker);
+    }
+
+    pub fn mark_eligible_discards(&mut self) {
+        let maker = self.maker.unwrap();
+        match self.options.discard_point_cards {
+            DiscardedPointCards::Allowed(_) => {
+                for card in &mut self.hands[maker] {
+                    card.eligible = true;
+                }
+            }
+            DiscardedPointCards::OnlyWhenForced(_) => {
+                let mut eligible_count = 0;
+                // Mark point cards as ineligible.
+                for card in &mut self.hands[maker] {
+                    if card.points == 0 {
+                        card.eligible = true;
+                        eligible_count += 1;
+                    } else {
+                        card.eligible = false;
+                    }
+                }
+                // Do we have enough cards to discard?
+                if eligible_count >= self.options.exchange_size {
+                    return; // yes
+                }
+                // Mark 5-point cards as eligible.
+                for card in &mut self.hands[maker] {
+                    if card.points == 5 {
+                        card.eligible = true;
+                        eligible_count += 1;
+                    }
+                }
+                // We good now?
+                if eligible_count >= self.options.exchange_size {
+                    return; // yes
+                }
+                // Mark 10-point cards as eligible.
+                for card in &mut self.hands[maker] {
+                    if card.points == 10 {
+                        card.eligible = true;
+                        eligible_count += 1;
+                    }
+                }
+                // Surely we are good now.
+                if eligible_count >= self.options.exchange_size {
+                    return; // yes
+                } else {
+                    panic!();
+                }
+            }
+        }
     }
 
     pub fn swap_with_exchange(&mut self, id: Id) {
@@ -562,6 +618,13 @@ impl Game {
             match self.options.defenders_lose {
                 DefendersLose::PointsTaken => {
                     self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team]
+                }
+                DefendersLose::HalfPoints => {
+                    let mut rounded = self.scoring.hand_subtotal[defen_team];
+                    if rounded % 5 == 0 {
+                        rounded += 5;
+                    }
+                    self.scoring.hand_final[defen_team] = rounded / 2;
                 }
 
                 DefendersLose::Zero => self.scoring.hand_final[defen_team] = 0,

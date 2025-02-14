@@ -1,5 +1,9 @@
 use array2d::Array2D;
-use macroquad::{math::Vec2, shapes::draw_rectangle, text::Font};
+use macroquad::{
+    math::{vec2, Vec2},
+    shapes::draw_rectangle,
+    text::Font,
+};
 
 use crate::game::Game;
 
@@ -26,17 +30,23 @@ impl ScoreTable {
         let mut transform = Transform::from_translation(position);
         transform.size = size;
 
-        let texter_pos = Vec2::new(0.0, 17.0);
+        let default_texter = Texter::new(
+            vec2(10.0, 10.0),
+            "----",
+            font,
+            14,
+            AlignH::Center,
+            AlignV::Center,
+        );
+        let mut texters = Array2D::filled_with(default_texter, 12, 3);
 
-        let def_texter = Texter::new(texter_pos, "----", font, 14, AlignH::Center, AlignV::Center);
-
-        let mut texters = Array2D::filled_with(def_texter, 12, 3);
-
+        // Create the column headings
         let col_headings = ["", "We", "They"];
         for col in 0..col_headings.len() {
             texters[(0, col)].text = col_headings[col].to_string();
         }
 
+        //  Create the row headings
         let row_headings = [
             "",
             "Taken",
@@ -56,29 +66,21 @@ impl ScoreTable {
             texters[(row, 0)].align_h = AlignH::Left;
         }
 
-        // Assign positions.
-        let column_x = [0.0, 130.0, 220.0];
-        let line_spacing = 19.0;
-
-        for row in 0..texters.num_rows() {
-            for col in 0..texters.num_columns() {
-                let mut pos = texter_pos;
-
-                // Row position
-                pos.y += row as f32 * line_spacing;
-
-                // Column position
-                pos.x += column_x[col];
-
-                texters[(row, col)].transform.translation = pos;
-            }
+        // Hide certain rows for this game.
+        for column in 0..3 {
+            texters[(2, column)].visible = false; // Last Trick
+                                                  //texters[(4, column)].visible = false; // Tricks Taken
+                                                  //texters[(5, column)].visible = false; // Majority
         }
+
+        let mut eventer = Eventer::new();
+        eventer.enabled = false;
 
         Self {
             visible: false,
             size,
             transform,
-            eventer: Eventer::new(),
+            eventer,
             trans_anim: None,
             texters,
         }
@@ -142,7 +144,7 @@ impl ScoreTable {
         }
     }
 
-    /// Returns true if the sprite is visible and transform contains the mouse_pos.
+    /// Returns true if visible and transform contains the mouse_pos.
     pub fn process_events(
         &mut self,
         parent_transform: Option<&Transform>,
@@ -174,10 +176,28 @@ impl ScoreTable {
         false
     }
 
-    pub fn draw(&self, parent_transform: Option<&Transform>) {
+    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
         if !self.visible {
             return;
         }
+
+        // Position all the texters that are visible.
+        let mut position = vec2(0.0, 27.0);
+        let line_spacing = vec2(0.0, 19.0);
+        let column_x = [0.0, 130.0, 220.0];
+
+        for row in 0..self.texters.num_rows() {
+            if self.texters[(row, 0)].visible {
+                for col in 0..self.texters.num_columns() {
+                    let pos = position + vec2(column_x[col], 0.0);
+                    self.texters[(row, col)].transform.translation = pos;
+                }
+                position += line_spacing;
+            }
+        }
+
+        // Set the right size for event checking
+        self.transform.size = vec2(self.size.x, position.y);
 
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
@@ -189,7 +209,7 @@ impl ScoreTable {
             pos.x - 14.0,
             pos.y,
             self.size.x,
-            self.size.y,
+            position.y,
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 

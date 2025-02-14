@@ -1,22 +1,23 @@
 players: 4
 hand_size: 10
-exchange_size: 5
-exchange_face_up: 1
-nest_size: 0
+exchange_size: 3
+exchange_face_up: 0
+nest_size: 2
 nest_face_up: 2
 min_bid: 80
 max_bid: 160
+bid_after_passing: false
 discard_point_cards: !OnlyWhenForced true
 nest_awarded: ToLastTrickWinner
 first_player: LeftOfBidder
 last_trick_pts: 0
 majority_of_tricks_pts: 0
 majority_tricks_tie: NoPoints
-bidders_win: !PointsBid 20
+bidders_win: !PointsTaken 40
 bidders_lose: Zero
-defenders_win: !PointsTakenWithCap 80
+defenders_win: !PointsTaken 40
 defenders_lose: PointsTaken
-points_to_win_game: 300
+points_to_win_game: 400
 cards_in_deck:
 - - Club
   - 4

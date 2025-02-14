@@ -15,7 +15,7 @@ pub type Id = u8;
 pub type Rank = u8;
 pub type Points = isize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Card {
     pub id: Id,
     pub suit: Suit,

@@ -185,9 +185,11 @@ impl Controller {
                             }
 
                             if self.game.bidding_completed() {
+                                self.game.end_bidding();
                                 self.delay_before_game_action = 2.0;
                                 self.game_action = Some(GameAction::EndBidding);
                             } else {
+                                self.game.next_bidding_player();
                                 self.delay_before_game_action = 1.0;
                                 self.game_action = Some(GameAction::GetBid);
                             }
@@ -198,9 +200,12 @@ impl Controller {
                         }
                         GameAction::MoveNestToMaker => {
                             self.game.move_exchange_cards_to_maker();
+                            self.game.mark_eligible_discards();
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
-                            self.view.set_discardable_hand_cards(&self.game);
+                            if !self.game.bot_is_active() {
+                                self.view.set_discardable_hand_cards(&self.game);
+                            }
                             self.game_action = Some(GameAction::GetExchanges);
                         }
                         GameAction::GetExchanges => {

@@ -1,8 +1,14 @@
-use std::sync::mpsc::Sender;
+use std::{isize, sync::mpsc::Sender};
+
+use combination::combine;
+
+use foldhash::HashMap;
+use foldhash::HashMapExt;
 
 use crate::{
     card::{Card, Id, Points, Suit},
     game::{Bid, Game, PlayerAction},
+    game_options::BiddersWin,
 };
 
 #[derive(Clone)]
@@ -49,25 +55,87 @@ impl BotMonte {
         lowest_id
     }
 
-    pub fn choose_discards(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
+    pub fn choose_discards_simple(
+        &self,
+        game: &Game,
+        exchange_size: usize,
+        sender: Sender<PlayerAction>,
+    ) {
         // Super basic: dump the three lowest non-trump cards.
 
-        // Make a copy of the hand cards.
-        let mut cards_copy = Vec::new();
+        let trump = self.best_suit(&game.active_hand());
+
+        // Get the eligible cards.
+        let mut eligible_cards = Vec::new();
         for card in game.active_hand() {
-            cards_copy.push(card.clone());
+            if card.eligible {
+                eligible_cards.push(card.clone());
+            }
+        }
+        if eligible_cards.is_empty() {
+            panic!("player: {}", game.active);
         }
         let mut discards = Vec::new();
 
-        let trump = self.best_suit(&cards_copy);
-
         while discards.len() < exchange_size {
-            let lowest_card_id = self.lowest_non_trump_card(&cards_copy, &Some(trump));
+            let lowest_card_id = self.lowest_non_trump_card(&eligible_cards, &Some(trump));
             discards.push(lowest_card_id);
-            if let Some(idx) = cards_copy.iter().position(|c| c.id == lowest_card_id) {
-                cards_copy.swap_remove(idx);
+            if let Some(idx) = eligible_cards.iter().position(|c| c.id == lowest_card_id) {
+                eligible_cards.swap_remove(idx);
             }
         }
+        sender
+            .send(PlayerAction::Discard(discards))
+            .expect("send error");
+    }
+
+    pub fn choose_discards(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
+        // Get the eligible cards.
+        let mut eligible_cards = Vec::new();
+        for card in game.active_hand() {
+            if card.eligible {
+                eligible_cards.push(card.clone());
+            }
+        }
+        if eligible_cards.len() < exchange_size {
+            panic!("Not enough eligible cards to exchange! p:{}", game.active);
+        }
+
+        // Make a simple vec of 0,1,2,3... as indicies to the eligible cards.
+        let mut indicies = Vec::new();
+        for i in 0..eligible_cards.len() {
+            indicies.push(i);
+        }
+
+        // Get all the combos of the indicies.
+        let idx_combos = combine::from_vec_at(&indicies, exchange_size);
+
+        let mut best_mean = isize::MIN;
+        let mut best_combo = idx_combos[0].clone();
+
+        println!("Searching {} discard combinations", idx_combos.len());
+
+        // Remove the card associated with each combo and find the best score
+        // and combo to remove.
+        for combo in &idx_combos {
+            let mut sim_game = game.clone();
+            for idx in combo {
+                sim_game.active_hand_mut().swap_remove(*idx);
+            }
+            let (_id, _best_score, all_scores) = self.run_simulations(&mut sim_game, 100);
+            let mean: isize = all_scores.iter().sum::<isize>() / all_scores.len() as isize;
+            if mean > best_mean {
+                println!("new best found: {}", mean);
+                best_mean = mean;
+                best_combo = combo.clone();
+            }
+        }
+
+        let mut discards = Vec::new();
+        for idx in best_combo {
+            discards.push(eligible_cards[idx].id);
+        }
+
         sender
             .send(PlayerAction::Discard(discards))
             .expect("send error");
@@ -84,7 +152,7 @@ impl BotMonte {
     pub fn get_bid(
         &self,
         min: Points,
-        max: Points,
+        _max: Points,
         game: &Game,
         simulations: usize,
         sender: Sender<PlayerAction>,
@@ -93,6 +161,7 @@ impl BotMonte {
         let cards = sim_game.active_hand();
         let suit = self.best_suit(cards);
         sim_game.maker = Some(sim_game.active);
+        sim_game.high_bid = 0;
         sim_game.set_trump_suit(suit);
 
         sim_game.active = game.active;
@@ -100,25 +169,32 @@ impl BotMonte {
         let (_id, _best_score, mut all_scores) = self.run_simulations(&mut sim_game, simulations);
 
         all_scores.sort_unstable();
+        let low = all_scores.first().unwrap();
+        let high = all_scores.last().unwrap();
 
         // 0.0 means choose the lowest score produced in all simulations.
         // 1.0 means choose the highest score produced in a simulations.
-        let aggressiveness = 0.50;
+        let aggressiveness = 0.70;
 
         let index = (all_scores.len() as f64 * aggressiveness) as usize - 1;
 
         let bid_pts = all_scores[index];
-        println!("P: {}: bid_pts: {}", game.active, bid_pts);
+        println!(
+            "P:{}, low:{}, high:{}, bid:{}",
+            game.active, low, high, bid_pts
+        );
 
         let mut bid = Bid::Pass;
 
         if bid_pts >= min {
-            // bid_pts is the max we should bid. Let's bid half-way between
-            // the min and bid_pts to allow room to raise. Add a random factor?
-            // let mut adj_bid = ((bid_pts + min) / 2) % 5;
-            let mut adj_bid = (bid_pts + min) / 2 / 5 * 5;
-            adj_bid = adj_bid.min(max);
-            bid = Bid::Points(adj_bid);
+            match game.options.bidders_win {
+                BiddersWin::PointsBid(_) => {
+                    bid = Bid::Points(bid_pts);
+                }
+                BiddersWin::PointsTaken(_) => {
+                    bid = Bid::Points(min);
+                }
+            }
         }
         sender.send(PlayerAction::Bid(bid)).expect("send error");
     }
@@ -138,18 +214,21 @@ impl BotMonte {
         game: &mut Game,
         simulations: usize,
     ) -> (Id, Points, Vec<Points>) {
+        let start_time = web_time::Instant::now();
+
         let monte_player = game.active;
         let team = game.team_index(game.active);
-        //let opp_team = game.opponent_index(game.active);
 
         let legal_card_ids = game.get_playable_card_ids();
-        let mut best_score = 0; //i32::MIN;
+        if legal_card_ids.is_empty() {
+            panic!("No legal card ids!");
+        }
+
+        let mut best_score = isize::MIN;
         let mut all_scores = Vec::with_capacity(simulations * legal_card_ids.len());
-
-        let legal_card_ids = game.get_playable_card_ids();
         let mut best_card_id = &legal_card_ids[0];
 
-        // Create a vec with all the cards we don't know about.
+        // Create a vec with a ref to all the cards we don't know about.
         let mut hidden_cards = Vec::new();
 
         for p in 0..game.options.players {
@@ -164,10 +243,6 @@ impl BotMonte {
             for card in &game.deck {
                 hidden_cards.push(card);
             }
-        }
-
-        if legal_card_ids.is_empty() {
-            panic!("No legal card ids!");
         }
 
         for card_id in &legal_card_ids {
@@ -210,10 +285,14 @@ impl BotMonte {
                 let _ = sim_game.award_nest_cards();
                 sim_game.complete_hand();
 
+                //let this_sim_score = sim_game.scoring.hand_final[team];
+
                 // Manually calc score to exclude success bonus.
                 let this_sim_score = sim_game.scoring.points_taken[team]
                     + sim_game.scoring.nest[team]
-                    + sim_game.scoring.last_trick[team];
+                    + sim_game.scoring.last_trick[team]
+                    + sim_game.scoring.majority_tricks[team];
+
                 all_scores.push(this_sim_score);
                 sim_score += this_sim_score;
             }
@@ -223,6 +302,10 @@ impl BotMonte {
                 best_card_id = card_id;
             }
         }
+
+        // let delta = web_time::Instant::now() - start_time;
+        //println!("sims: {}, ms: {}", simulations, delta.as_millis());
+
         (*best_card_id, best_score, all_scores)
     }
 }
