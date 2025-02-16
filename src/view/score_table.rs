@@ -22,56 +22,62 @@ pub struct ScoreTable {
     eventer: Eventer,
     trans_anim: Option<TranslationAnimator>,
     texters: Array2D<Texter>,
+    column_widths: Vec<usize>,
+    row_heights: Vec<usize>,
+
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
-        let size = Vec2::new(400.0, 250.0);
-        let mut transform = Transform::from_translation(position);
-        transform.size = size;
-
         let default_texter = Texter::new(
-            vec2(10.0, 10.0),
-            "----",
+            Vec2::ZERO,
+            "-",
             font,
             14,
             AlignH::Center,
             AlignV::Center,
         );
-        let mut texters = Array2D::filled_with(default_texter, 12, 3);
+        let mut texters = Array2D::filled_with(default_texter, 4, 9);
 
-        // Create the column headings
-        let col_headings = ["", "We", "They"];
-        for col in 0..col_headings.len() {
-            texters[(0, col)].text = col_headings[col].to_string();
+        let column_widths = vec![50, 75, 60, 75, 75, 75, 75, 80, 66, 75];
+        let row_heights = vec![20, 20, 20, 20];
+        let starting_pos = vec2(0.0, 0.0);
+
+        let col_headings0 = ["", "Taken", "#",   "Majority", "Nest", "Total",  "Win",  "Hand",  "Game"];
+        let col_headings1 = ["", "Pts",  "Tricks", "Bonus",  "Pts",  "/ Bid", "Bonus", "Score", "/ Win"];
+        for i in 0..col_headings0.len() {
+            texters[(0, i)].text = col_headings0[i].to_string();
+            texters[(1, i)].text = col_headings1[i].to_string();
         }
 
-        //  Create the row headings
         let row_headings = [
             "",
-            "Taken",
-            "Last Trick",
-            "Nest",
-            "Tricks Taken",
-            "Majority",
             "",
-            "Total/Bid",
-            "Bonus",
-            "",
-            "Hand",
-            "Game/Win",
+            "We",
+            "They",
         ];
         for row in 0..row_headings.len() {
             texters[(row, 0)].text = row_headings[row].to_string();
-            texters[(row, 0)].align_h = AlignH::Left;
         }
 
-        // Hide certain rows for this game.
-        for column in 0..3 {
-            texters[(2, column)].visible = false; // Last Trick
-                                                  //texters[(4, column)].visible = false; // Tricks Taken
-                                                  //texters[(5, column)].visible = false; // Majority
+        // Position all the texters and determine the overall size.
+        let mut pos = starting_pos;
+        let mut size = Vec2::ZERO;
+        for row in 0..texters.num_rows() {
+            pos.y += row_heights[row] as f32;
+            for col in 0..texters.num_columns() {
+                pos.x += column_widths[col] as f32;
+                texters[(row, col)].transform.translation = pos;
+            }
+            size.x = pos.x;
+            pos.x = starting_pos.x;
         }
+        size.y = pos.y;
+        // Expand the size to give a margin.
+        size += vec2(40.0, 20.0);
+
+        let mut transform = Transform::from_translation(position);
+        transform.size = size;
 
         let mut eventer = Eventer::new();
         eventer.enabled = false;
@@ -83,56 +89,56 @@ impl ScoreTable {
             eventer,
             trans_anim: None,
             texters,
+            column_widths,
+            row_heights,
         }
     }
 
     pub fn update_scoring(&mut self, game: &Game) {
         let scoring = &game.scoring;
-        let mut row = 1;
-        self.texters[(row, 1)].text = scoring.points_taken[0].to_string();
-        self.texters[(row, 2)].text = scoring.points_taken[1].to_string();
-        row += 1;
+        let mut col = 1;
+        self.texters[(2, col)].text = scoring.points_taken[0].to_string();
+        self.texters[(3, col)].text = scoring.points_taken[1].to_string();
+        col += 1;
 
-        self.texters[(row, 1)].text = scoring.last_trick[0].to_string();
-        self.texters[(row, 2)].text = scoring.last_trick[1].to_string();
-        row += 1;
+        self.texters[(2, col)].text = scoring.trick_count[0].to_string();
+        self.texters[(3, col)].text = scoring.trick_count[1].to_string();
+        col += 1;
 
-        self.texters[(row, 1)].text = scoring.nest[0].to_string();
-        self.texters[(row, 2)].text = scoring.nest[1].to_string();
-        row += 1;
+        // self.texters[(row, 1)].text = scoring.nest[0].to_string();
+        // self.texters[(row, 2)].text = scoring.nest[1].to_string();
+        // row += 1;
 
-        self.texters[(row, 1)].text = scoring.trick_count[0].to_string();
-        self.texters[(row, 2)].text = scoring.trick_count[1].to_string();
-        row += 1;
+       
 
-        self.texters[(row, 1)].text = scoring.majority_tricks[0].to_string();
-        self.texters[(row, 2)].text = scoring.majority_tricks[1].to_string();
-        row += 1;
+        // self.texters[(row, 1)].text = scoring.majority_tricks[0].to_string();
+        // self.texters[(row, 2)].text = scoring.majority_tricks[1].to_string();
+        // row += 1;
 
-        // Dividing line.
-        row += 1;
+        // // Dividing line.
+        // row += 1;
 
-        let total0 = scoring.hand_subtotal[0];
-        let total1 = scoring.hand_subtotal[1];
-        self.texters[(row, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
-        self.texters[(row, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
-        row += 1;
+        // let total0 = scoring.hand_subtotal[0];
+        // let total1 = scoring.hand_subtotal[1];
+        // self.texters[(row, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
+        // self.texters[(row, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
+        // row += 1;
 
-        self.texters[(row, 1)].text = scoring.bonus[0].to_string();
-        self.texters[(row, 2)].text = scoring.bonus[1].to_string();
-        row += 1;
+        // self.texters[(row, 1)].text = scoring.bonus[0].to_string();
+        // self.texters[(row, 2)].text = scoring.bonus[1].to_string();
+        // row += 1;
 
-        // Dividing line.
-        row += 1;
+        // // Dividing line.
+        // row += 1;
 
-        self.texters[(row, 1)].text = scoring.hand_final[0].to_string();
-        self.texters[(row, 2)].text = scoring.hand_final[1].to_string();
-        row += 1;
+        // self.texters[(row, 1)].text = scoring.hand_final[0].to_string();
+        // self.texters[(row, 2)].text = scoring.hand_final[1].to_string();
+        // row += 1;
 
-        self.texters[(row, 1)].text =
-            format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
-        self.texters[(row, 2)].text =
-            format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+        // self.texters[(row, 1)].text =
+        //     format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
+        // self.texters[(row, 2)].text =
+        //     format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -181,24 +187,6 @@ impl ScoreTable {
             return;
         }
 
-        // Position all the texters that are visible.
-        let mut position = vec2(0.0, 27.0);
-        let line_spacing = vec2(0.0, 19.0);
-        let column_x = [0.0, 130.0, 220.0];
-
-        for row in 0..self.texters.num_rows() {
-            if self.texters[(row, 0)].visible {
-                for col in 0..self.texters.num_columns() {
-                    let pos = position + vec2(column_x[col], 0.0);
-                    self.texters[(row, col)].transform.translation = pos;
-                }
-                position += line_spacing;
-            }
-        }
-
-        // Set the right size for event checking
-        self.transform.size = vec2(self.size.x, position.y);
-
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,
@@ -206,10 +194,10 @@ impl ScoreTable {
         let (pos, _rot) = transform.drawable_position_rotation();
 
         draw_rectangle(
-            pos.x - 14.0,
+            pos.x,
             pos.y,
             self.size.x,
-            position.y,
+            self.size.y,
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 

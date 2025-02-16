@@ -2,8 +2,6 @@ use std::sync::mpsc::Sender;
 
 use macroquad::prelude::*;
 
-// use foldhash::{HashMap, HashMapExt};
-
 use crate::{
     card::{Card, Id, Suit},
     game::{Game, PlayerAction},
@@ -16,14 +14,13 @@ use super::{
     button_shaded::ButtonShaded,
     button_text::ButtonText,
     imager::Imager,
-    score_table_old::ScoreTable,
+    score_table_1::ScoreTable,
     texter::AlignH,
     texter_multi::TexterMulti,
     trump_chooser::TrumpChooser,
     trump_marker::TrumpMarker,
     view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS,
-        PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
+        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS
     },
 };
 
@@ -42,11 +39,11 @@ pub struct View {
     done_exchanging_button: ButtonText,
     trump_chooser: TrumpChooser,
     trump_marker: TrumpMarker,
+    next_hand_button: ButtonText,
     sender: Sender<PlayerAction>,
     z_order_needs_update: bool,
 
     message: TexterMulti,
-    //trans_animators: HashMap<Id, TranslationAnimator>,
 }
 
 impl View {
@@ -83,6 +80,11 @@ impl View {
         done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.visible = false;
 
+        let mut next_hand_button = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font.clone(), 16, vec2(120.0, 40.0));
+        next_hand_button.sender = Some(sender.clone());
+        next_hand_button.action = Some(PlayerAction::NextHand);
+        next_hand_button.visible = false;
+
         Self {
             card_views: Vec::new(),
             turn_marker,
@@ -94,6 +96,7 @@ impl View {
             done_exchanging_button,
             trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
             trump_marker: TrumpMarker::new(CENTER),
+            next_hand_button,
             sender,
             z_order_needs_update: false,
             message: TexterMulti::new(MESSAGE_POS),
@@ -117,7 +120,7 @@ impl View {
             card.points,
             self.sender.clone(),
         );
-        view.move_to(view_geom::DECK_POS, 100.0);
+        view.move_to(view_geom::CENTER, 100.0);
         self.card_views.push(view);
     }
 
@@ -167,6 +170,10 @@ impl View {
         }
 
         if self.trump_chooser.process_events(None, mouse_pos) {
+            return;
+        }
+
+        if self.next_hand_button.process_events(None, mouse_pos) {
             return;
         }
 
@@ -379,14 +386,17 @@ impl View {
         }
     }
 
-    pub fn show_trump_chooser(&mut self) {
-        self.trump_chooser.visible = true;
-        self.update_message(&["Select trump suit."]);
+    pub fn show_trump_chooser(&mut self, visible: bool) {
+        self.trump_chooser.visible = visible;
+        if visible {
+            self.update_message(&["Select trump suit."]);
+        } else {
+            self.update_message(&[""]);
+        }
     }
 
-    pub fn hide_trump_chooser(&mut self) {
-        self.trump_chooser.visible = false;
-        self.update_message(&[""]);
+    pub fn show_trump_marker(&mut self, visible: bool) {
+        self.trump_marker.visible = visible;
     }
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
@@ -405,6 +415,10 @@ impl View {
         }
     }
 
+    pub fn show_next_hand_button(&mut self, visible: bool) {
+        self.next_hand_button.visible = visible;
+    }
+
     pub fn get_human_bid(&mut self, game: &Game) {
         // Hide bid marker for human.
         self.bid_markers[game.active].visible = false;
@@ -418,6 +432,10 @@ impl View {
 
     pub fn end_human_bid(&mut self, _game: &Game) {
         self.bid_panel.visible = false;
+    }
+
+    pub fn hide_bid_marker(&mut self, bidder: usize) {
+        self.bid_markers[bidder].visible = false;
     }
 
     pub fn get_bot_discards(&mut self, _game: &Game) {
@@ -457,6 +475,7 @@ impl View {
         self.bid_panel.draw(None);
         self.done_exchanging_button.draw(None);
         self.trump_chooser.draw(None);
+        self.next_hand_button.draw(None);
 
         self.message.draw(None);
 

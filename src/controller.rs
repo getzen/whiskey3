@@ -100,6 +100,9 @@ impl Controller {
                     PlayerAction::PlayCard(card_id) => {
                         self.game_action = Some(GameAction::PlayCard(card_id));
                     }
+                    PlayerAction::NextHand => {
+                        self.game_action = Some(GameAction::ResetForNewHand);
+                    }
                     PlayerAction::ShouldExit => todo!(),
                     // _ => {} // Remaining actions were handled directly by view.
                 }
@@ -126,6 +129,8 @@ impl Controller {
                         }
                         GameAction::ResetForNewHand => {
                             self.game.reset_for_new_hand();
+                            self.view.update_message(&[""]);
+                            self.view.show_next_hand_button(false);
                             self.view.update_info(&self.game);
                             self.view.update_deck(&self.game);
                             self.game_action = Some(GameAction::DealToHands);
@@ -263,7 +268,7 @@ impl Controller {
                                 self.view.get_bot_trump(&self.game);
                                 self.spawn_trump_bot();
                             } else {
-                                self.view.show_trump_chooser();
+                                self.view.show_trump_chooser(true);
                             }
                             self.delay_before_game_action = 1.0;
                             self.game_action = None;
@@ -272,7 +277,8 @@ impl Controller {
                             self.game.set_trump_suit(*suit);
 
                             self.view.update_hand(&self.game, 0);
-                            self.view.hide_trump_chooser();
+                            self.view.show_trump_chooser(false);
+                            self.view.show_trump_marker(true);
                             self.view.set_trump_suit(Some(*suit)).await;
 
                             self.delay_before_game_action = 1.0;
@@ -323,18 +329,22 @@ impl Controller {
                             let points = self.game.award_nest_cards();
 
                             let message = format!("There were {} points in the nest.", points);
+                            self.view.show_trump_marker(false);
                             self.view.update_message(&[&message]);
                             self.view.update_info(&self.game);
                             self.view.update_nest(&self.game, false);
+                            self.view.hide_bid_marker(self.game.maker.unwrap());
+
                             self.delay_before_game_action = 3.0;
                             self.game_action = Some(GameAction::PresentScore);
                         }
                         GameAction::PresentScore => {
                             self.game_action = None;
                             self.game.complete_hand();
-
+                            self.view.show_next_hand_button(true);
                             self.view.update_info(&self.game);
-                        } //GameAction::Exit => todo!(),
+                        }
+                         //GameAction::Exit => todo!(),
                     }
                 }
             }

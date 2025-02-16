@@ -8,7 +8,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = true;
+pub const DEBUGGING: bool = false;
 
 #[derive(Clone)]
 pub enum PlayerAction {
@@ -18,6 +18,7 @@ pub enum PlayerAction {
     DoneExchanging,
     ChooseTrump(Suit),
     PlayCard(Id),
+    NextHand,
     ShouldExit,
 }
 
@@ -40,7 +41,6 @@ pub struct Game {
     pub bids: Vec<Option<Bid>>,
     pub taken: Vec<Vec<Card>>,
 
-    /// The player who is the dealer.
     pub dealer: usize,
     /// The active player.
     pub active: usize,
@@ -184,13 +184,15 @@ impl Game {
     pub fn reset_for_new_hand(&mut self) {
         self.scoring = self.scoring.new_for_next_hand();
 
-        // If a game is over, all the cards are now in "taken."
+        // Gather all the cards
         for p in 0..self.options.players {
             if !self.taken[p].is_empty() {
                 self.deck.append(&mut self.taken[p]);
             }
             self.bids[p] = None;
         }
+        self.deck.append(&mut self.nest);
+
         for card in &mut self.deck {
             card.face_up = false;
         }
@@ -202,6 +204,7 @@ impl Game {
         self.nest_face_up_count = 0;
         self.maker = None;
         self.high_bid = 0;
+        self.trick.reset();
         self.set_joker_suit(Suit::Joker);
 
         self.hand_cards_to_deal = self.options.hand_size * self.options.players;

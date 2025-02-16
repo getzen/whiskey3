@@ -2,19 +2,19 @@ use std::f32::consts::PI;
 
 use macroquad::math::{vec2, Vec2};
 
-pub const SCREEN: Vec2 = vec2(800., 800.);
-pub const CENTER: Vec2 = vec2(SCREEN.x * 0.5, SCREEN.y * 0.5);
+pub const SCREEN: Vec2 = vec2(1000., 800.);
+pub const CENTER: Vec2 = vec2(600., 400.);
 
-pub const DECK_POS: Vec2 = vec2(200.0, 200.0); //vec2(SCREEN.x - 80.0, SCREEN.y - 100.0);
 pub const NEST_EXCHANGE_POS: Vec2 = vec2(CENTER.x, CENTER.y - 30.0);
+pub const NEST_ASIDE_POS: Vec2 = vec2(50.0, SCREEN.y - 130.);
 pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 110.0);
-pub const SCORE_TABLE_POS: Vec2 = vec2(SCREEN.x - 260.0, 0.); // -175?
+pub const SCORE_TABLE_POS: Vec2 = vec2(0., 0.); // -175?
 pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
 pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 220.);
 pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 60.0);
+pub const NEXT_HAND_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 200.0);
 pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 70.);
 
-//pub const TURN_MARKER_SPEED: f32 = 600.0;
 pub const CARD_SPEED: f32 = 800.0;
 pub const ROT_SPEED: f32 = 10.0;
 
@@ -95,9 +95,8 @@ pub fn nest_aside_geom(index: usize, _count: usize) -> ViewGeom {
     // x_offset += index as f32 * x_spacing;
     // let pos = vec2(210., SCREEN.y - 210.0) + vec2(x_offset, 0.0);
 
-    let start = vec2(50.0, 70.0);
     let x_offset = max_spacing * index as f32;
-    let pos = start + vec2(x_offset, 0.0);
+    let pos = NEST_ASIDE_POS + vec2(x_offset, 0.0);
 
     ViewGeom {
         pos,

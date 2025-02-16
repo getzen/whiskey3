@@ -2,9 +2,6 @@ use std::{isize, sync::mpsc::Sender};
 
 use combination::combine;
 
-use foldhash::HashMap;
-use foldhash::HashMapExt;
-
 use crate::{
     card::{Card, Id, Points, Suit},
     game::{Bid, Game, PlayerAction},
