@@ -1,34 +1,28 @@
 players: 4
-hand_size: 9
-exchange_size: 3
+hand_size: 7
+exchange_size: 2
 exchange_face_up: 0
 nest_size: 2
 nest_face_up: 2
 min_bid: 60
 max_bid: 120
 bid_after_passing: false
-discard_point_cards: !Allowed false
+discard_point_cards: !Allowed true
 nest_awarded: ToLastTrickWinner
 first_player: LeftOfBidder
 last_trick_pts: 0
-majority_of_tricks_pts: 0
-majority_tricks_tie: NoPoints
-bidders_win: !PointsTaken 0
-bidders_lose: MinusBid
-defenders_win: !PointsTaken 0
+majority_of_tricks_pts: 20
+majority_tricks_tie: ToDefenders
+bidders_win: !PointsTaken 10
+bidders_lose: Zero
+defenders_win: !PointsTaken 10
 defenders_lose: PointsTaken
-points_to_win_game: 200
+points_to_win_game: 300
 cards_in_deck:
 - - Club
   - 5
   - 5
 - - Club
-  - 6
-  - 0
-- - Club
-  - 7
-  - 0
-- - Club
   - 8
   - 0
 - - Club
@@ -45,19 +39,13 @@ cards_in_deck:
   - 0
 - - Club
   - 13
-  - 0
+  - 10
 - - Club
   - 14
-  - 10
+  - 0
 - - Diamond
   - 5
   - 5
-- - Diamond
-  - 6
-  - 0
-- - Diamond
-  - 7
-  - 0
 - - Diamond
   - 8
   - 0
@@ -75,19 +63,13 @@ cards_in_deck:
   - 0
 - - Diamond
   - 13
-  - 0
+  - 10
 - - Diamond
   - 14
-  - 10
+  - 0
 - - Heart
   - 5
   - 5
-- - Heart
-  - 6
-  - 0
-- - Heart
-  - 7
-  - 0
 - - Heart
   - 8
   - 0
@@ -105,19 +87,13 @@ cards_in_deck:
   - 0
 - - Heart
   - 13
-  - 0
+  - 10
 - - Heart
   - 14
-  - 10
+  - 0
 - - Spade
   - 5
   - 5
-- - Spade
-  - 6
-  - 0
-- - Spade
-  - 7
-  - 0
 - - Spade
   - 8
   - 0
@@ -135,10 +111,7 @@ cards_in_deck:
   - 0
 - - Spade
   - 13
-  - 0
+  - 10
 - - Spade
   - 14
-  - 10
-- - Joker
-  - 1
-  - 20
+  - 0

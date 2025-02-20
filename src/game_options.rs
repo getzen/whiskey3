@@ -121,9 +121,9 @@ impl GameOptions {
             last_trick_pts: 0,
             majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::NoPoints,
-            bidders_win: BiddersWin::PointsTaken(40),
+            bidders_win: BiddersWin::PointsTaken(20),
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(40),
+            defenders_win: DefendersWin::PointsTaken(20),
             defenders_lose: DefendersLose::PointsTaken,
             points_to_win_game: 400,
             // All cards from 4 -> Ace, plus one high Joker worth 0. 45 cards.
@@ -185,19 +185,19 @@ impl GameOptions {
             exchange_size: 2,
             exchange_face_up: 0,
             nest_size: 2,
-            nest_face_up: 0,
+            nest_face_up: 2,
             min_bid: 60,
             max_bid: 120,
             bid_after_passing: false,
-            discard_point_cards: DiscardedPointCards::OnlyWhenForced(true),
+            discard_point_cards: DiscardedPointCards::Allowed(true),
             nest_awarded: NestAwarded::ToLastTrickWinner,
-            first_player: FirstPlayer::Bidder,
+            first_player: FirstPlayer::LeftOfBidder,
             last_trick_pts: 0,
             majority_of_tricks_pts: 20,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
-            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_win: BiddersWin::PointsTaken(10),
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(0),
+            defenders_win: DefendersWin::PointsTaken(10),
             defenders_lose: DefendersLose::PointsTaken,
             points_to_win_game: 300,
             cards_in_deck: vec![
@@ -250,15 +250,15 @@ impl GameOptions {
 
     // }
 
-    /// This version has the Joker as the low trump, plus a smaller nest size.
+    /// This version has the Joker as the low trump.
     pub fn kentucky_discard() -> Self {
         Self {
             players: 4,
             hand_size: 9,
-            exchange_size: 3,
+            exchange_size: 5,
             exchange_face_up: 0,
-            nest_size: 2,
-            nest_face_up: 2,
+            nest_size: 0,
+            nest_face_up: 0,
             min_bid: 60,
             max_bid: 120,
             bid_after_passing: false,

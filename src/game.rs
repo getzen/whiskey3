@@ -8,7 +8,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = false;
+pub const DEBUGGING: bool = true;
 
 #[derive(Clone)]
 pub enum PlayerAction {
@@ -66,9 +66,9 @@ impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
         // let options = GameOptions::whiskey_4();
-        // let options = GameOptions::dixie();
+        let options = GameOptions::dixie();
         // let options = GameOptions::one_high_partnership();
-        let options = GameOptions::kentucky_discard();
+        // let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
 
         // Read as normal.
@@ -450,7 +450,9 @@ impl Game {
         self.trump_suit = Some(suit);
         self.set_joker_suit(suit);
         self.sort_hand(0);
+    }
 
+    pub fn set_first_player(&mut self) {
         // Who starts the first trick?
         match self.options.first_player {
             FirstPlayer::Bidder => {

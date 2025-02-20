@@ -24,7 +24,10 @@ fn conf() -> Conf {
 #[macroquad::main(conf)]
 async fn main() {
     // Set up backtracing for debugging.
-    std::env::set_var("RUST_BACKTRACE", "1");
+    unsafe {
+        std::env::set_var("RUST_BACKTRACE", "1");
+    }
+    
 
     let mut controller = Controller::new().await;
     controller.go().await;

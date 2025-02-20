@@ -273,6 +273,7 @@ impl Controller {
                         }
                         GameAction::ChooseTrump(suit) => {
                             self.game.set_trump_suit(*suit);
+                            self.game.set_first_player();
 
                             self.view.update_hand(&self.game, 0);
                             self.view.show_trump_chooser(false);
