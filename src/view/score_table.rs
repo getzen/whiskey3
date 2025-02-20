@@ -1,6 +1,6 @@
 use array2d::Array2D;
 use macroquad::{
-    math::{vec2, Vec2},
+    math::{Vec2, vec2},
     shapes::draw_rectangle,
     text::Font,
 };

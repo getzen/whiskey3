@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use macroquad::{
-    math::{vec2, Vec2},
+    math::{Vec2, vec2},
     texture::load_texture,
 };
 

@@ -1,4 +1,4 @@
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{Vec2, vec2};
 
 pub struct TranslationAnimator {
     pub current: Vec2,

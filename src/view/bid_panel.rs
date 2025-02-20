@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{Vec2, vec2};
 
 use crate::{
     card::Points,

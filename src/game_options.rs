@@ -195,9 +195,9 @@ impl GameOptions {
             last_trick_pts: 0,
             majority_of_tricks_pts: 20,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
-            bidders_win: BiddersWin::PointsTaken(10),
+            bidders_win: BiddersWin::PointsTaken(20),
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(10),
+            defenders_win: DefendersWin::PointsTaken(20),
             defenders_lose: DefendersLose::PointsTaken,
             points_to_win_game: 300,
             cards_in_deck: vec![

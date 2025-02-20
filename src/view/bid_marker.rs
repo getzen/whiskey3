@@ -1,6 +1,6 @@
 use macroquad::{
     color::{Color, WHITE},
-    math::{vec4, Vec2},
+    math::{Vec2, vec4},
     shapes::draw_circle_lines,
 };
 

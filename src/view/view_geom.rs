@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{Vec2, vec2};
 
 pub const SCREEN: Vec2 = vec2(1000., 1000.);
 

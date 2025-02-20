@@ -20,8 +20,8 @@ use super::{
     trump_chooser::TrumpChooser,
     trump_marker::TrumpMarker,
     view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS,
-        PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
+        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS,
+        PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, bid_marker_geom,
     },
 };
 
