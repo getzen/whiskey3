@@ -44,13 +44,7 @@ pub struct CardView {
 }
 
 impl CardView {
-    pub fn new(
-        id: Id,
-        face: Texture2D,
-        back: Texture2D,
-        points: Points,
-        sender: Sender<PlayerAction>,
-    ) -> Self {
+    pub fn new(id: Id, face: Texture2D, back: Texture2D, points: Points, sender: Sender<PlayerAction>) -> Self {
         let size_mult = 0.3333;
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
 
@@ -101,11 +95,7 @@ impl CardView {
     }
 
     pub fn rotate_to(&mut self, end_radian: f32, velocity: f32) {
-        self.angle_anim = Some(RotationAnimator::new(
-            self.transform.rotation,
-            end_radian,
-            velocity,
-        ));
+        self.angle_anim = Some(RotationAnimator::new(self.transform.rotation, end_radian, velocity));
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -125,11 +115,7 @@ impl CardView {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

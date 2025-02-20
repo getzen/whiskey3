@@ -2,18 +2,24 @@ use std::f32::consts::PI;
 
 use macroquad::math::{vec2, Vec2};
 
-pub const SCREEN: Vec2 = vec2(1000., 800.);
-pub const CENTER: Vec2 = vec2(600., 400.);
+pub const SCREEN: Vec2 = vec2(1000., 1000.);
 
-pub const NEST_EXCHANGE_POS: Vec2 = vec2(CENTER.x, CENTER.y - 30.0);
-pub const NEST_ASIDE_POS: Vec2 = vec2(50.0, SCREEN.y - 130.);
-pub const MESSAGE_POS: Vec2 = vec2(CENTER.x, CENTER.y + 110.0);
-pub const SCORE_TABLE_POS: Vec2 = vec2(0., 0.); // -175?
-pub const PLAY_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 100.0);
-pub const BID_PANEL_POS: Vec2 = vec2(CENTER.x, CENTER.y + 220.);
-pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 60.0);
-pub const NEXT_HAND_BUTTON_POS: Vec2 = vec2(CENTER.x, CENTER.y + 200.0);
-pub const TRUMP_CHOOSER_POS: Vec2 = vec2(CENTER.x, CENTER.y + 70.);
+pub const PLAY_TOP_LEFT: Vec2 = vec2(0.0, 100.0);
+pub const PLAY_BOTTOM_RIGHT: Vec2 = vec2(SCREEN.x, SCREEN.y);
+pub const PLAY_CENTER: Vec2 = vec2(
+    PLAY_TOP_LEFT.x + (PLAY_BOTTOM_RIGHT.x - PLAY_TOP_LEFT.x) * 0.5,
+    PLAY_TOP_LEFT.y + (PLAY_BOTTOM_RIGHT.y - PLAY_TOP_LEFT.y) * 0.5,
+);
+
+pub const NEST_EXCHANGE_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y - 30.0);
+pub const NEST_ASIDE_POS: Vec2 = vec2(PLAY_TOP_LEFT.x + 90.0, PLAY_BOTTOM_RIGHT.y - 120.);
+pub const MESSAGE_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 110.0);
+pub const SCORE_TABLE_POS: Vec2 = vec2(0., 0.);
+pub const PLAY_BUTTON_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 100.0);
+pub const BID_PANEL_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 220.);
+pub const DONE_EXCHANGING_BUTTON_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 60.0);
+pub const NEXT_HAND_BUTTON_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 200.0);
+pub const TRUMP_CHOOSER_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 70.);
 
 pub const CARD_SPEED: f32 = 800.0;
 pub const ROT_SPEED: f32 = 10.0;
@@ -37,7 +43,7 @@ impl Default for ViewGeom {
 pub fn turn_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     let rad = player_radians_from_center(player, player_count);
     ViewGeom {
-        pos: position_from(CENTER, rad, 240.0),
+        pos: position_from(PLAY_CENTER, rad, 240.0),
         ..Default::default()
     }
 }
@@ -45,7 +51,7 @@ pub fn turn_marker_geom(player: usize, player_count: usize) -> ViewGeom {
 pub fn bid_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     let rad = player_radians_from_center(player, player_count);
     ViewGeom {
-        pos: position_from(CENTER, rad, 220.0),
+        pos: position_from(PLAY_CENTER, rad, 220.0),
         ..Default::default()
     }
 }
@@ -54,7 +60,7 @@ pub fn deck_geom(dealer: Option<usize>, player_count: usize, _index: usize) -> V
     if let Some(dealer) = dealer {
         let rad = player_radians_from_center(dealer, player_count);
         ViewGeom {
-            pos: position_from(CENTER, rad, 190.0),
+            pos: position_from(PLAY_CENTER, rad, 190.0),
             rot: player_rotation(dealer, player_count),
             ..Default::default()
         }
@@ -84,23 +90,20 @@ pub fn nest_exchange_geom(index: usize, count: usize) -> ViewGeom {
     }
 }
 
-pub fn nest_aside_geom(index: usize, _count: usize) -> ViewGeom {
-    let max_spacing: f32 = 30.;
+pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
+    let max_width = 130.;
+    let max_spacing: f32 = 40.;
 
-    // let max_width = 150.;
-    // let computed_width = max_width / count as f32;
-    // let x_spacing = max_spacing.min(computed_width);
+    let computed_width = max_width / count as f32;
+    let x_spacing = max_spacing.min(computed_width);
 
-    // let mut x_offset = (count - 1) as f32 * -x_spacing / 2.0;
-    // x_offset += index as f32 * x_spacing;
-    // let pos = vec2(210., SCREEN.y - 210.0) + vec2(x_offset, 0.0);
-
-    let x_offset = max_spacing * index as f32;
-    let pos = NEST_ASIDE_POS + vec2(x_offset, 0.0);
+    let mut offset = (count - 1) as f32 * -x_spacing / 2.0;
+    offset += index as f32 * x_spacing;
+    let pos = NEST_ASIDE_POS + vec2(offset, -offset);
 
     ViewGeom {
         pos,
-        rot: 0.0, // was -0.2
+        rot: -0.3,
         z: index,
     }
 }
@@ -120,17 +123,11 @@ pub fn position_from(start_pos: Vec2, radians: f32, magnitude: f32) -> Vec2 {
     )
 }
 
-pub fn hand_card_geom(
-    player: usize,
-    index: usize,
-    hand_count: usize,
-    player_count: usize,
-    is_bot: bool,
-) -> ViewGeom {
+pub fn hand_card_geom(player: usize, index: usize, hand_count: usize, player_count: usize, is_bot: bool) -> ViewGeom {
     let distance_from_center = 330.0;
 
     let max_width = match is_bot {
-        true => 250.,
+        true => 300.,
         false => 530.,
     };
     let max_spacing: f32 = 60.;
@@ -142,7 +139,7 @@ pub fn hand_card_geom(
     x_offset += index as f32 * x_spacing;
 
     let rad = player_radians_from_center(player, player_count);
-    let mut pos = position_from(CENTER, rad, distance_from_center);
+    let mut pos = position_from(PLAY_CENTER, rad, distance_from_center);
 
     let angle = player_rotation(player, player_count);
     pos.x += x_offset * angle.cos();
@@ -158,7 +155,7 @@ pub fn hand_card_geom(
 pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
     let distance_from_center = 105.0;
     let rad = player_radians_from_center(player, player_count);
-    let pos = position_from(CENTER, rad, distance_from_center);
+    let pos = position_from(PLAY_CENTER, rad, distance_from_center);
     let angle = player_rotation(player, player_count);
 
     ViewGeom {
@@ -169,13 +166,9 @@ pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
 }
 
 pub fn taken_geom(player: usize, player_count: usize) -> ViewGeom {
-    let distance_from_center = 470.0;
+    let distance_from_center = 450.0;
     let rad = player_radians_from_center(player, player_count);
-    let pos = position_from(CENTER, rad, distance_from_center);
+    let pos = position_from(PLAY_CENTER, rad, distance_from_center);
     let angle = player_rotation(player, player_count) + PI * 0.5;
-    ViewGeom {
-        pos,
-        rot: angle,
-        z: 0,
-    }
+    ViewGeom { pos, rot: angle, z: 0 }
 }

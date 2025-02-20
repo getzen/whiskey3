@@ -34,6 +34,7 @@ pub enum MajorityTricksTie {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum FirstPlayer {
+    Bidder,
     LeftOfBidder,
     LeftOfDealer,
 }
@@ -190,16 +191,15 @@ impl GameOptions {
             bid_after_passing: false,
             discard_point_cards: DiscardedPointCards::OnlyWhenForced(true),
             nest_awarded: NestAwarded::ToLastTrickWinner,
-            first_player: FirstPlayer::LeftOfBidder,
+            first_player: FirstPlayer::Bidder,
             last_trick_pts: 0,
             majority_of_tricks_pts: 20,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
-            bidders_win: BiddersWin::PointsTaken(30),
+            bidders_win: BiddersWin::PointsTaken(0),
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(30),
+            defenders_win: DefendersWin::PointsTaken(0),
             defenders_lose: DefendersLose::PointsTaken,
             points_to_win_game: 300,
-            // All cards from 5, 9 -> Ace. 28 cards.
             cards_in_deck: vec![
                 (Suit::Club, 5, 5),
                 //(Suit::Club, 6, 0),
@@ -250,16 +250,15 @@ impl GameOptions {
 
     // }
 
-    /// This version has the Joker as the low trump. Having it as the high trump
-    /// and worth 20 should be outlawed.
+    /// This version has the Joker as the low trump, plus a smaller nest size.
     pub fn kentucky_discard() -> Self {
         Self {
             players: 4,
             hand_size: 9,
-            exchange_size: 5,
+            exchange_size: 3,
             exchange_face_up: 0,
-            nest_size: 0,
-            nest_face_up: 0,
+            nest_size: 2,
+            nest_face_up: 2,
             min_bid: 60,
             max_bid: 120,
             bid_after_passing: false,

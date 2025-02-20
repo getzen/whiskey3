@@ -42,11 +42,7 @@ impl ButtonShaded {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

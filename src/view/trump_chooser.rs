@@ -53,11 +53,7 @@ impl TrumpChooser {
     }
 
     /// Returns true if event found.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         if !self.visible {
             return false;
         }
@@ -68,9 +64,7 @@ impl TrumpChooser {
         };
 
         let mouse_over0 = self.club_button.process_events(Some(transform), mouse_pos);
-        let mouse_over1 = self
-            .diamond_button
-            .process_events(Some(transform), mouse_pos);
+        let mouse_over1 = self.diamond_button.process_events(Some(transform), mouse_pos);
         let mouse_over2 = self.heart_button.process_events(Some(transform), mouse_pos);
         let mouse_over3 = self.spade_button.process_events(Some(transform), mouse_pos);
 

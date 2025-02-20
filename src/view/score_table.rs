@@ -22,40 +22,25 @@ pub struct ScoreTable {
     eventer: Eventer,
     trans_anim: Option<TranslationAnimator>,
     texters: Array2D<Texter>,
-    column_widths: Vec<usize>,
-    row_heights: Vec<usize>,
-
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
-        let default_texter = Texter::new(
-            Vec2::ZERO,
-            "-",
-            font,
-            14,
-            AlignH::Center,
-            AlignV::Center,
-        );
+        let default_texter = Texter::new(Vec2::ZERO, "-", font, 14, AlignH::Center, AlignV::Center);
         let mut texters = Array2D::filled_with(default_texter, 4, 9);
 
         let column_widths = vec![50, 75, 60, 75, 75, 75, 75, 80, 66, 75];
         let row_heights = vec![20, 20, 20, 20];
         let starting_pos = vec2(0.0, 0.0);
 
-        let col_headings0 = ["", "Taken", "#",   "Majority", "Nest", "Total",  "Win",  "Hand",  "Game"];
-        let col_headings1 = ["", "Pts",  "Tricks", "Bonus",  "Pts",  "/ Bid", "Bonus", "Score", "/ Win"];
+        let col_headings0 = ["", "Taken", "#", "Majority", "Nest", "Total", "Win", "Hand", "Game"];
+        let col_headings1 = ["", "Pts", "Tricks", "Bonus", "Pts", "/ Bid", "Bonus", "Score", "/ Win"];
         for i in 0..col_headings0.len() {
             texters[(0, i)].text = col_headings0[i].to_string();
             texters[(1, i)].text = col_headings1[i].to_string();
         }
 
-        let row_headings = [
-            "",
-            "",
-            "We",
-            "They",
-        ];
+        let row_headings = ["", "", "We", "They"];
         for row in 0..row_headings.len() {
             texters[(row, 0)].text = row_headings[row].to_string();
         }
@@ -89,8 +74,6 @@ impl ScoreTable {
             eventer,
             trans_anim: None,
             texters,
-            column_widths,
-            row_heights,
         }
     }
 
@@ -105,40 +88,30 @@ impl ScoreTable {
         self.texters[(3, col)].text = scoring.trick_count[1].to_string();
         col += 1;
 
-        // self.texters[(row, 1)].text = scoring.nest[0].to_string();
-        // self.texters[(row, 2)].text = scoring.nest[1].to_string();
-        // row += 1;
+        self.texters[(2, col)].text = scoring.majority_bonus[0].to_string();
+        self.texters[(3, col)].text = scoring.majority_bonus[1].to_string();
+        col += 1;
 
-       
+        self.texters[(2, col)].text = scoring.nest[0].to_string();
+        self.texters[(3, col)].text = scoring.nest[1].to_string();
+        col += 1;
 
-        // self.texters[(row, 1)].text = scoring.majority_tricks[0].to_string();
-        // self.texters[(row, 2)].text = scoring.majority_tricks[1].to_string();
-        // row += 1;
+        let total0 = scoring.hand_subtotal[0];
+        let total1 = scoring.hand_subtotal[1];
+        self.texters[(2, col)].text = format!("{}/{}", total0, scoring.bid[0]);
+        self.texters[(3, col)].text = format!("{}/{}", total1, scoring.bid[1]);
+        col += 1;
 
-        // // Dividing line.
-        // row += 1;
+        self.texters[(2, col)].text = scoring.bonus[0].to_string();
+        self.texters[(3, col)].text = scoring.bonus[1].to_string();
+        col += 1;
 
-        // let total0 = scoring.hand_subtotal[0];
-        // let total1 = scoring.hand_subtotal[1];
-        // self.texters[(row, 1)].text = format!("{}/{}", total0, scoring.bid[0]);
-        // self.texters[(row, 2)].text = format!("{}/{}", total1, scoring.bid[1]);
-        // row += 1;
+        self.texters[(2, col)].text = scoring.hand_final[0].to_string();
+        self.texters[(3, col)].text = scoring.hand_final[1].to_string();
+        col += 1;
 
-        // self.texters[(row, 1)].text = scoring.bonus[0].to_string();
-        // self.texters[(row, 2)].text = scoring.bonus[1].to_string();
-        // row += 1;
-
-        // // Dividing line.
-        // row += 1;
-
-        // self.texters[(row, 1)].text = scoring.hand_final[0].to_string();
-        // self.texters[(row, 2)].text = scoring.hand_final[1].to_string();
-        // row += 1;
-
-        // self.texters[(row, 1)].text =
-        //     format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
-        // self.texters[(row, 2)].text =
-        //     format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+        self.texters[(2, col)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
+        self.texters[(3, col)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -151,11 +124,7 @@ impl ScoreTable {
     }
 
     /// Returns true if visible and transform contains the mouse_pos.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         let transform = match parent_transform {
             Some(parent) => &Transform::combine(parent, &self.transform),
             None => &self.transform,

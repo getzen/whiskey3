@@ -109,8 +109,7 @@ impl Controller {
             }
 
             if self.delay_before_game_action > 0.0 {
-                self.delay_before_game_action =
-                    (self.delay_before_game_action - time_delta).max(0.0);
+                self.delay_before_game_action = (self.delay_before_game_action - time_delta).max(0.0);
             } else {
                 // Here is where the sausage is made.
                 if let Some(action) = &self.game_action {
@@ -228,8 +227,7 @@ impl Controller {
                             self.game.swap_with_exchange(*id);
 
                             // Disable Done button if nest is full.
-                            self.view
-                                .show_done_exchanging_button(self.game.exchange_is_full());
+                            self.view.show_done_exchanging_button(self.game.exchange_is_full());
 
                             let maker = self.game.maker.unwrap();
                             self.view.update_hand(&self.game, maker);
@@ -343,8 +341,7 @@ impl Controller {
                             self.game.complete_hand();
                             self.view.show_next_hand_button(true);
                             self.view.update_info(&self.game);
-                        }
-                         //GameAction::Exit => todo!(),
+                        } //GameAction::Exit => todo!(),
                     }
                 }
             }

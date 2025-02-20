@@ -80,11 +80,7 @@ impl Transform {
 
     /// Returns an Affine2 created from self properties and offset using offset and size.
     pub fn offset_affine(&self) -> Affine2 {
-        Affine2::from_scale_angle_translation(
-            self.scale,
-            self.rotation,
-            self.translation + self.offset_translation(),
-        )
+        Affine2::from_scale_angle_translation(self.scale, self.rotation, self.translation + self.offset_translation())
         //self.affine() * Affine2::from_translation(offset_trans)
     }
 
@@ -99,10 +95,7 @@ impl Transform {
     pub fn contains_point(&self, screen_pt: Vec2) -> bool {
         let mut world_pt = self.affine().inverse().transform_point2(screen_pt);
         world_pt -= self.offset_translation();
-        world_pt.x >= 0.0
-            && world_pt.y >= 0.0
-            && world_pt.x <= self.size.x
-            && world_pt.y <= self.size.y
+        world_pt.x >= 0.0 && world_pt.y >= 0.0 && world_pt.x <= self.size.x && world_pt.y <= self.size.y
     }
 
     /// Returns a Mat4 created from self properties. Macroquad and OpenGL use Mat4

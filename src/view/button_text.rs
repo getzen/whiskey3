@@ -31,14 +31,7 @@ pub struct ButtonText {
 
 impl ButtonText {
     pub fn new(position: Vec2, text: &str, font: Font, font_size: u16, size: Vec2) -> Self {
-        let text = Texter::new(
-            Vec2::ZERO,
-            text,
-            font,
-            font_size,
-            AlignH::Center,
-            AlignV::Center,
-        );
+        let text = Texter::new(Vec2::ZERO, text, font, font_size, AlignH::Center, AlignV::Center);
 
         Self {
             visible: true,
@@ -56,11 +49,7 @@ impl ButtonText {
     }
 
     /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         if !self.visible {
             return false;
         }

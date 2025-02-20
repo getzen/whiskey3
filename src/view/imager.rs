@@ -12,10 +12,7 @@ pub struct Imager {
 
 impl Imager {
     pub fn new(texture: Texture2D, size_multiplier: f32, centered: bool) -> Self {
-        let size = vec2(
-            texture.width() * size_multiplier,
-            texture.height() * size_multiplier,
-        );
+        let size = vec2(texture.width() * size_multiplier, texture.height() * size_multiplier);
 
         Self {
             visible: true,

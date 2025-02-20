@@ -1,8 +1,8 @@
 use crate::{
     card::{Card, Id, Points, Rank, Suit},
     game_options::{
-        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer,
-        GameOptions, MajorityTricksTie, NestAwarded,
+        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer, GameOptions,
+        MajorityTricksTie, NestAwarded,
     },
     scoring::Scoring,
     trick::Trick,
@@ -65,10 +65,10 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
-        let options = GameOptions::whiskey_4();
+        // let options = GameOptions::whiskey_4();
         // let options = GameOptions::dixie();
         // let options = GameOptions::one_high_partnership();
-        // let options = GameOptions::kentucky_discard();
+        let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
 
         // Read as normal.
@@ -453,6 +453,9 @@ impl Game {
 
         // Who starts the first trick?
         match self.options.first_player {
+            FirstPlayer::Bidder => {
+                self.active = self.maker.unwrap();
+            }
             FirstPlayer::LeftOfBidder => {
                 self.active = self.maker.unwrap();
                 self.next_player();
@@ -583,20 +586,18 @@ impl Game {
 
         // Award points for taking the majority of tricks
         if self.scoring.trick_count[maker_team] > self.scoring.trick_count[defen_team] {
-            self.scoring.majority_tricks[maker_team] = self.options.majority_of_tricks_pts;
+            self.scoring.majority_bonus[maker_team] = self.options.majority_of_tricks_pts;
         } else if self.scoring.trick_count[defen_team] > self.scoring.trick_count[maker_team] {
-            self.scoring.majority_tricks[defen_team] = self.options.majority_of_tricks_pts;
+            self.scoring.majority_bonus[defen_team] = self.options.majority_of_tricks_pts;
         } else {
             // It's a tie
             match self.options.majority_tricks_tie {
                 MajorityTricksTie::ToDefenders => {
-                    self.scoring.majority_tricks[defen_team] = self.options.majority_of_tricks_pts;
+                    self.scoring.majority_bonus[defen_team] = self.options.majority_of_tricks_pts;
                 }
                 MajorityTricksTie::SplitBetween => {
-                    self.scoring.majority_tricks[maker_team] =
-                        self.options.majority_of_tricks_pts / 2;
-                    self.scoring.majority_tricks[defen_team] =
-                        self.options.majority_of_tricks_pts / 2;
+                    self.scoring.majority_bonus[maker_team] = self.options.majority_of_tricks_pts / 2;
+                    self.scoring.majority_bonus[defen_team] = self.options.majority_of_tricks_pts / 2;
                 }
                 MajorityTricksTie::NoPoints => {}
             }
@@ -636,9 +637,7 @@ impl Game {
             // Defenders win
             match self.options.bidders_lose {
                 BiddersLose::Zero => self.scoring.hand_final[maker_team] = 0,
-                BiddersLose::MinusBid => {
-                    self.scoring.hand_final[maker_team] = -self.scoring.bid[maker_team]
-                }
+                BiddersLose::MinusBid => self.scoring.hand_final[maker_team] = -self.scoring.bid[maker_team],
             }
             match self.options.defenders_win {
                 DefendersWin::PointsTaken(bonus) => {

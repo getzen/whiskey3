@@ -27,14 +27,7 @@ impl TexterMulti {
         self.spacings.clear();
     }
 
-    pub fn add_line(
-        &mut self,
-        text: &str,
-        font: Font,
-        font_size: u16,
-        align_h: AlignH,
-        spacing: f32,
-    ) {
+    pub fn add_line(&mut self, text: &str, font: Font, font_size: u16, align_h: AlignH, spacing: f32) {
         let mut pos = Vec2::ZERO;
         for spacing in &self.spacings {
             pos.y += spacing;

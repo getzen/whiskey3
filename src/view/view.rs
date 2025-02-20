@@ -14,13 +14,14 @@ use super::{
     button_shaded::ButtonShaded,
     button_text::ButtonText,
     imager::Imager,
-    score_table_1::ScoreTable,
+    score_table::ScoreTable,
     texter::AlignH,
     texter_multi::TexterMulti,
     trump_chooser::TrumpChooser,
     trump_marker::TrumpMarker,
     view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, CENTER, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, SCORE_TABLE_POS, TRUMP_CHOOSER_POS
+        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS,
+        PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS,
     },
 };
 
@@ -50,7 +51,7 @@ impl View {
     pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         {
-            // This is in a block so that body_font goes out of scope (and unlocked) after it's set.
+            // This is in a block so that body_font goes out of scope (and unlocks) after it's set.
             let mut body_font = BODY_FONT.lock().unwrap();
             *body_font = Some(font.clone());
         }
@@ -69,18 +70,14 @@ impl View {
             bid_markers.push(marker);
         }
 
-        let mut done_exchanging_button = ButtonText::new(
-            DONE_EXCHANGING_BUTTON_POS,
-            "Done",
-            font.clone(),
-            16,
-            vec2(80.0, 40.0),
-        );
+        let mut done_exchanging_button =
+            ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font.clone(), 16, vec2(80.0, 40.0));
         done_exchanging_button.sender = Some(sender.clone());
         done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.visible = false;
 
-        let mut next_hand_button = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font.clone(), 16, vec2(120.0, 40.0));
+        let mut next_hand_button =
+            ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font.clone(), 16, vec2(120.0, 40.0));
         next_hand_button.sender = Some(sender.clone());
         next_hand_button.action = Some(PlayerAction::NextHand);
         next_hand_button.visible = false;
@@ -88,19 +85,17 @@ impl View {
         Self {
             card_views: Vec::new(),
             turn_marker,
-            //message,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             play_button,
             bid_markers,
             bid_panel: BidPanel::new(0, 0, BID_PANEL_POS, sender.clone()),
             done_exchanging_button,
             trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
-            trump_marker: TrumpMarker::new(CENTER),
+            trump_marker: TrumpMarker::new(PLAY_CENTER),
             next_hand_button,
             sender,
             z_order_needs_update: false,
             message: TexterMulti::new(MESSAGE_POS),
-            //trans_animators: HashMap::new(),
         }
     }
 
@@ -113,14 +108,8 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut view = CardView::new(
-            card.id,
-            face,
-            back.clone(),
-            card.points,
-            self.sender.clone(),
-        );
-        view.move_to(view_geom::CENTER, 100.0);
+        let mut view = CardView::new(card.id, face, back.clone(), card.points, self.sender.clone());
+        view.move_to(view_geom::PLAY_CENTER, 100.0);
         self.card_views.push(view);
     }
 
@@ -134,22 +123,18 @@ impl View {
     // }
 
     fn find_card_view_mut(&mut self, card_id: Id) -> Option<&mut CardView> {
-        self.card_views
-            .iter_mut()
-            .find(|card_view| card_view.id == card_id)
+        self.card_views.iter_mut().find(|card_view| card_view.id == card_id)
     }
 
     fn sort_card_views_by_z_order(&mut self) {
-        self.card_views
-            .sort_by(|a, b| a.card_image.z_order.cmp(&b.card_image.z_order));
+        // self.card_views.sort_by(|a, b| a.card_image.z_order.cmp(&b.card_image.z_order));
+        self.card_views.sort_by_key(|a| a.card_image.z_order);
     }
 
     pub fn check_events(&mut self) {
         // Key presses
         if is_key_released(KeyCode::Escape) {
-            self.sender
-                .send(PlayerAction::ShouldExit)
-                .expect("Send error");
+            self.sender.send(PlayerAction::ShouldExit).expect("Send error");
         }
 
         let mouse_pos: Vec2 = mouse_position().into();
@@ -186,21 +171,6 @@ impl View {
     }
 
     pub fn update(&mut self, time_delta: f32) {
-        // // Translation animators
-        // let mut completed_ids = Vec::new();
-        // for (card_id, anim) in &mut self.trans_animators {
-        //     if let Some(card_view) = self.card_views.iter_mut().find(|c| c.id == *card_id) {
-        //         card_view.transform.translation = anim.update(time_delta);
-        //     }
-        //     if anim.completed {
-        //         completed_ids.push(*card_id);
-        //     }
-        // }
-        // // Remove the completed animators.
-        // for card_id in completed_ids {
-        //     self.trans_animators.remove(&card_id);
-        // }
-
         for view in &mut self.card_views {
             view.update(time_delta);
         }
@@ -230,8 +200,7 @@ impl View {
         let font = BODY_FONT.lock().unwrap().clone().unwrap();
 
         for text in texts {
-            self.message
-                .add_line(text, font.clone(), 18, AlignH::Center, 20.0);
+            self.message.add_line(text, font.clone(), 18, AlignH::Center, 20.0);
         }
     }
 
@@ -298,13 +267,7 @@ impl View {
 
         for (idx, card) in hand.iter().enumerate() {
             if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                let geom = view_geom::hand_card_geom(
-                    player,
-                    idx,
-                    hand.len(),
-                    game.options.players,
-                    is_bot,
-                );
+                let geom = view_geom::hand_card_geom(player, idx, hand.len(), game.options.players, is_bot);
                 view.move_to(geom.pos, view_geom::CARD_SPEED);
                 view.rotate_to(geom.rot, view_geom::ROT_SPEED);
                 view.card_image.z_order = geom.z;

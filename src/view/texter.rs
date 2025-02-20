@@ -32,14 +32,7 @@ pub struct Texter {
 }
 
 impl Texter {
-    pub fn new(
-        position: Vec2,
-        text: &str,
-        font: Font,
-        font_size: u16,
-        align_h: AlignH,
-        align_v: AlignV,
-    ) -> Self {
+    pub fn new(position: Vec2, text: &str, font: Font, font_size: u16, align_h: AlignH, align_v: AlignV) -> Self {
         Self {
             visible: true,
             transform: Transform::from_translation(position),
@@ -61,12 +54,7 @@ impl Texter {
         let mut adj_pos = Vec2::ZERO;
 
         // Is this function slow?
-        let dimensions = measure_text(
-            &self.text,
-            Some(&self.font),
-            self.font_size,
-            self.font_scale,
-        );
+        let dimensions = measure_text(&self.text, Some(&self.font), self.font_size, self.font_scale);
 
         adj_pos.x += match self.align_h {
             AlignH::Left => 0.0,

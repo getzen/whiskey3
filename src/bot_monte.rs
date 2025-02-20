@@ -52,12 +52,7 @@ impl BotMonte {
         lowest_id
     }
 
-    pub fn choose_discards_simple(
-        &self,
-        game: &Game,
-        exchange_size: usize,
-        sender: Sender<PlayerAction>,
-    ) {
+    pub fn choose_discards_simple(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
         // Super basic: dump the three lowest non-trump cards.
 
         let trump = self.best_suit(&game.active_hand());
@@ -81,9 +76,7 @@ impl BotMonte {
                 eligible_cards.swap_remove(idx);
             }
         }
-        sender
-            .send(PlayerAction::Discard(discards))
-            .expect("send error");
+        sender.send(PlayerAction::Discard(discards)).expect("send error");
     }
 
     pub fn choose_discards(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
@@ -133,27 +126,16 @@ impl BotMonte {
             discards.push(eligible_cards[idx].id);
         }
 
-        sender
-            .send(PlayerAction::Discard(discards))
-            .expect("send error");
+        sender.send(PlayerAction::Discard(discards)).expect("send error");
     }
 
     pub fn choose_trump(&self, game: &Game, sender: Sender<PlayerAction>) {
         let cards = game.active_hand();
         let suit = self.best_suit(cards);
-        sender
-            .send(PlayerAction::ChooseTrump(suit))
-            .expect("send error");
+        sender.send(PlayerAction::ChooseTrump(suit)).expect("send error");
     }
 
-    pub fn get_bid(
-        &self,
-        min: Points,
-        _max: Points,
-        game: &Game,
-        simulations: usize,
-        sender: Sender<PlayerAction>,
-    ) {
+    pub fn get_bid(&self, min: Points, _max: Points, game: &Game, simulations: usize, sender: Sender<PlayerAction>) {
         let mut sim_game = game.clone();
         let cards = sim_game.active_hand();
         let suit = self.best_suit(cards);
@@ -176,10 +158,7 @@ impl BotMonte {
         let index = (all_scores.len() as f64 * aggressiveness) as usize - 1;
 
         let bid_pts = all_scores[index];
-        println!(
-            "P:{}, low:{}, high:{}, bid:{}",
-            game.active, low, high, bid_pts
-        );
+        println!("P:{}, low:{}, high:{}, bid:{}", game.active, low, high, bid_pts);
 
         let mut bid = Bid::Pass;
 
@@ -200,18 +179,12 @@ impl BotMonte {
         let mut sim_game = game.clone();
         let (best_play_id, _score, _all_scores) = self.run_simulations(&mut sim_game, simulations);
 
-        sender
-            .send(PlayerAction::PlayCard(best_play_id))
-            .expect("send error");
+        sender.send(PlayerAction::PlayCard(best_play_id)).expect("send error");
     }
 
     // Use a MonteCarlo simulation to pick the best card.
-    pub fn run_simulations(
-        &self,
-        game: &mut Game,
-        simulations: usize,
-    ) -> (Id, Points, Vec<Points>) {
-        let start_time = web_time::Instant::now();
+    pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<Points>) {
+        //let start_time = web_time::Instant::now();
 
         let monte_player = game.active;
         let team = game.team_index(game.active);
@@ -288,7 +261,7 @@ impl BotMonte {
                 let this_sim_score = sim_game.scoring.points_taken[team]
                     + sim_game.scoring.nest[team]
                     + sim_game.scoring.last_trick[team]
-                    + sim_game.scoring.majority_tricks[team];
+                    + sim_game.scoring.majority_bonus[team];
 
                 all_scores.push(this_sim_score);
                 sim_score += this_sim_score;

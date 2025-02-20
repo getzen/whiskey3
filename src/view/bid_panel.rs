@@ -30,29 +30,20 @@ pub struct BidPanel {
 }
 
 impl BidPanel {
-    pub fn new(
-        min_bid: Points,
-        max_bid: Points,
-        position: Vec2,
-        sender: Sender<PlayerAction>,
-    ) -> Self {
+    pub fn new(min_bid: Points, max_bid: Points, position: Vec2, sender: Sender<PlayerAction>) -> Self {
         let font = BODY_FONT.lock().unwrap().clone().unwrap();
 
-        let mut bid_button =
-            ButtonText::new(vec2(-5.0, 0.0), "Bid", font.clone(), 18, vec2(80.0, 40.0));
+        let mut bid_button = ButtonText::new(vec2(-5.0, 0.0), "Bid", font.clone(), 18, vec2(80.0, 40.0));
         bid_button.sender = Some(sender.clone());
         bid_button.action = Some(PlayerAction::Bid(Bid::Points(min_bid)));
 
-        let mut pass_button =
-            ButtonText::new(vec2(100.0, 0.0), "Pass", font.clone(), 18, vec2(80.0, 40.0));
+        let mut pass_button = ButtonText::new(vec2(100.0, 0.0), "Pass", font.clone(), 18, vec2(80.0, 40.0));
         pass_button.sender = Some(sender.clone());
         pass_button.action = Some(PlayerAction::Bid(Bid::Pass));
 
-        let plus_button =
-            ButtonText::new(vec2(-70.0, -12.0), "+", font.clone(), 18, vec2(20.0, 20.0));
+        let plus_button = ButtonText::new(vec2(-70.0, -12.0), "+", font.clone(), 18, vec2(20.0, 20.0));
 
-        let minus_button =
-            ButtonText::new(vec2(-70.0, 12.0), "-", font.clone(), 18, vec2(20.0, 20.0));
+        let minus_button = ButtonText::new(vec2(-70.0, 12.0), "-", font.clone(), 18, vec2(20.0, 20.0));
 
         let min_text = min_bid.to_string();
         let bid_text = Texter::new(
@@ -86,11 +77,7 @@ impl BidPanel {
     }
 
     /// Returns true if event found.
-    pub fn process_events(
-        &mut self,
-        parent_transform: Option<&Transform>,
-        mouse_pos: Vec2,
-    ) -> bool {
+    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
         if !self.visible {
             return false;
         }
@@ -109,9 +96,7 @@ impl BidPanel {
             self.update_bid_amount(new_amount);
         }
 
-        let mouse_over3 = self
-            .minus_button
-            .process_events(Some(&transform), mouse_pos);
+        let mouse_over3 = self.minus_button.process_events(Some(&transform), mouse_pos);
         if self.minus_button.eventer.left_mouse_released {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);

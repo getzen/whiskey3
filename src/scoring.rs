@@ -7,7 +7,7 @@ pub struct Scoring {
     pub nest: [Points; 2],
     pub last_trick: [Points; 2],
     pub trick_count: [u8; 2],
-    pub majority_tricks: [Points; 2],
+    pub majority_bonus: [Points; 2],
     pub hand_subtotal: [Points; 2],
     pub bonus: [Points; 2],
     pub hand_final: [Points; 2],
@@ -22,7 +22,7 @@ impl Scoring {
             nest: [0, 0],
             last_trick: [0, 0],
             trick_count: [0, 0],
-            majority_tricks: [0, 0],
+            majority_bonus: [0, 0],
             hand_subtotal: [0, 0],
 
             bonus: [0, 0],
@@ -51,8 +51,7 @@ impl Scoring {
 
     pub fn update_hand_subtotals(&mut self) {
         for t in 0..2 {
-            self.hand_subtotal[t] =
-                self.points_taken[t] + self.nest[t] + self.last_trick[t] + self.majority_tricks[t];
+            self.hand_subtotal[t] = self.points_taken[t] + self.nest[t] + self.last_trick[t] + self.majority_bonus[t];
         }
     }
 
