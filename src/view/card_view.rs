@@ -20,7 +20,7 @@ use super::texter::AlignH;
 use super::texter::AlignV;
 use super::texter::Texter;
 use super::transform::Transform;
-use super::view::BODY_FONT;
+use super::view::FONT;
 
 pub struct CardView {
     pub id: Id, // must match Card id
@@ -48,13 +48,13 @@ impl CardView {
         let size_mult = 0.3333;
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
 
-        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+        let font = FONT.get().unwrap();
         let text_pos = vec2(-15.0, 46.0);
 
         let mut point_text = None;
         if points > 0 {
             let text = format!("{} pts", points);
-            let mut pt = Texter::new(text_pos, &text, font, 12, AlignH::Center, AlignV::Bottom);
+            let mut pt = Texter::new(text_pos, &text, font.clone(), 12, AlignH::Center, AlignV::Bottom);
             pt.color = GRAY;
             //pt.transform.rotation = -std::f32::consts::PI * 0.5;
             point_text = Some(pt);

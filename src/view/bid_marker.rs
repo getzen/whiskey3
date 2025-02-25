@@ -9,7 +9,7 @@ use crate::game::Bid;
 use super::{
     texter::{AlignH, AlignV, Texter},
     transform::Transform,
-    view::BODY_FONT,
+    view::FONT,
 };
 
 pub struct BidMarker {
@@ -25,8 +25,8 @@ pub struct BidMarker {
 
 impl BidMarker {
     pub fn new(position: Vec2) -> Self {
-        let font = BODY_FONT.lock().unwrap().clone().unwrap();
-        let text = Texter::new(Vec2::ZERO, "?", font, 18, AlignH::Center, AlignV::Center);
+        let font = FONT.get().unwrap();
+        let text = Texter::new(Vec2::ZERO, "?", font.clone(), 18, AlignH::Center, AlignV::Center);
 
         Self {
             visible: false,

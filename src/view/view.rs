@@ -25,10 +25,9 @@ use super::{
     },
 };
 
-// Global variable, created in new() below. To access:
-// let font = BODY_FONT.lock().unwrap().clone().unwrap();
-use std::sync::Mutex;
-pub static BODY_FONT: Mutex<Option<Font>> = Mutex::new(None);
+use std::sync::OnceLock;
+pub static SENDER: OnceLock<Sender<PlayerAction>> = OnceLock::new();
+pub static FONT: OnceLock<Font> = OnceLock::new();
 
 pub struct View {
     card_views: Vec<CardView>,
@@ -50,11 +49,7 @@ pub struct View {
 impl View {
     pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
-        {
-            // This is in a block so that body_font goes out of scope (and unlocks) after it's set.
-            let mut body_font = BODY_FONT.lock().unwrap();
-            *body_font = Some(font.clone());
-        }
+        FONT.set(font.clone()).expect("Error setting FONT.");
 
         let texture = load_texture("src/assets/circle.png").await.unwrap();
         let turn_marker = Imager::new(texture, 0.4, true);
@@ -197,7 +192,7 @@ impl View {
 
     pub fn update_message(&mut self, texts: &[&str]) {
         self.message.clear_lines();
-        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+        let font = FONT.get().unwrap();
 
         for text in texts {
             self.message.add_line(text, font.clone(), 18, AlignH::Center, 20.0);

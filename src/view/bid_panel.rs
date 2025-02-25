@@ -11,7 +11,7 @@ use super::{
     button_text::ButtonText,
     texter::{AlignH, AlignV, Texter},
     transform::Transform,
-    view::BODY_FONT,
+    view::FONT,
 };
 
 pub struct BidPanel {
@@ -31,7 +31,7 @@ pub struct BidPanel {
 
 impl BidPanel {
     pub fn new(min_bid: Points, max_bid: Points, position: Vec2, sender: Sender<PlayerAction>) -> Self {
-        let font = BODY_FONT.lock().unwrap().clone().unwrap();
+        let font = FONT.get().unwrap();
 
         let mut bid_button = ButtonText::new(vec2(-5.0, 0.0), "Bid", font.clone(), 18, vec2(80.0, 40.0));
         bid_button.sender = Some(sender.clone());
