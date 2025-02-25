@@ -75,11 +75,10 @@ impl Controller {
             self.view.check_events();
 
             // Check for PlayerAction message. Bots send messages to convey results.
-            let received = self.receiver.try_recv();
-            if received.is_ok() {
+            if let Ok(received) = self.receiver.try_recv() {
                 // Don't handle actions here directly. Forward as GameActions to keep
                 // all the logic in one place.
-                match received.unwrap() {
+                match received {
                     PlayerAction::Bid(bid) => {
                         self.game_action = Some(GameAction::MakeBid(bid));
                     }

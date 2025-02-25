@@ -2,16 +2,6 @@ use macroquad::prelude::*;
 
 use super::transform::Transform;
 
-// #[derive(Debug)]
-// pub enum EventerEvent {
-//     MouseEntered,
-//     MouseExited,
-//     LeftMousePressed,
-//     LeftMouseReleased,
-//     // Right
-//     DragStarted
-// }
-
 pub struct Eventer {
     /// Will check for events. If false, process_events() always returns false.
     pub enabled: bool,

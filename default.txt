@@ -13,9 +13,9 @@ first_player: LeftOfBidder
 last_trick_pts: 0
 majority_of_tricks_pts: 20
 majority_tricks_tie: ToDefenders
-bidders_win: !PointsTaken 10
+bidders_win: !PointsTaken 20
 bidders_lose: Zero
-defenders_win: !PointsTaken 10
+defenders_win: !PointsTaken 20
 defenders_lose: PointsTaken
 points_to_win_game: 300
 cards_in_deck:

@@ -112,7 +112,7 @@ impl BotMonte {
             // Must iterate the combo indices in reverse, otherwise removing an index
             // will foul up the correctness of the others.
             for idx in combo.iter().rev() {
-                sim_game.active_hand_mut().remove(*idx);
+                sim_game.active_hand_mut().swap_remove(*idx);
             }
             let (_id, _best_score, all_scores) = self.run_simulations(&mut sim_game, 100);
             let mean: isize = all_scores.iter().sum::<isize>() / all_scores.len() as isize;
