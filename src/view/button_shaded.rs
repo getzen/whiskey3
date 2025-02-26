@@ -8,7 +8,7 @@ use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
 use crate::view::imager::Imager;
-use crate::view::transform::Transform;
+use crate::view::transform_old::Transform;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {

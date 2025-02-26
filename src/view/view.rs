@@ -10,7 +10,7 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::ViewEntity, view_geom::{
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::ViewEntity, view_geom::{
         self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS
     }
 };
@@ -30,7 +30,7 @@ pub struct View {
     z_orders: Vec<ZOrder>,
 
     card_views: Vec<CardView>,
-    turn_marker: Imager,
+    turn_marker: Sprite,
     score_table: ScoreTable,
     play_button: ButtonShaded,
     bid_markers: Vec<BidMarker>,
@@ -51,7 +51,8 @@ impl View {
         FONT.set(font.clone()).expect("Error setting FONT.");
 
         let texture = load_texture("src/assets/circle.png").await.unwrap();
-        let turn_marker = Imager::new(texture, 0.4, true);
+        let mut turn_marker = Sprite::new(texture);
+        turn_marker.set_size_from_multiplier(0.4);
 
         let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
         let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
@@ -79,7 +80,7 @@ impl View {
         Self {
             view_entities: HashMap::<Id, Box<dyn ViewEntity>>::new(),
             z_orders: Vec::new(),
-            
+
             card_views: Vec::new(),
             turn_marker,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),

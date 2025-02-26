@@ -11,7 +11,7 @@ use super::{
     animators::TranslationAnimator,
     eventer::Eventer,
     texter::{AlignH, AlignV, Texter},
-    transform::Transform,
+    transform_old::Transform,
     view_geom::SCORE_TABLE_POS,
 };
 

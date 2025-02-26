@@ -12,7 +12,7 @@ use crate::view::eventer::Eventer;
 use super::texter::AlignH;
 use super::texter::AlignV;
 use super::texter::Texter;
-use super::transform::Transform;
+use super::transform_old::Transform;
 
 /// A button with drawn text and border. Always centered.
 pub struct ButtonText {

@@ -2,15 +2,15 @@ use macroquad::{math::Vec2, texture::load_texture};
 
 use crate::card::Suit;
 
-use super::{sprite::Sprite, transform::Transform};
+use super::{sprite::Sprite, transform::Transform, view_entity::ViewEntity};
 
-pub struct TrumpMarker {
+pub struct TurnMarkerEnt {
     pub visible: bool,
     transform: Transform,
     sprite: Option<Sprite>,
 }
 
-impl TrumpMarker {
+impl TurnMarkerEnt {
     pub fn new(position: Vec2) -> Self {
         Self {
             visible: true,
@@ -35,8 +35,14 @@ impl TrumpMarker {
             self.sprite = None;
         }
     }
+}
 
-    pub fn draw(&mut self) {
+impl ViewEntity for TurnMarkerEnt {
+    fn set_translation(&mut self, _translation: Vec2) {
+        self.transform.translation = _translation;
+    }
+
+    fn draw(&mut self) {
         if !self.visible {
             return;
         }
