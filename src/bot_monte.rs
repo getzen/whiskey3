@@ -1,11 +1,9 @@
-use std::{isize, sync::mpsc::Sender};
+use std::isize;
 
 use combination::combine;
 
 use crate::{
-    card::{Card, Id, Points, Suit},
-    game::{Bid, Game, PlayerAction},
-    game_options::BiddersWin,
+    card::{Card, Id, Points, Suit}, controller::SENDER, game::{Bid, Game, PlayerAction}, game_options::BiddersWin
 };
 
 #[derive(Clone)]
@@ -52,7 +50,7 @@ impl BotMonte {
         lowest_id
     }
 
-    pub fn choose_discards_simple(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
+    pub fn choose_discards_simple(&self, game: &Game, exchange_size: usize) {
         // Super basic: dump the three lowest non-trump cards.
 
         let trump = self.best_suit(&game.active_hand());
@@ -76,10 +74,11 @@ impl BotMonte {
                 eligible_cards.swap_remove(idx);
             }
         }
-        sender.send(PlayerAction::Discard(discards)).expect("send error");
+        // sender.send(PlayerAction::Discard(discards)).expect("send error");
+        SENDER.get().unwrap().send(PlayerAction::Discard(discards)).expect("send error");
     }
 
-    pub fn choose_discards(&self, game: &Game, exchange_size: usize, sender: Sender<PlayerAction>) {
+    pub fn choose_discards(&self, game: &Game, exchange_size: usize) {
         // Get the eligible cards.
         let mut eligible_cards = Vec::new();
         for card in game.active_hand() {
@@ -128,16 +127,18 @@ impl BotMonte {
             discards.push(eligible_cards[idx].id);
         }
 
-        sender.send(PlayerAction::Discard(discards)).expect("send error");
+        // sender.send(PlayerAction::Discard(discards)).expect("send error");
+        SENDER.get().unwrap().send(PlayerAction::Discard(discards)).expect("send error");
     }
 
-    pub fn choose_trump(&self, game: &Game, sender: Sender<PlayerAction>) {
+    pub fn choose_trump(&self, game: &Game) {
         let cards = game.active_hand();
         let suit = self.best_suit(cards);
-        sender.send(PlayerAction::ChooseTrump(suit)).expect("send error");
+        // sender.send(PlayerAction::ChooseTrump(suit)).expect("send error");
+        SENDER.get().unwrap().send(PlayerAction::ChooseTrump(suit)).expect("send error");
     }
 
-    pub fn get_bid(&self, min: Points, _max: Points, game: &Game, simulations: usize, sender: Sender<PlayerAction>) {
+    pub fn get_bid(&self, min: Points, _max: Points, game: &Game, simulations: usize) {
         let mut sim_game = game.clone();
         let cards = sim_game.active_hand();
         let suit = self.best_suit(cards);
@@ -166,22 +167,24 @@ impl BotMonte {
 
         if bid_pts >= min {
             match game.options.bidders_win {
-                BiddersWin::PointsBid(_) => {
+                BiddersWin::PointsBid => {
                     bid = Bid::Points(bid_pts);
                 }
-                BiddersWin::PointsTaken(_) => {
+                BiddersWin::PointsTaken => {
                     bid = Bid::Points(min);
                 }
             }
         }
-        sender.send(PlayerAction::Bid(bid)).expect("send error");
+        // sender.send(PlayerAction::Bid(bid)).expect("send error");
+        SENDER.get().unwrap().send(PlayerAction::Bid(bid)).expect("send error");
     }
 
-    pub fn get_play(&self, game: &mut Game, simulations: usize, sender: Sender<PlayerAction>) {
+    pub fn get_play(&self, game: &mut Game, simulations: usize) {
         let mut sim_game = game.clone();
         let (best_play_id, _score, _all_scores) = self.run_simulations(&mut sim_game, simulations);
 
-        sender.send(PlayerAction::PlayCard(best_play_id)).expect("send error");
+        // sender.send(PlayerAction::PlayCard(best_play_id)).expect("send error");
+        SENDER.get().unwrap().send(PlayerAction::PlayCard(best_play_id)).expect("send error");
     }
 
     // Use a MonteCarlo simulation to pick the best card.

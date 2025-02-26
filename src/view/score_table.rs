@@ -33,7 +33,7 @@ impl ScoreTable {
         let row_heights = vec![20, 20, 20, 20];
         let starting_pos = vec2(0.0, 0.0);
 
-        let col_headings0 = ["", "Taken", "#", "Majority", "Nest", "Total", "Win", "Hand", "Game"];
+        let col_headings0 = ["", "Taken", "#", "Majority", "Nest", "Total", "Slam", "Hand", "Game"];
         let col_headings1 = ["", "Pts", "Tricks", "Bonus", "Pts", "/ Bid", "Bonus", "Score", "/ Win"];
         for i in 0..col_headings0.len() {
             texters[(0, i)].text = col_headings0[i].to_string();
@@ -102,8 +102,8 @@ impl ScoreTable {
         self.texters[(3, col)].text = format!("{}/{}", total1, scoring.bid[1]);
         col += 1;
 
-        self.texters[(2, col)].text = scoring.bonus[0].to_string();
-        self.texters[(3, col)].text = scoring.bonus[1].to_string();
+        self.texters[(2, col)].text = scoring.slam_bonus[0].to_string();
+        self.texters[(3, col)].text = scoring.slam_bonus[1].to_string();
         col += 1;
 
         self.texters[(2, col)].text = scoring.hand_final[0].to_string();

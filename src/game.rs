@@ -609,19 +609,22 @@ impl Game {
 
         let maker_subtotal = self.scoring.hand_subtotal[maker_team];
 
-        if maker_subtotal >= self.high_bid {
-            // Success by makers
+        if maker_subtotal >= self.high_bid { // Success by makers
             match self.options.bidders_win {
-                BiddersWin::PointsBid(bonus) => {
+                BiddersWin::PointsBid => {
+                    // Note max bid by maker is required.
                     if self.high_bid == self.options.max_bid && maker_subtotal == self.options.max_bid {
-                        self.scoring.hand_final[maker_team] = maker_subtotal + self.options.slam_bonus;
+                        self.scoring.slam_bonus[maker_team] = self.options.slam_bonus;
                     }
-                    self.scoring.bonus[maker_team] = bonus;
-                    self.scoring.hand_final[maker_team] = self.scoring.bid[maker_team] + bonus;
+                    self.scoring.hand_final[maker_team] = self.scoring.bid[maker_team] + self.scoring.slam_bonus[maker_team];
+                    
                 }
-                BiddersWin::PointsTaken(bonus) => {
-                    self.scoring.bonus[maker_team] = bonus;
-                    self.scoring.hand_final[maker_team] = maker_subtotal + bonus;
+                BiddersWin::PointsTaken => {
+                    // Note max bid by maker is not required.
+                    if maker_subtotal == self.options.max_bid {
+                        self.scoring.slam_bonus[maker_team] = self.options.slam_bonus;
+                    }
+                    self.scoring.hand_final[maker_team] = maker_subtotal + self.scoring.slam_bonus[maker_team];
                 }
             }
             match self.options.defenders_lose {
@@ -645,14 +648,8 @@ impl Game {
                 BiddersLose::MinusBid => self.scoring.hand_final[maker_team] = -self.scoring.bid[maker_team],
             }
             match self.options.defenders_win {
-                DefendersWin::PointsTaken(bonus) => {
-                    self.scoring.bonus[defen_team] = bonus;
-                    self.scoring.hand_final[defen_team] =
-                        self.scoring.hand_subtotal[defen_team] + self.scoring.bonus[defen_team];
-                }
-                DefendersWin::PointsTakenWithCap(cap) => {
-                    let capped_pts = self.scoring.hand_subtotal[defen_team].min(cap);
-                    self.scoring.hand_final[defen_team] = capped_pts;
+                DefendersWin::PointsTaken => {
+                    self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team];
                 }
             }
         }

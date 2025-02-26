@@ -41,10 +41,8 @@ pub enum FirstPlayer {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum BiddersWin {
-    /// Points = bonus for win
-    PointsBid(Points),
-    /// Points = bonus for win
-    PointsTaken(Points),
+    PointsBid,
+    PointsTaken,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -55,9 +53,7 @@ pub enum BiddersLose {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DefendersWin {
-    /// Points = bonus for win
-    PointsTaken(Points),
-    PointsTakenWithCap(Points),
+    PointsTaken,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -98,6 +94,8 @@ pub struct GameOptions {
     pub bidders_lose: BiddersLose,
     pub defenders_win: DefendersWin,
     pub defenders_lose: DefendersLose,
+    /// Bonus for taking the max points. If bidders_win is set to PointsBid,
+    /// then the bid must be for the max points too.
     pub slam_bonus: Points,
     pub points_to_win_game: Points,
 
@@ -122,11 +120,11 @@ impl GameOptions {
             last_trick_pts: 0,
             majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::NoPoints,
-            bidders_win: BiddersWin::PointsTaken(20),
+            bidders_win: BiddersWin::PointsTaken,
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(20),
+            defenders_win: DefendersWin::PointsTaken,
             defenders_lose: DefendersLose::PointsTaken,
-            slam_bonus: 100,
+            slam_bonus: 90,
             points_to_win_game: 400,
             // All cards from 4 -> Ace, plus one high Joker worth 0. 45 cards.
             cards_in_deck: vec![
@@ -197,9 +195,9 @@ impl GameOptions {
             last_trick_pts: 0,
             majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
-            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_win: BiddersWin::PointsTaken,
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(0),
+            defenders_win: DefendersWin::PointsTaken,
             defenders_lose: DefendersLose::PointsTaken,
             slam_bonus: 50,
             points_to_win_game: 300,
@@ -271,9 +269,9 @@ impl GameOptions {
             last_trick_pts: 0,
             majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::NoPoints,
-            bidders_win: BiddersWin::PointsTaken(0),
+            bidders_win: BiddersWin::PointsTaken,
             bidders_lose: BiddersLose::MinusBid,
-            defenders_win: DefendersWin::PointsTaken(0),
+            defenders_win: DefendersWin::PointsTaken,
             defenders_lose: DefendersLose::PointsTaken,
             slam_bonus: 0,
             points_to_win_game: 200,

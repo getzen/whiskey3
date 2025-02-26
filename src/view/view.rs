@@ -26,7 +26,6 @@ use super::{
 };
 
 use std::sync::OnceLock;
-pub static SENDER: OnceLock<Sender<PlayerAction>> = OnceLock::new();
 pub static FONT: OnceLock<Font> = OnceLock::new();
 
 pub struct View {

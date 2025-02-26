@@ -6,6 +6,9 @@ use crate::game::{Bid, Game, PlayerAction};
 
 use crate::view::view::View;
 
+use std::sync::OnceLock;
+pub static SENDER: OnceLock<Sender<PlayerAction>> = OnceLock::new();
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum GameAction {
     Setup,
@@ -35,7 +38,6 @@ pub struct Controller {
     game: Game,
     view: View,
 
-    sender: Sender<PlayerAction>,
     receiver: Receiver<PlayerAction>,
 
     game_action: Option<GameAction>,
@@ -45,13 +47,14 @@ pub struct Controller {
 impl Controller {
     pub async fn new() -> Self {
         let (sender, receiver) = mpsc::channel();
+        SENDER.set(sender.clone()).expect("Error setting SENDER.");
+
         let game = Game::new();
         let players = game.options.players;
 
         Self {
             game,
             view: View::new(players, sender.clone()).await,
-            sender,
             receiver,
             game_action: None,
             delay_before_game_action: 0.0,
@@ -352,63 +355,59 @@ impl Controller {
 
     fn spawn_bid_bot(&self) {
         let game_clone = self.game.clone();
-        let sender = self.sender.clone();
         let min_bid = self.game.min_current_bid();
         let max_bid = self.game.options.max_bid;
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_bid(min_bid, max_bid, &game_clone, 100, sender);
+            bot.get_bid(min_bid, max_bid, &game_clone, 100);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_bid(min_bid, max_bid, &game_clone, 100, sender);
+                bot.get_bid(min_bid, max_bid, &game_clone, 100);
             });
         }
     }
 
     fn spawn_discard_bot(&self) {
         let game_clone = self.game.clone();
-        let sender = self.sender.clone();
         let exchange_size = self.game.options.exchange_size;
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.choose_discards(&game_clone, exchange_size, sender);
+            bot.choose_discards(&game_clone, exchange_size);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.choose_discards(&game_clone, exchange_size, sender);
+                bot.choose_discards(&game_clone, exchange_size);
             });
         }
     }
 
     fn spawn_trump_bot(&self) {
         let game_clone = self.game.clone();
-        let sender = self.sender.clone();
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.choose_trump(&game_clone, sender);
+            bot.choose_trump(&game_clone);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.choose_trump(&game_clone, sender);
+                bot.choose_trump(&game_clone);
             });
         }
     }
 
     fn spawn_play_bot(&self) {
         let mut game_clone = self.game.clone();
-        let sender = self.sender.clone();
 
         if cfg!(target_family = "wasm") {
             let bot = BotMonte::new();
-            bot.get_play(&mut game_clone, 500, sender);
+            bot.get_play(&mut game_clone, 500);
         } else {
             std::thread::spawn(move || {
                 let bot = BotMonte::new();
-                bot.get_play(&mut game_clone, 500, sender);
+                bot.get_play(&mut game_clone, 500);
             });
         }
     }
