@@ -8,7 +8,7 @@ use crate::{
     trick::Trick,
 };
 
-pub const DEBUGGING: bool = true;
+pub const DEBUGGING: bool = false;
 
 #[derive(Clone)]
 pub enum PlayerAction {
@@ -613,6 +613,9 @@ impl Game {
             // Success by makers
             match self.options.bidders_win {
                 BiddersWin::PointsBid(bonus) => {
+                    if self.high_bid == self.options.max_bid && maker_subtotal == self.options.max_bid {
+                        self.scoring.hand_final[maker_team] = maker_subtotal + self.options.slam_bonus;
+                    }
                     self.scoring.bonus[maker_team] = bonus;
                     self.scoring.hand_final[maker_team] = self.scoring.bid[maker_team] + bonus;
                 }

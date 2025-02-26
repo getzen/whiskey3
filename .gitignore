@@ -2,3 +2,5 @@
 .DS_Store
 Cargo.lock
 Graphics.free
+score table.numbers
+default.txt

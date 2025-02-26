@@ -98,6 +98,7 @@ pub struct GameOptions {
     pub bidders_lose: BiddersLose,
     pub defenders_win: DefendersWin,
     pub defenders_lose: DefendersLose,
+    pub slam_bonus: Points,
     pub points_to_win_game: Points,
 
     pub cards_in_deck: Vec<(Suit, Rank, Points)>,
@@ -125,6 +126,7 @@ impl GameOptions {
             bidders_lose: BiddersLose::Zero,
             defenders_win: DefendersWin::PointsTaken(20),
             defenders_lose: DefendersLose::PointsTaken,
+            slam_bonus: 100,
             points_to_win_game: 400,
             // All cards from 4 -> Ace, plus one high Joker worth 0. 45 cards.
             cards_in_deck: vec![
@@ -186,19 +188,20 @@ impl GameOptions {
             exchange_face_up: 0,
             nest_size: 2,
             nest_face_up: 2,
-            min_bid: 60,
-            max_bid: 120,
+            min_bid: 50,
+            max_bid: 100,
             bid_after_passing: false,
             discard_point_cards: DiscardedPointCards::Allowed(true),
             nest_awarded: NestAwarded::ToLastTrickWinner,
             first_player: FirstPlayer::LeftOfBidder,
             last_trick_pts: 0,
-            majority_of_tricks_pts: 20,
+            majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
-            bidders_win: BiddersWin::PointsTaken(20),
+            bidders_win: BiddersWin::PointsTaken(0),
             bidders_lose: BiddersLose::Zero,
-            defenders_win: DefendersWin::PointsTaken(20),
+            defenders_win: DefendersWin::PointsTaken(0),
             defenders_lose: DefendersLose::PointsTaken,
+            slam_bonus: 50,
             points_to_win_game: 300,
             cards_in_deck: vec![
                 (Suit::Club, 5, 5),
@@ -272,6 +275,7 @@ impl GameOptions {
             bidders_lose: BiddersLose::MinusBid,
             defenders_win: DefendersWin::PointsTaken(0),
             defenders_lose: DefendersLose::PointsTaken,
+            slam_bonus: 0,
             points_to_win_game: 200,
             // All cards from 5 -> Ace, plus one low Joker worth 20. 41 cards.
             cards_in_deck: vec![
