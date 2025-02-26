@@ -1,5 +1,6 @@
 use std::sync::mpsc::Sender;
 
+use hashbrown::HashMap;
 use macroquad::prelude::*;
 
 use crate::{
@@ -9,26 +10,25 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_shaded::ButtonShaded,
-    button_text::ButtonText,
-    imager::Imager,
-    score_table::ScoreTable,
-    texter::AlignH,
-    texter_multi::TexterMulti,
-    trump_chooser::TrumpChooser,
-    trump_marker::TrumpMarker,
-    view_geom::{
-        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS,
-        PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, bid_marker_geom,
-    },
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, imager::Imager, score_table::ScoreTable, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::ViewEntity, view_geom::{
+        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS
+    }
 };
 
 use std::sync::OnceLock;
 pub static FONT: OnceLock<Font> = OnceLock::new();
 
+/// ZOrder can be put into a Vec and sorted by z to provide a drawing
+/// and event-checking order for the ids.
+struct ZOrder {
+    id: Id,
+    z: i32,
+}
+
 pub struct View {
+    view_entities: HashMap<Id, Box<dyn ViewEntity>>,
+    z_orders: Vec<ZOrder>,
+
     card_views: Vec<CardView>,
     turn_marker: Imager,
     score_table: ScoreTable,
@@ -77,6 +77,9 @@ impl View {
         next_hand_button.visible = false;
 
         Self {
+            view_entities: HashMap::<Id, Box<dyn ViewEntity>>::new(),
+            z_orders: Vec::new(),
+            
             card_views: Vec::new(),
             turn_marker,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),

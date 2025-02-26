@@ -14,6 +14,7 @@ pub mod transform;
 pub mod trump_chooser;
 pub mod trump_marker;
 pub mod view;
+pub mod view_entity;
 pub mod view_geom;
 
 use macroquad::prelude::*;
