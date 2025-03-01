@@ -47,7 +47,7 @@ impl Default for ViewGeom {
 pub fn turn_marker_geom(player: usize, player_count: usize) -> ViewGeom {
     let rad = player_radians_from_center(player, player_count);
     ViewGeom {
-        pos: position_from(PLAY_CENTER, rad, 420.0),
+        pos: position_from(PLAY_CENTER, rad, 435.0),
         ..Default::default()
     }
 }

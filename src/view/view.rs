@@ -55,7 +55,7 @@ pub struct View {
     next_hand_button: Id,
     message: Id,
     score_table: Id,
-    
+
     sender: Sender<PlayerAction>,
 }
 
@@ -110,10 +110,10 @@ impl View {
         let id = self.next_id();
         let tex = load_texture("src/assets/circle.png").await.unwrap();
         let mut entity = TurnMarker::new(tex, vec2(20.0, 20.0));
-        entity.set_translation(PLAY_CENTER);
+        entity.transform.translation = PLAY_CENTER;
 
         self.view_entities.insert(id, ViewEnt::TurnMarker(entity));
-        self.z_orders.push(ZOrder { id, z: 0 });
+        self.z_orders.push(ZOrder { id, z: 255 });
         id
     }
 
@@ -162,7 +162,7 @@ impl View {
         let mut entity = ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font, 16, vec2(80.0, 40.0));
         entity.click_action = Some(PlayerAction::DoneExchanging);
         entity.visible = false;
-        self.view_entities.insert(id, ViewEnt::DoneExchangingButton(entity));
+        self.view_entities.insert(id, ViewEnt::ButtonText(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -173,7 +173,7 @@ impl View {
         let mut entity = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font, 16, vec2(120.0, 40.0));
         entity.click_action = Some(PlayerAction::NextHand);
         entity.visible = false;
-        self.view_entities.insert(id, ViewEnt::NextHandButton(entity));
+        self.view_entities.insert(id, ViewEnt::ButtonText(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -274,13 +274,12 @@ impl View {
             table.visible = true;
             table.update_scoring(&game);
         }
-       
 
         let entity = self.view_entities.get_mut(&self.turn_marker).unwrap();
         if let ViewEnt::TurnMarker(marker) = entity {
             marker.visible = true;
             let geom = view_geom::turn_marker_geom(game.active, game.options.players);
-            marker.set_translation(geom.pos);
+            marker.transform.translation = geom.pos;
         }
     }
 
@@ -290,8 +289,7 @@ impl View {
             text_multi.clear_lines();
             let font = FONT.get().unwrap();
             for text in texts {
-                text_multi
-                    .add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
+                text_multi.add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
             }
         }
     }
@@ -409,20 +407,20 @@ impl View {
 
     pub fn show_done_exchanging_button(&mut self, enabled: bool) {
         let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
-        if let ViewEnt::DoneExchangingButton(button) = entity {
+        if let ViewEnt::ButtonText(button) = entity {
             button.visible = true;
             button.state = match enabled {
                 true => ButtonState::Normal,
                 false => ButtonState::Disabled,
             }
-        }        
+        }
     }
 
     pub fn hide_done_exchanging_button(&mut self) {
         let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
-        if let ViewEnt::DoneExchangingButton(button) = entity {
-           button.visible = false;
-        }   
+        if let ViewEnt::ButtonText(button) = entity {
+            button.visible = false;
+        }
     }
 
     pub fn set_discardable_hand_cards(&mut self, game: &Game) {
@@ -453,14 +451,14 @@ impl View {
     }
 
     pub fn show_trump_marker(&mut self, visible: bool) {
-        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        let entity = self.view_entities.get_mut(&self.trump_marker).unwrap();
         if let ViewEnt::TrumpMarker(marker) = entity {
             marker.visible = visible
         }
     }
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
-        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        let entity = self.view_entities.get_mut(&self.trump_marker).unwrap();
         if let ViewEnt::TrumpMarker(marker) = entity {
             marker.set_suit(suit).await
         }
@@ -482,7 +480,7 @@ impl View {
 
     pub fn show_next_hand_button(&mut self, visible: bool) {
         let entity = self.view_entities.get_mut(&self.next_hand_button).unwrap();
-        if let ViewEnt::NextHandButton(button) = entity {
+        if let ViewEnt::ButtonText(button) = entity {
             button.visible = visible
         }
     }

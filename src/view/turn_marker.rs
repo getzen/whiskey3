@@ -17,10 +17,6 @@ impl TurnMarker {
         }
     }
 
-    pub fn set_translation(&mut self, translation: Vec2) {
-        self.transform.translation = translation;
-    }
-
     pub fn draw(&mut self) {
         if self.visible {
             self.sprite.draw(&self.transform);

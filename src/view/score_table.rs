@@ -8,7 +8,7 @@ use macroquad::{
 use crate::game::Game;
 
 use super::{
-    animators::TranslationAnimator,
+    translation_anim::TranslationAnimator,
     eventer::{Eventer, HitDetector},
     text::Text,
     transform::Transform,

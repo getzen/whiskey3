@@ -134,6 +134,7 @@ impl Controller {
                             self.game.reset_for_new_hand();
                             self.view.update_message(&[""]);
                             self.view.show_next_hand_button(false);
+                            self.view.show_trump_marker(false);
                             self.view.update_info(&self.game);
                             self.view.update_deck(&self.game);
                             self.game_action = Some(GameAction::DealToHands);
@@ -214,6 +215,7 @@ impl Controller {
                             if !self.game.bot_is_active() {
                                 self.view.set_discardable_hand_cards(&self.game);
                             }
+                            self.view.update_info(&self.game);
                             self.game_action = Some(GameAction::GetExchanges);
                         }
                         GameAction::GetExchanges => {
@@ -279,6 +281,7 @@ impl Controller {
                             self.game.set_trump_suit(*suit);
                             self.game.set_first_player();
 
+                            self.view.update_info(&self.game);
                             self.view.update_hand(&self.game, 0);
                             self.view.show_trump_chooser(false);
                             self.view.show_trump_marker(true);
@@ -306,6 +309,7 @@ impl Controller {
                             self.view.update_hand(&self.game, player);
                             self.view.update_trick(&self.game);
                             self.view.update_message(&[""]);
+                            self.view.update_info(&self.game);
 
                             if self.game.trick_completed() {
                                 self.delay_before_game_action = 1.0;

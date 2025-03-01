@@ -1,7 +1,9 @@
 use macroquad::math::Vec2;
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, card_ent::CardEnt, score_table::ScoreTable, text_multi::TextMulti, transform::Transform, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker
+    bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, card_ent::CardEnt, score_table::ScoreTable,
+    text_multi::TextMulti, transform::Transform, trump_chooser::TrumpChooser, trump_marker::TrumpMarker,
+    turn_marker::TurnMarker,
 };
 
 // To get a concrete entity when stored as an enum:
@@ -15,8 +17,7 @@ pub enum ViewEnt {
     BidPanel(BidPanel),
     TrumpChooser(TrumpChooser),
     TrumpMarker(TrumpMarker),
-    DoneExchangingButton(ButtonText),
-    NextHandButton(ButtonText),
+    ButtonText(ButtonText),
     TextMulti(TextMulti),
     ScoreTable(ScoreTable),
     CardEnt(CardEnt),
@@ -25,30 +26,32 @@ pub enum ViewEnt {
 impl ViewEnt {
     pub fn set_translation(&mut self, translation: Vec2) {
         match self {
-            ViewEnt::TurnMarker(marker) => marker.set_translation(translation),
             ViewEnt::CardEnt(card) => card.set_translation(translation),
-            _ => {}
+            _ => { panic!() }
         }
     }
 
     pub fn set_rotation(&mut self, rotation: f32) {
         match self {
             ViewEnt::CardEnt(card) => card.set_rotation(rotation),
-            _ => {}
+            _ => { panic!() }
         }
     }
 
     pub fn update(&mut self, time_delta: f32) {
         match self {
             ViewEnt::BidMarker(marker) => marker.update(time_delta),
-            _ => {}
+            _ => { }
         }
     }
 
     pub fn process_mouse(&mut self, mouse_pos: Vec2) -> bool {
+        let transform = Transform::default();
         match self {
-            ViewEnt::CardEnt(card) => card.process_mouse(mouse_pos),
+            ViewEnt::BidPanel(panel) => panel.process_mouse(&mouse_pos),
             ViewEnt::TrumpChooser(chooser) => chooser.process_mouse(mouse_pos),
+            ViewEnt::ButtonText(text) => text.process_mouse(&mouse_pos, &transform),
+            ViewEnt::CardEnt(card) => card.process_mouse(mouse_pos),
             _ => false,
         }
     }
@@ -61,8 +64,7 @@ impl ViewEnt {
             ViewEnt::BidPanel(panel) => panel.draw(),
             ViewEnt::TrumpChooser(chooser) => chooser.draw(),
             ViewEnt::TrumpMarker(marker) => marker.draw(),
-            ViewEnt::DoneExchangingButton(button) => button.draw(&transform),
-            ViewEnt::NextHandButton(button) => button.draw(&transform),
+            ViewEnt::ButtonText(button) => button.draw(&transform),
             ViewEnt::TextMulti(text_multi) => text_multi.draw(&transform),
             ViewEnt::ScoreTable(table) => table.draw(&transform),
             ViewEnt::CardEnt(card) => card.draw(),
