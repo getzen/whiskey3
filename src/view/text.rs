@@ -2,7 +2,6 @@ use macroquad::prelude::*;
 
 use super::transform::Transform;
 
-
 #[allow(unused)]
 #[derive(Clone)]
 pub enum AlignH {
@@ -22,7 +21,7 @@ pub enum AlignV {
 #[derive(Clone)]
 /// A text component.
 pub struct Text {
-    pub transform: Transform // ??????????????
+    pub transform: Transform,
     pub text: String,
     pub font: Font,
     pub font_size: u16,
@@ -33,8 +32,9 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(text: &str, font: Font, font_size: u16) -> Self {
+    pub fn new(position: Vec2, text: &str, font: Font, font_size: u16) -> Self {
         Self {
+            transform: Transform::from_translation(position),
             text: text.to_string(),
             font,
             font_size,
@@ -45,7 +45,9 @@ impl Text {
         }
     }
 
-    pub fn draw(&self, transform: &Transform) {
+    pub fn draw(&self, parent_transform: &Transform) {
+        let transform = *parent_transform * self.transform;
+
         // Determine the adjustment we need to make for h/v centering.
         let mut offset = Vec2::ZERO;
 
@@ -65,7 +67,7 @@ impl Text {
         };
 
         let offset_trans = Transform::from_translation(offset);
-        let adj_transform = Transform::from_multiplying(transform, &offset_trans);
+        let adj_transform = Transform::from_multiplying(&transform, &offset_trans);
         let (trans, rot, _scale) = adj_transform.trans_rot_scale();
 
         let params = TextParams {

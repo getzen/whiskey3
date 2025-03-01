@@ -14,6 +14,7 @@ use super::eventer::HitDetector;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
+    pub visible: bool,
     pub state: ButtonState,
     pub transform: Transform,
     pub sprite: Sprite,
@@ -28,6 +29,7 @@ impl ButtonShaded {
     pub fn new(position: Vec2, texture: Texture2D, size_mult: f32, click_action: Option<PlayerAction>) -> Self {
         let size = texture.size() * size_mult;
         Self {
+            visible: true,
             state: ButtonState::Normal,
             transform: Transform::from_translation(position),
             sprite: Sprite::new_with_size_mult(texture, size_mult),
@@ -40,6 +42,10 @@ impl ButtonShaded {
     }
 
     pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+        if !self.visible {
+            return false;
+        }
+
         let transform = *parent_transform * self.transform;
         let mouse_over = self.eventer.process_mouse(mouse_pos, &transform);
 
@@ -71,6 +77,10 @@ impl ButtonShaded {
     }
 
     pub fn draw(&mut self, parent_transform: &Transform) {
+        if !self.visible {
+            return;
+        }
+
         let transform = *parent_transform * self.transform;
         self.sprite.color = match &self.state {
             ButtonState::Highlighted => self.highlighted_color,

@@ -9,9 +9,9 @@ use crate::game::Game;
 
 use super::{
     animators::TranslationAnimator,
-    eventer_old::Eventer,
-    texter::{AlignH, AlignV, Texter},
-    transform_old::Transform,
+    eventer::{Eventer, HitDetector},
+    text::Text,
+    transform::Transform,
     view_geom::SCORE_TABLE_POS,
 };
 
@@ -21,12 +21,12 @@ pub struct ScoreTable {
     transform: Transform,
     eventer: Eventer,
     trans_anim: Option<TranslationAnimator>,
-    texters: Array2D<Texter>,
+    texts: Array2D<Text>,
 }
 
 impl ScoreTable {
     pub fn new(position: Vec2, font: Font) -> Self {
-        let default_texter = Texter::new(Vec2::ZERO, "-", font, 14, AlignH::Center, AlignV::Center);
+        let default_texter = Text::new(Vec2::ZERO, "-", font, 14);
         let mut texters = Array2D::filled_with(default_texter, 4, 9);
 
         let column_widths = vec![50, 75, 60, 75, 75, 75, 75, 80, 66, 75];
@@ -61,57 +61,54 @@ impl ScoreTable {
         // Expand the size to give a margin.
         size += vec2(40.0, 20.0);
 
-        let mut transform = Transform::from_translation(position);
-        transform.size = size;
-
-        let mut eventer = Eventer::new();
+        let mut eventer = Eventer::new(HitDetector::Rect(size, Vec2::ZERO));
         eventer.enabled = false;
 
         Self {
             visible: false,
             size,
-            transform,
+            transform: Transform::from_translation(position),
             eventer,
             trans_anim: None,
-            texters,
+            texts: texters,
         }
     }
 
     pub fn update_scoring(&mut self, game: &Game) {
         let scoring = &game.scoring;
         let mut col = 1;
-        self.texters[(2, col)].text = scoring.points_taken[0].to_string();
-        self.texters[(3, col)].text = scoring.points_taken[1].to_string();
+        self.texts[(2, col)].text = scoring.points_taken[0].to_string();
+        self.texts[(3, col)].text = scoring.points_taken[1].to_string();
         col += 1;
 
-        self.texters[(2, col)].text = scoring.trick_count[0].to_string();
-        self.texters[(3, col)].text = scoring.trick_count[1].to_string();
+        self.texts[(2, col)].text = scoring.trick_count[0].to_string();
+        self.texts[(3, col)].text = scoring.trick_count[1].to_string();
         col += 1;
 
-        self.texters[(2, col)].text = scoring.majority_bonus[0].to_string();
-        self.texters[(3, col)].text = scoring.majority_bonus[1].to_string();
+        self.texts[(2, col)].text = scoring.majority_bonus[0].to_string();
+        self.texts[(3, col)].text = scoring.majority_bonus[1].to_string();
         col += 1;
 
-        self.texters[(2, col)].text = scoring.nest[0].to_string();
-        self.texters[(3, col)].text = scoring.nest[1].to_string();
+        self.texts[(2, col)].text = scoring.nest[0].to_string();
+        self.texts[(3, col)].text = scoring.nest[1].to_string();
         col += 1;
 
         let total0 = scoring.hand_subtotal[0];
         let total1 = scoring.hand_subtotal[1];
-        self.texters[(2, col)].text = format!("{}/{}", total0, scoring.bid[0]);
-        self.texters[(3, col)].text = format!("{}/{}", total1, scoring.bid[1]);
+        self.texts[(2, col)].text = format!("{}/{}", total0, scoring.bid[0]);
+        self.texts[(3, col)].text = format!("{}/{}", total1, scoring.bid[1]);
         col += 1;
 
-        self.texters[(2, col)].text = scoring.slam_bonus[0].to_string();
-        self.texters[(3, col)].text = scoring.slam_bonus[1].to_string();
+        self.texts[(2, col)].text = scoring.slam_bonus[0].to_string();
+        self.texts[(3, col)].text = scoring.slam_bonus[1].to_string();
         col += 1;
 
-        self.texters[(2, col)].text = scoring.hand_final[0].to_string();
-        self.texters[(3, col)].text = scoring.hand_final[1].to_string();
+        self.texts[(2, col)].text = scoring.hand_final[0].to_string();
+        self.texts[(3, col)].text = scoring.hand_final[1].to_string();
         col += 1;
 
-        self.texters[(2, col)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
-        self.texters[(3, col)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+        self.texts[(2, col)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
+        self.texts[(3, col)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -123,14 +120,11 @@ impl ScoreTable {
         }
     }
 
-    /// Returns true if visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
+    pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+        if !self.visible { return false; }
+        let transform = *parent_transform * self.transform;
 
-        let _mouse_over = self.eventer.process_events(transform, mouse_pos);
+        self.eventer.process_mouse(mouse_pos, &transform);
 
         if self.eventer.mouse_entered {
             let drop_down_pos = SCORE_TABLE_POS + Vec2::new(0.0, -SCORE_TABLE_POS.y);
@@ -151,16 +145,13 @@ impl ScoreTable {
         false
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
+    pub fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }
 
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
-        let (pos, _rot) = transform.drawable_position_rotation();
+        let transform = *parent_transform * self.transform;
+        let (pos, _rot, _scale) = transform.trans_rot_scale();
 
         draw_rectangle(
             pos.x,
@@ -170,8 +161,8 @@ impl ScoreTable {
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 
-        for texter in self.texters.as_row_major() {
-            texter.draw(Some(transform));
+        for texter in self.texts.as_row_major() {
+            texter.draw(&transform);
         }
     }
 }

@@ -22,11 +22,10 @@ pub struct CardEnt {
 
     pub dimmed_color: Color,
     pub dimmed: bool,
-    
+
     pub eventer: Eventer,
     pub action: Option<PlayerAction>,
 
-    pub point_text_transform: Transform,
     pub point_text: Option<Text>,
 }
 
@@ -36,12 +35,11 @@ impl CardEnt {
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
 
         let font = FONT.get().unwrap();
-        let point_text_transform = Transform::from_x_y(-15.0, 46.0);
 
         let mut point_text = None;
         if points > 0 {
             let text = format!("{} pts", points);
-            let mut pt = Text::new(&text, font.clone(), 12);
+            let mut pt = Text::new(vec2(-15.0, 46.0), &text, font.clone(), 12);
             pt.color = GRAY;
             point_text = Some(pt);
         }
@@ -56,7 +54,6 @@ impl CardEnt {
             dimmed_color: Color::from_rgba(200, 200, 200, 255),
             dimmed: false,
 
-            point_text_transform,
             point_text,
 
             eventer: Eventer::new(HitDetector::Rect(size, vec2(0.5, 0.5))),

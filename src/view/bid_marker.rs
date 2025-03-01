@@ -6,17 +6,13 @@ use macroquad::{
 
 use crate::game::Bid;
 
-use super::{
-    texter::{AlignH, AlignV, Texter},
-    transform_old::Transform,
-    view::FONT,
-};
+use super::{text::Text, transform::Transform, view::FONT};
 
 pub struct BidMarker {
     pub visible: bool,
     transform: Transform,
     radius: f32,
-    text: Texter,
+    text: Text,
 
     current_bid: Option<Bid>,
     color: Color,
@@ -26,7 +22,7 @@ pub struct BidMarker {
 impl BidMarker {
     pub fn new(position: Vec2) -> Self {
         let font = FONT.get().unwrap();
-        let text = Texter::new(Vec2::ZERO, "?", font.clone(), 18, AlignH::Center, AlignV::Center);
+        let text = Text::new(Vec2::ZERO, "?", font.clone(), 18);
 
         Self {
             visible: false,
@@ -77,21 +73,17 @@ impl BidMarker {
         self.color = WHITE;
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
+    pub fn draw(&mut self) {
         if !self.visible {
             return;
         }
 
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
-        let (pos, _rot) = self.transform.drawable_position_rotation();
+        let (pos, _rot, _scale) = self.transform.trans_rot_scale();
 
         // Circles are already centered.
         draw_circle_lines(pos.x, pos.y, self.radius, 3.0, self.color);
 
         // Text is already centered vert and horiz.
-        self.text.draw(Some(transform));
+        self.text.draw(&self.transform);
     }
 }

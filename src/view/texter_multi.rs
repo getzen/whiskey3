@@ -2,7 +2,7 @@ use macroquad::{math::Vec2, text::Font};
 
 use super::{
     text::{AlignH, AlignV, Text},
-    transform_old::Transform,
+    transform::Transform,
 };
 
 pub struct TexterMulti {
@@ -32,23 +32,22 @@ impl TexterMulti {
         for spacing in &self.spacings {
             pos.y += spacing;
         }
-        let line = Texter::new(pos, text, font, font_size, align_h, AlignV::Top);
+        let mut line = Text::new(pos, text, font, font_size);
+        line.align_h = align_h;
+        line.align_v = AlignV::Top;
         self.lines.push(line);
         self.spacings.push(spacing);
     }
 
-    pub fn draw(&self, parent_transform: Option<&Transform>) {
+    pub fn draw(&self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }
 
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
+        let transform = *parent_transform * self.transform;
 
         for line in &self.lines {
-            line.draw(Some(transform));
+            line.draw(&transform);
         }
     }
 }

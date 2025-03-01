@@ -10,9 +10,19 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_geom::{
-        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
-    }
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_text::ButtonText,
+    score_table::ScoreTable,
+    sprite::Sprite,
+    texter_multi::TexterMulti,
+    trump_chooser::TrumpChooser,
+    trump_marker::TrumpMarker,
+    turn_marker::TurnMarker,
+    view_geom::{
+        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS,
+        PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
+    },
 };
 
 use super::view_entity::ViewEnt;
@@ -66,14 +76,12 @@ impl View {
 
         let mut done_exchanging_button =
             ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font.clone(), 16, vec2(80.0, 40.0));
-        done_exchanging_button.sender = Some(sender.clone());
-        done_exchanging_button.action = Some(PlayerAction::DoneExchanging);
+        done_exchanging_button.click_action = Some(PlayerAction::DoneExchanging);
         done_exchanging_button.visible = false;
 
         let mut next_hand_button =
             ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font.clone(), 16, vec2(120.0, 40.0));
-        next_hand_button.sender = Some(sender.clone());
-        next_hand_button.action = Some(PlayerAction::NextHand);
+        next_hand_button.click_action = Some(PlayerAction::NextHand);
         next_hand_button.visible = false;
 
         Self {
@@ -89,7 +97,7 @@ impl View {
             card_views: Vec::new(),
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             bid_markers,
-            bid_panel: BidPanel::new(0, 0, BID_PANEL_POS, sender.clone()),
+            bid_panel: BidPanel::new(BID_PANEL_POS, 0, 0),
             done_exchanging_button,
             trump_marker: TrumpMarker::new(PLAY_CENTER),
             next_hand_button,
@@ -108,10 +116,7 @@ impl View {
         // Cards are created from Controller call in GameAction::Setup.
         self.turn_marker = self.create_turn_marker().await;
         self.trump_chooser = self.create_trump_chooser().await;
-
-        
-        
-    } 
+    }
 
     async fn create_turn_marker(&mut self) -> Id {
         let id = self.next_id();
@@ -170,20 +175,26 @@ impl View {
         for z_order in &self.z_orders {
             let entity = self.view_entities.get_mut(&z_order.id).unwrap();
             let done = entity.process_mouse(mouse_pos);
-            if done { break }
+            if done {
+                break;
+            }
         }
 
-        self.score_table.process_events(None, mouse_pos);
+        let transform = super::transform::Transform::default();
 
-        if self.bid_panel.process_events(None, mouse_pos) {
+        if self.score_table.process_mouse(&mouse_pos, &transform) {
             return;
         }
 
-        if self.done_exchanging_button.process_events(None, mouse_pos) {
+        if self.bid_panel.process_mouse(&mouse_pos) {
             return;
         }
 
-        if self.next_hand_button.process_events(None, mouse_pos) {
+        if self.done_exchanging_button.process_mouse(&mouse_pos, &transform) {
+            return;
+        }
+
+        if self.next_hand_button.process_mouse(&mouse_pos, &transform) {
             return;
         }
     }
@@ -214,7 +225,7 @@ impl View {
             marker.visible = true;
             let geom = view_geom::turn_marker_geom(game.active, game.options.players);
             marker.set_translation(geom.pos);
-        }        
+        }
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
@@ -222,7 +233,7 @@ impl View {
         let font = FONT.get().unwrap();
 
         for text in texts {
-            self.message.add_line(text, font.clone(), 18, AlignH::Center, 20.0);
+            self.message.add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
         }
     }
 
@@ -429,20 +440,22 @@ impl View {
         self.trump_marker.draw();
 
         for marker in &mut self.bid_markers {
-            marker.draw(None);
+            marker.draw();
         }
 
         for view in &mut self.card_views {
             view.draw();
         }
 
-        self.score_table.draw(None);
+        let transform = super::transform::Transform::default();
 
-        self.bid_panel.draw(None);
-        self.done_exchanging_button.draw(None);
-        self.next_hand_button.draw(None);
+        self.score_table.draw(&transform);
 
-        self.message.draw(None);
+        self.bid_panel.draw();
+        self.done_exchanging_button.draw(&transform);
+        self.next_hand_button.draw(&transform);
+
+        self.message.draw(&transform);
 
         next_frame().await;
     }
