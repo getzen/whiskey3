@@ -24,10 +24,16 @@ pub const TRUMP_CHOOSER_POS: Vec2 = vec2(PLAY_CENTER.x, PLAY_CENTER.y + 70.);
 pub const CARD_SPEED: f32 = 800.0;
 pub const ROT_SPEED: f32 = 10.0;
 
+pub type Z = u16;
+// The base z-order for cards.
+const BOTTOM_UI_Z: Z = 0;
+const CARD_Z: Z = 100;
+const TOP_UI_Z: Z = 1000;
+
 pub struct ViewGeom {
     pub pos: Vec2,
     pub rot: f32,
-    pub z: usize,
+    pub z: Z,
 }
 
 impl Default for ViewGeom {
@@ -86,7 +92,7 @@ pub fn nest_exchange_geom(index: usize, count: usize) -> ViewGeom {
     ViewGeom {
         pos,
         rot: 0.0,
-        z: index,
+        z: CARD_Z + index as Z,
     }
 }
 
@@ -104,7 +110,7 @@ pub fn nest_aside_geom(index: usize, count: usize) -> ViewGeom {
     ViewGeom {
         pos,
         rot: -0.3,
-        z: index,
+        z: CARD_Z + index as Z,
     }
 }
 
@@ -148,7 +154,7 @@ pub fn hand_card_geom(player: usize, index: usize, hand_count: usize, player_cou
     ViewGeom {
         pos,
         rot: angle,
-        z: index + 100,
+        z: CARD_Z + index as Z,
     }
 }
 
@@ -161,7 +167,7 @@ pub fn trick_card_geom(player: usize, player_count: usize) -> ViewGeom {
     ViewGeom {
         pos,
         rot: angle,
-        z: 200,
+        z: CARD_Z + 200,
     }
 }
 

@@ -3,7 +3,10 @@ use std::isize;
 use combination::combine;
 
 use crate::{
-    card::{Card, Id, Points, Suit}, controller::SENDER, game::{Bid, Game, PlayerAction}, game_options::BiddersWin
+    card::{Card, Id, Points, Suit},
+    controller::SENDER,
+    game::{Bid, Game, PlayerAction},
+    game_options::BiddersWin,
 };
 
 #[derive(Clone)]
@@ -75,7 +78,11 @@ impl BotMonte {
             }
         }
         // sender.send(PlayerAction::Discard(discards)).expect("send error");
-        SENDER.get().unwrap().send(PlayerAction::Discard(discards)).expect("send error");
+        SENDER
+            .get()
+            .unwrap()
+            .send(PlayerAction::Discard(discards))
+            .expect("send error");
     }
 
     pub fn choose_discards(&self, game: &Game, exchange_size: usize) {
@@ -128,14 +135,22 @@ impl BotMonte {
         }
 
         // sender.send(PlayerAction::Discard(discards)).expect("send error");
-        SENDER.get().unwrap().send(PlayerAction::Discard(discards)).expect("send error");
+        SENDER
+            .get()
+            .unwrap()
+            .send(PlayerAction::Discard(discards))
+            .expect("send error");
     }
 
     pub fn choose_trump(&self, game: &Game) {
         let cards = game.active_hand();
         let suit = self.best_suit(cards);
         // sender.send(PlayerAction::ChooseTrump(suit)).expect("send error");
-        SENDER.get().unwrap().send(PlayerAction::ChooseTrump(suit)).expect("send error");
+        SENDER
+            .get()
+            .unwrap()
+            .send(PlayerAction::ChooseTrump(suit))
+            .expect("send error");
     }
 
     pub fn get_bid(&self, min: Points, _max: Points, game: &Game, simulations: usize) {
@@ -184,7 +199,11 @@ impl BotMonte {
         let (best_play_id, _score, _all_scores) = self.run_simulations(&mut sim_game, simulations);
 
         // sender.send(PlayerAction::PlayCard(best_play_id)).expect("send error");
-        SENDER.get().unwrap().send(PlayerAction::PlayCard(best_play_id)).expect("send error");
+        SENDER
+            .get()
+            .unwrap()
+            .send(PlayerAction::PlayCard(best_play_id))
+            .expect("send error");
     }
 
     // Use a MonteCarlo simulation to pick the best card.

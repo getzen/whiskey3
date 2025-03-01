@@ -609,15 +609,16 @@ impl Game {
 
         let maker_subtotal = self.scoring.hand_subtotal[maker_team];
 
-        if maker_subtotal >= self.high_bid { // Success by makers
+        if maker_subtotal >= self.high_bid {
+            // Success by makers
             match self.options.bidders_win {
                 BiddersWin::PointsBid => {
                     // Note max bid by maker is required.
                     if self.high_bid == self.options.max_bid && maker_subtotal == self.options.max_bid {
                         self.scoring.slam_bonus[maker_team] = self.options.slam_bonus;
                     }
-                    self.scoring.hand_final[maker_team] = self.scoring.bid[maker_team] + self.scoring.slam_bonus[maker_team];
-                    
+                    self.scoring.hand_final[maker_team] =
+                        self.scoring.bid[maker_team] + self.scoring.slam_bonus[maker_team];
                 }
                 BiddersWin::PointsTaken => {
                     // Note max bid by maker is not required.

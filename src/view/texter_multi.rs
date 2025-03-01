@@ -1,14 +1,14 @@
 use macroquad::{math::Vec2, text::Font};
 
 use super::{
-    texter::{AlignH, AlignV, Texter},
+    text::{AlignH, AlignV, Text},
     transform_old::Transform,
 };
 
 pub struct TexterMulti {
     pub visible: bool,
     pub transform: Transform,
-    pub lines: Vec<Texter>,
+    pub lines: Vec<Text>,
     pub spacings: Vec<f32>,
 }
 

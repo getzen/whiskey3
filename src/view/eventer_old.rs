@@ -1,19 +1,10 @@
 use macroquad::prelude::*;
 
-use super::transform::Transform;
-
-#[allow(unused)]
-pub enum HitDetector {
-    Rect(Vec2, Vec2),   // size, anchor
-    Circle(f32),        // radius
-    Polygon(Vec<Vec2>), // points
-}
+use super::transform_old::Transform;
 
 pub struct Eventer {
     /// Will check for events. If false, process_events() always returns false.
     pub enabled: bool,
-    /// The type of hit detection to use.
-    pub hit_detector: HitDetector,
     /// The mouse just entered.
     pub mouse_entered: bool,
     /// The mouse is currently over.
@@ -31,10 +22,9 @@ pub struct Eventer {
 }
 
 impl Eventer {
-    pub fn new(hit_detector: HitDetector) -> Self {
+    pub fn new() -> Self {
         Self {
             enabled: true,
-            hit_detector,
             mouse_entered: false,
             mouse_over: false,
             mouse_exited: false,
@@ -45,7 +35,7 @@ impl Eventer {
         }
     }
 
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2, transform: &Transform) -> bool {
+    pub fn process_events(&mut self, transform: &Transform, mouse_pos: Vec2) -> bool {
         if !self.enabled {
             return false;
         }
@@ -56,8 +46,8 @@ impl Eventer {
         self.left_mouse_pressed = false;
         self.left_mouse_released = false;
 
-        let mouse_over = self.contains_point(mouse_pos, transform);
-
+        // Mouse over
+        let mouse_over = transform.contains_point(mouse_pos);
         if mouse_over && !self.mouse_over {
             self.mouse_entered = true;
         }
@@ -78,35 +68,7 @@ impl Eventer {
         } else {
             self.left_mouse_down = false;
         }
+
         mouse_over
-    }
-
-    /// Returns true if the given point is contained in HitDetector.
-    pub fn contains_point(&self, point: &Vec2, transform: &Transform) -> bool {
-        // Get the adjusted test point relative to the translation.
-        let mut adj_pt = vec2(point.x - transform.translation.x, point.y - transform.translation.y);
-
-        // Rotate the point clockwise (Notan and Macroquad both rotate clockwise).
-        let theta = transform.rotation;
-        adj_pt = vec2(
-            adj_pt.x * f32::cos(theta) + adj_pt.y * f32::sin(theta),
-            -adj_pt.x * f32::sin(theta) + adj_pt.y * f32::cos(theta),
-        );
-
-        match &self.hit_detector {
-            HitDetector::Rect(size, anchor) => {
-                let adj_size = *size * transform.scale;
-                adj_pt.x += adj_size.x * anchor.x;
-                adj_pt.y += adj_size.y * anchor.y;
-                adj_pt.x >= 0.0 && adj_pt.x <= adj_size.x && adj_pt.y >= 0.0 && adj_pt.y <= adj_size.y
-            }
-            HitDetector::Circle(radius) => {
-                let adj_radius = radius * transform.scale.x;
-                // adj_pt.x -= radius * anchor.x;
-                // adj_pt.y -= radius * anchor.y;
-                Vec2::ZERO.distance(adj_pt) <= adj_radius
-            }
-            HitDetector::Polygon(_points) => todo!(),
-        }
     }
 }

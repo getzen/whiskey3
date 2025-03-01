@@ -9,7 +9,7 @@ use crate::game::Game;
 
 use super::{
     animators::TranslationAnimator,
-    eventer::Eventer,
+    eventer_old::Eventer,
     texter::{AlignH, AlignV, Texter},
     transform_old::Transform,
     view_geom::SCORE_TABLE_POS,

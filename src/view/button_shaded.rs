@@ -1,54 +1,47 @@
-use std::sync::mpsc::Sender;
-
 use macroquad::math::Vec2;
+use macroquad::math::vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 
+use crate::controller::SENDER;
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
-use crate::view::imager::Imager;
-use crate::view::transform_old::Transform;
+use crate::view::sprite::Sprite;
+use crate::view::transform::Transform;
+
+use super::eventer::HitDetector;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
-    pub visible: bool,
-    pub transform: Transform,
-    pub image: Imager,
-    pub eventer: Eventer,
     pub state: ButtonState,
+    pub transform: Transform,
+    pub sprite: Sprite,
     pub normal_color: Color,
     pub highlighted_color: Color,
     pub disabled_color: Color,
-    pub sender: Option<Sender<PlayerAction>>,
-    pub action: Option<PlayerAction>,
+    pub eventer: Eventer,
+    pub click_action: Option<PlayerAction>,
 }
 
 impl ButtonShaded {
-    pub fn new(position: Vec2, texture: Texture2D, size_mult: f32) -> Self {
-        let size = Vec2::new(texture.width() * size_mult, texture.height() * size_mult);
+    pub fn new(position: Vec2, texture: Texture2D, size_mult: f32, click_action: Option<PlayerAction>) -> Self {
+        let size = texture.size() * size_mult;
         Self {
-            visible: true,
-            transform: Transform::from_translation_size_centered(position, size, true),
-            image: Imager::new(texture, size_mult, true),
-            eventer: Eventer::new(),
             state: ButtonState::Normal,
+            transform: Transform::from_translation(position),
+            sprite: Sprite::new_with_size_mult(texture, size_mult),
             normal_color: Color::from_rgba(230, 230, 230, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
             disabled_color: Color::from_rgba(100, 100, 100, 255),
-            sender: None,
-            action: None,
+            eventer: Eventer::new(HitDetector::Rect(size, vec2(0.5, 0.5))),
+            click_action,
         }
     }
 
-    /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_events(&mut self, parent_transform: Option<&Transform>, mouse_pos: Vec2) -> bool {
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
-
-        let mouse_over = self.eventer.process_events(transform, mouse_pos);
+    pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+        let transform = *parent_transform * self.transform;
+        let mouse_over = self.eventer.process_mouse(mouse_pos, &transform);
 
         if self.state == ButtonState::Disabled {
             return mouse_over;
@@ -68,10 +61,8 @@ impl ButtonShaded {
 
         if self.eventer.left_mouse_released {
             self.state = ButtonState::Normal;
-
-            // Send action if sender and action exist.
-            if let Some(sender) = &self.sender {
-                if let Some(action) = &self.action {
+            if let Some(sender) = SENDER.get() {
+                if let Some(action) = &self.click_action {
                     sender.send(action.clone()).expect("Send error");
                 }
             }
@@ -79,21 +70,13 @@ impl ButtonShaded {
         mouse_over
     }
 
-    pub fn draw(&mut self, parent_transform: Option<&Transform>) {
-        if !self.visible {
-            return;
-        }
-
-        let transform = match parent_transform {
-            Some(parent) => &Transform::combine(parent, &self.transform),
-            None => &self.transform,
-        };
-
-        self.image.color = match &self.state {
+    pub fn draw(&mut self, parent_transform: &Transform) {
+        let transform = *parent_transform * self.transform;
+        self.sprite.color = match &self.state {
             ButtonState::Highlighted => self.highlighted_color,
             ButtonState::Disabled => self.disabled_color,
             _ => self.normal_color,
         };
-        self.image.draw(Some(transform));
+        self.sprite.draw(&transform);
     }
 }

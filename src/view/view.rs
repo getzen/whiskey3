@@ -6,14 +6,16 @@ use macroquad::prelude::*;
 use crate::{
     card::{Card, Id, Suit},
     game::{Game, PlayerAction},
-    view::{button_state::ButtonState, card_view::CardView},
+    view::{button_state::ButtonState, card_ent::CardEnt},
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::ViewEntity, view_geom::{
-        self, bid_marker_geom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS
+    bid_marker::BidMarker, bid_panel::BidPanel, button_shaded::ButtonShaded, button_text::ButtonText, score_table::ScoreTable, sprite::Sprite, texter::AlignH, texter_multi::TexterMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_geom::{
+        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
     }
 };
+
+use super::view_entity::ViewEnt;
 
 use std::sync::OnceLock;
 pub static FONT: OnceLock<Font> = OnceLock::new();
@@ -22,21 +24,22 @@ pub static FONT: OnceLock<Font> = OnceLock::new();
 /// and event-checking order for the ids.
 struct ZOrder {
     id: Id,
-    z: i32,
+    z: Z,
 }
 
 pub struct View {
-    view_entities: HashMap<Id, Box<dyn ViewEntity>>,
+    id: Id,
+    view_entities: HashMap<Id, ViewEnt>,
     z_orders: Vec<ZOrder>,
+    turn_marker: Id,
+    bid_marker: Id,
+    trump_chooser: Id,
 
-    card_views: Vec<CardView>,
-    turn_marker: Sprite,
+    card_views: Vec<CardEnt>,
     score_table: ScoreTable,
-    play_button: ButtonShaded,
     bid_markers: Vec<BidMarker>,
     bid_panel: BidPanel,
     done_exchanging_button: ButtonText,
-    trump_chooser: TrumpChooser,
     trump_marker: TrumpMarker,
     next_hand_button: ButtonText,
     sender: Sender<PlayerAction>,
@@ -53,10 +56,6 @@ impl View {
         let texture = load_texture("src/assets/circle.png").await.unwrap();
         let mut turn_marker = Sprite::new(texture);
         turn_marker.set_size_from_multiplier(0.4);
-
-        let play_button_tex = load_texture("src/assets/play_button@2x.png").await.unwrap();
-        let mut play_button = ButtonShaded::new(PLAY_BUTTON_POS, play_button_tex, 0.5);
-        play_button.visible = false;
 
         let mut bid_markers = Vec::new();
         for p in 0..players {
@@ -78,23 +77,59 @@ impl View {
         next_hand_button.visible = false;
 
         Self {
-            view_entities: HashMap::<Id, Box<dyn ViewEntity>>::new(),
+            // Set id high enough so that we don't step on the card ids.
+            id: 100,
+            view_entities: HashMap::<Id, ViewEnt>::new(),
             z_orders: Vec::new(),
+            // These id values are assigned in setup().
+            turn_marker: 0,
+            bid_marker: 0,
+            trump_chooser: 0,
 
             card_views: Vec::new(),
-            turn_marker,
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
-            play_button,
             bid_markers,
             bid_panel: BidPanel::new(0, 0, BID_PANEL_POS, sender.clone()),
             done_exchanging_button,
-            trump_chooser: TrumpChooser::new(TRUMP_CHOOSER_POS, sender.clone()).await,
             trump_marker: TrumpMarker::new(PLAY_CENTER),
             next_hand_button,
             sender,
             z_order_needs_update: false,
             message: TexterMulti::new(MESSAGE_POS),
         }
+    }
+
+    fn next_id(&mut self) -> Id {
+        self.id += 1;
+        self.id
+    }
+
+    pub async fn setup(&mut self) {
+        // Cards are created from Controller call in GameAction::Setup.
+        self.turn_marker = self.create_turn_marker().await;
+        self.trump_chooser = self.create_trump_chooser().await;
+
+        
+        
+    } 
+
+    async fn create_turn_marker(&mut self) -> Id {
+        let id = self.next_id();
+        let tex = load_texture("src/assets/circle.png").await.unwrap();
+        let mut entity = TurnMarker::new(tex);
+        entity.set_translation(vec2(100.0, 100.0));
+
+        self.view_entities.insert(id, ViewEnt::TurnMarker(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    async fn create_trump_chooser(&mut self) -> Id {
+        let id = self.next_id();
+        let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
+        self.view_entities.insert(id, ViewEnt::TrumpChooser(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
     }
 
     async fn texture_for(&self, card: &Card) -> Texture2D {
@@ -106,27 +141,22 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut view = CardView::new(card.id, face, back.clone(), card.points, self.sender.clone());
-        view.move_to(view_geom::PLAY_CENTER, 100.0);
-        self.card_views.push(view);
+        let mut entity = CardEnt::new(card.id, face, back.clone(), card.points);
+        entity.transform.translation = view_geom::PLAY_CENTER;
+        self.view_entities.insert(card.id, ViewEnt::CardEnt(entity));
+        self.z_orders.push(ZOrder { id: card.id, z: 0 });
     }
 
-    // fn find_card_view(&self, card_id: Id) -> Option<&CardView> {
-    //     for card_view in &self.card_views {
-    //         if card_view.id == card_id {
-    //             return Some(card_view);
-    //         }
-    //     }
-    //     None
-    // }
-
-    fn find_card_view_mut(&mut self, card_id: Id) -> Option<&mut CardView> {
-        self.card_views.iter_mut().find(|card_view| card_view.id == card_id)
+    fn set_z_order(&mut self, id: Id, z: Z) {
+        if let Some(z_order) = self.z_orders.iter_mut().find(|z| z.id == id) {
+            z_order.z = z;
+        }
+        self.z_order_needs_update = true;
     }
 
-    fn sort_card_views_by_z_order(&mut self) {
-        // self.card_views.sort_by(|a, b| a.card_image.z_order.cmp(&b.card_image.z_order));
-        self.card_views.sort_by_key(|a| a.card_image.z_order);
+    fn sort_entities_by_z_order(&mut self) {
+        self.z_orders.sort_by_key(|f| f.z);
+        self.z_order_needs_update = false;
     }
 
     pub fn check_events(&mut self) {
@@ -137,10 +167,11 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
-        // if self.play_button.process_events(None, mouse_pos) {
-        //     self.play_button.visible = false;
-        //     return;
-        // }
+        for z_order in &self.z_orders {
+            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            let done = entity.process_mouse(mouse_pos);
+            if done { break }
+        }
 
         self.score_table.process_events(None, mouse_pos);
 
@@ -152,29 +183,19 @@ impl View {
             return;
         }
 
-        if self.trump_chooser.process_events(None, mouse_pos) {
-            return;
-        }
-
         if self.next_hand_button.process_events(None, mouse_pos) {
             return;
-        }
-
-        // Cards
-        for card_view in self.card_views.iter_mut().rev() {
-            if card_view.process_events(None, mouse_pos) {
-                return;
-            }
         }
     }
 
     pub fn update(&mut self, time_delta: f32) {
-        for view in &mut self.card_views {
-            view.update(time_delta);
+        for z_order in &self.z_orders {
+            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            entity.update(time_delta);
         }
+
         if self.z_order_needs_update {
-            self.sort_card_views_by_z_order();
-            self.z_order_needs_update = false;
+            self.sort_entities_by_z_order();
         }
 
         for bid_marker in &mut self.bid_markers {
@@ -188,9 +209,12 @@ impl View {
         self.score_table.visible = true;
         self.score_table.update_scoring(&game);
 
-        self.turn_marker.visible = true;
-        let geom = view_geom::turn_marker_geom(game.active, game.options.players);
-        self.turn_marker.transform.translation = geom.pos;
+        let entity = self.view_entities.get_mut(&self.turn_marker).unwrap();
+        if let ViewEnt::TurnMarker(marker) = entity {
+            marker.visible = true;
+            let geom = view_geom::turn_marker_geom(game.active, game.options.players);
+            marker.set_translation(geom.pos);
+        }        
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
@@ -202,46 +226,38 @@ impl View {
         }
     }
 
+    fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
+        let entity = self.view_entities.get_mut(&id).unwrap();
+        if let ViewEnt::CardEnt(card_ent) = entity {
+            //view.move_to(geom.pos, view_geom::CARD_SPEED);
+            //view.rotate_to(geom.rot, view_geom::ROT_SPEED);
+            card_ent.set_face_up(face_up);
+        }
+        self.set_z_order(id, geom.z);
+    }
+
     pub fn update_deck(&mut self, game: &Game) {
         for (idx, card) in game.deck.iter().enumerate() {
-            if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::deck_geom(Some(game.dealer), game.options.players, idx);
-                view.move_to(geom.pos, view_geom::CARD_SPEED);
-                view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                view.card_image.z_order = geom.z;
-                view.set_face_up(false)
-            }
+            let geom = view_geom::deck_geom(Some(game.dealer), game.options.players, idx);
+            self.update_card_ent(card.id, geom, card.face_up);
         }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_exchange(&mut self, game: &Game) {
         for (idx, card) in game.exchange.iter().enumerate() {
-            if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = view_geom::nest_exchange_geom(idx, game.exchange.len());
-                view.move_to(geom.pos, view_geom::CARD_SPEED);
-                view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                view.card_image.z_order = geom.z;
-                view.set_face_up(card.face_up);
-            }
+            let geom = view_geom::nest_exchange_geom(idx, game.exchange.len());
+            self.update_card_ent(card.id, geom, card.face_up);
         }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_nest(&mut self, game: &Game, aside: bool) {
         for (idx, card) in game.nest.iter().enumerate() {
-            if let Some(view) = self.find_card_view_mut(card.id) {
-                let geom = match aside {
-                    true => view_geom::nest_aside_geom(idx, game.nest.len()),
-                    false => view_geom::nest_exchange_geom(idx, game.nest.len()),
-                };
-                view.move_to(geom.pos, view_geom::CARD_SPEED);
-                view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                view.card_image.z_order = geom.z;
-                view.set_face_up(card.face_up);
-            }
+            let geom = match aside {
+                true => view_geom::nest_aside_geom(idx, game.nest.len()),
+                false => view_geom::nest_exchange_geom(idx, game.nest.len()),
+            };
+            self.update_card_ent(card.id, geom, card.face_up);
         }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_bids(&mut self, game: &Game) {
@@ -264,43 +280,25 @@ impl View {
         let is_bot = game.bot_players[player];
 
         for (idx, card) in hand.iter().enumerate() {
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                let geom = view_geom::hand_card_geom(player, idx, hand.len(), game.options.players, is_bot);
-                view.move_to(geom.pos, view_geom::CARD_SPEED);
-                view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                view.card_image.z_order = geom.z;
-                view.set_face_up(card.face_up);
-                // card.eligible and card_view.dimmed not handled here
-            }
+            let geom = view_geom::hand_card_geom(player, idx, hand.len(), game.options.players, is_bot);
+            self.update_card_ent(card.id, geom, card.face_up);
         }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_trick(&mut self, game: &Game) {
         for (idx, opt_card) in game.trick.cards.iter().enumerate() {
             if let Some(card) = opt_card {
-                if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom = view_geom::trick_card_geom(idx, game.options.players);
-                    view.move_to(geom.pos, view_geom::CARD_SPEED);
-                    view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                    view.card_image.z_order = geom.z;
-                    view.set_face_up(true);
-                }
+                let geom = view_geom::trick_card_geom(idx, game.options.players);
+                self.update_card_ent(card.id, geom, card.face_up);
             }
         }
-        self.z_order_needs_update = true;
     }
 
     pub fn update_taken(&mut self, game: &Game) {
         for p in 0..game.options.players {
             for card in &game.taken[p] {
-                if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                    let geom = view_geom::taken_geom(p, game.options.players);
-                    view.move_to(geom.pos, view_geom::CARD_SPEED);
-                    view.rotate_to(geom.rot, view_geom::ROT_SPEED);
-                    view.card_image.z_order = geom.z;
-                    view.set_face_up(false);
-                }
+                let geom = view_geom::taken_geom(p, game.options.players);
+                self.update_card_ent(card.id, geom, card.face_up);
             }
         }
     }
@@ -348,7 +346,11 @@ impl View {
     }
 
     pub fn show_trump_chooser(&mut self, visible: bool) {
-        self.trump_chooser.visible = visible;
+        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        if let ViewEnt::TrumpChooser(chooser) = entity {
+            chooser.visible = visible
+        }
+
         if visible {
             self.update_message(&["Select trump suit."]);
         } else {
@@ -419,7 +421,11 @@ impl View {
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
 
-        //self.turn_marker.draw();
+        for z_order in &self.z_orders {
+            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            entity.draw();
+        }
+
         self.trump_marker.draw();
 
         for marker in &mut self.bid_markers {
@@ -432,10 +438,8 @@ impl View {
 
         self.score_table.draw(None);
 
-        self.play_button.draw(None);
         self.bid_panel.draw(None);
         self.done_exchanging_button.draw(None);
-        self.trump_chooser.draw(None);
         self.next_hand_button.draw(None);
 
         self.message.draw(None);
