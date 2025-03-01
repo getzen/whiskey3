@@ -26,9 +26,7 @@ pub const ROT_SPEED: f32 = 10.0;
 
 pub type Z = u16;
 // The base z-order for cards.
-const BOTTOM_UI_Z: Z = 0;
 const CARD_Z: Z = 100;
-const TOP_UI_Z: Z = 1000;
 
 pub struct ViewGeom {
     pub pos: Vec2,

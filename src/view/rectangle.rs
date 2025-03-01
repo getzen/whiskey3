@@ -13,12 +13,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn new(
-        size: Vec2,
-        fill_color: Option<Color>,
-        stroke_color: Option<Color>,
-        stroke_width: f32,
-    ) -> Self {
+    pub fn new(size: Vec2, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {
             size,
             anchor: Vec2::new(0.5, 0.5),

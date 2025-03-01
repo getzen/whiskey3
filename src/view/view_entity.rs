@@ -1,6 +1,8 @@
 use macroquad::math::Vec2;
 
-use super::{bid_marker::BidMarker, card_ent::CardEnt, trump_chooser::TrumpChooser, turn_marker::TurnMarker};
+use super::{
+    bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, card_ent::CardEnt, score_table::ScoreTable, text_multi::TextMulti, transform::Transform, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker
+};
 
 // To get a concrete entity when stored as an enum:
 // let entity = self.view_entities.get_mut(&id).unwrap();
@@ -9,8 +11,14 @@ use super::{bid_marker::BidMarker, card_ent::CardEnt, trump_chooser::TrumpChoose
 // }
 pub enum ViewEnt {
     TurnMarker(TurnMarker),
-    //BidMarker(BidMarker),
+    BidMarker(BidMarker),
+    BidPanel(BidPanel),
     TrumpChooser(TrumpChooser),
+    TrumpMarker(TrumpMarker),
+    DoneExchangingButton(ButtonText),
+    NextHandButton(ButtonText),
+    TextMulti(TextMulti),
+    ScoreTable(ScoreTable),
     CardEnt(CardEnt),
 }
 
@@ -32,6 +40,7 @@ impl ViewEnt {
 
     pub fn update(&mut self, time_delta: f32) {
         match self {
+            ViewEnt::BidMarker(marker) => marker.update(time_delta),
             _ => {}
         }
     }
@@ -45,10 +54,17 @@ impl ViewEnt {
     }
 
     pub fn draw(&mut self) {
+        let transform = Transform::default();
         match self {
             ViewEnt::TurnMarker(marker) => marker.draw(),
-            //ViewEnt::BidMarker(marker) => {} //marker.draw(),
+            ViewEnt::BidMarker(marker) => marker.draw(),
+            ViewEnt::BidPanel(panel) => panel.draw(),
             ViewEnt::TrumpChooser(chooser) => chooser.draw(),
+            ViewEnt::TrumpMarker(marker) => marker.draw(),
+            ViewEnt::DoneExchangingButton(button) => button.draw(&transform),
+            ViewEnt::NextHandButton(button) => button.draw(&transform),
+            ViewEnt::TextMulti(text_multi) => text_multi.draw(&transform),
+            ViewEnt::ScoreTable(table) => table.draw(&transform),
             ViewEnt::CardEnt(card) => card.draw(),
         }
     }

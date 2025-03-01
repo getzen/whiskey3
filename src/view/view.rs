@@ -10,9 +10,20 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, rotation_anim::RotationAnimator, score_table::ScoreTable, sprite::Sprite, text_multi::TextMulti, transform::Transform, translation_anim::TranslationAnimator, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_geom::{
-        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
-    }
+    bid_marker::BidMarker,
+    bid_panel::BidPanel,
+    button_text::ButtonText,
+    rotation_anim::RotationAnimator,
+    score_table::ScoreTable,
+    text_multi::TextMulti,
+    translation_anim::TranslationAnimator,
+    trump_chooser::TrumpChooser,
+    trump_marker::TrumpMarker,
+    turn_marker::TurnMarker,
+    view_geom::{
+        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER,
+        SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
+    },
 };
 
 use super::view_entity::ViewEnt;
@@ -35,45 +46,23 @@ pub struct View {
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
     turn_marker: Id,
-    bid_marker: Id,
+    // Player 0 bid marker. Player 1 is this id + 1, etc
+    bid_marker_0: Id,
+    bid_panel: Id,
     trump_chooser: Id,
-
-    score_table: ScoreTable,
-    bid_markers: Vec<BidMarker>,
-    bid_panel: BidPanel,
-    done_exchanging_button: ButtonText,
-    trump_marker: TrumpMarker,
-    next_hand_button: ButtonText,
+    trump_marker: Id,
+    done_exchanging_button: Id,
+    next_hand_button: Id,
+    message: Id,
+    score_table: Id,
+    
     sender: Sender<PlayerAction>,
-
-    message: TextMulti,
 }
 
 impl View {
-    pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
+    pub async fn new(sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         FONT.set(font.clone()).expect("Error setting FONT.");
-
-        let texture = load_texture("src/assets/circle.png").await.unwrap();
-        let mut turn_marker = Sprite::new(texture);
-        turn_marker.set_size_from_multiplier(0.4);
-
-        let mut bid_markers = Vec::new();
-        for p in 0..players {
-            let geom = bid_marker_geom(p, players);
-            let marker = BidMarker::new(geom.pos);
-            bid_markers.push(marker);
-        }
-
-        let mut done_exchanging_button =
-            ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font.clone(), 16, vec2(80.0, 40.0));
-        done_exchanging_button.click_action = Some(PlayerAction::DoneExchanging);
-        done_exchanging_button.visible = false;
-
-        let mut next_hand_button =
-            ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font.clone(), 16, vec2(120.0, 40.0));
-        next_hand_button.click_action = Some(PlayerAction::NextHand);
-        next_hand_button.visible = false;
 
         Self {
             // Set id high enough so that we don't step on the card ids.
@@ -83,20 +72,19 @@ impl View {
             z_order_needs_update: false,
             translation_anims: HashMap::new(),
             rotation_anims: HashMap::new(),
+
             // These id values are assigned in setup().
             turn_marker: 0,
-            bid_marker: 0,
+            bid_marker_0: 0,
+            bid_panel: 0,
             trump_chooser: 0,
+            trump_marker: 0,
+            done_exchanging_button: 0,
+            next_hand_button: 0,
+            message: 0,
+            score_table: 0,
 
-            score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
-            bid_markers,
-            bid_panel: BidPanel::new(BID_PANEL_POS, 0, 0),
-            done_exchanging_button,
-            trump_marker: TrumpMarker::new(PLAY_CENTER),
-            next_hand_button,
             sender,
-           
-            message: TextMulti::new(MESSAGE_POS),
         }
     }
 
@@ -105,10 +93,17 @@ impl View {
         self.id
     }
 
-    pub async fn setup(&mut self) {
+    pub async fn setup(&mut self, players: usize) {
         // Cards are created from Controller call in GameAction::Setup.
         self.turn_marker = self.create_turn_marker().await;
+        self.bid_marker_0 = self.create_bid_marker(players);
+        self.bid_panel = self.create_bid_panel();
         self.trump_chooser = self.create_trump_chooser().await;
+        self.trump_marker = self.create_trump_marker();
+        self.done_exchanging_button = self.create_done_exchanging_button();
+        self.next_hand_button = self.create_next_hand_button();
+        self.message = self.create_message();
+        self.score_table = self.create_score_table();
     }
 
     async fn create_turn_marker(&mut self) -> Id {
@@ -122,11 +117,81 @@ impl View {
         id
     }
 
+    fn create_bid_marker(&mut self, players: usize) -> Id {
+        let mut p_0_id = 0;
+        for p in 0..players {
+            let geom = bid_marker_geom(p, players);
+            let entity = BidMarker::new(geom.pos);
+            let id = self.next_id();
+            if p == 0 {
+                p_0_id = id;
+            }
+            self.view_entities.insert(id, ViewEnt::BidMarker(entity));
+            self.z_orders.push(ZOrder { id, z: 0 });
+        }
+        p_0_id
+    }
+
+    fn create_bid_panel(&mut self) -> Id {
+        let id = self.next_id();
+        let entity = BidPanel::new(BID_PANEL_POS, 0, 0);
+        self.view_entities.insert(id, ViewEnt::BidPanel(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
     async fn create_trump_chooser(&mut self) -> Id {
         let id = self.next_id();
         let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
         self.view_entities.insert(id, ViewEnt::TrumpChooser(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    fn create_trump_marker(&mut self) -> Id {
+        let id = self.next_id();
+        let entity = TrumpMarker::new(PLAY_CENTER);
+        self.view_entities.insert(id, ViewEnt::TrumpMarker(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    fn create_done_exchanging_button(&mut self) -> Id {
+        let id = self.next_id();
+        let font = FONT.get().unwrap().clone();
+        let mut entity = ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font, 16, vec2(80.0, 40.0));
+        entity.click_action = Some(PlayerAction::DoneExchanging);
+        entity.visible = false;
+        self.view_entities.insert(id, ViewEnt::DoneExchangingButton(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    fn create_next_hand_button(&mut self) -> Id {
+        let id = self.next_id();
+        let font = FONT.get().unwrap().clone();
+        let mut entity = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font, 16, vec2(120.0, 40.0));
+        entity.click_action = Some(PlayerAction::NextHand);
+        entity.visible = false;
+        self.view_entities.insert(id, ViewEnt::NextHandButton(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    fn create_message(&mut self) -> Id {
+        let id = self.next_id();
+        let entity = TextMulti::new(MESSAGE_POS);
+        self.view_entities.insert(id, ViewEnt::TextMulti(entity));
+        self.z_orders.push(ZOrder { id, z: 0 });
+        id
+    }
+
+    fn create_score_table(&mut self) -> Id {
+        let id = self.next_id();
+        let font = FONT.get().unwrap().clone();
+        let entity = ScoreTable::new(SCORE_TABLE_POS, font);
+        self.view_entities.insert(id, ViewEnt::ScoreTable(entity));
+        self.z_orders.push(ZOrder { id, z: 250 });
         id
     }
 
@@ -172,24 +237,6 @@ impl View {
                 break;
             }
         }
-
-        let transform = Transform::default();
-
-        if self.score_table.process_mouse(&mouse_pos, &transform) {
-            return;
-        }
-
-        if self.bid_panel.process_mouse(&mouse_pos) {
-            return;
-        }
-
-        if self.done_exchanging_button.process_mouse(&mouse_pos, &transform) {
-            return;
-        }
-
-        if self.next_hand_button.process_mouse(&mouse_pos, &transform) {
-            return;
-        }
     }
 
     pub fn update(&mut self, time_delta: f32) {
@@ -219,17 +266,15 @@ impl View {
             }
         }
         self.rotation_anims.retain(|_k, v| !v.completed);
-
-        for bid_marker in &mut self.bid_markers {
-            bid_marker.update(time_delta);
-        }
-
-        self.score_table.update(time_delta);
     }
 
     pub fn update_info(&mut self, game: &Game) {
-        self.score_table.visible = true;
-        self.score_table.update_scoring(&game);
+        let entity = self.view_entities.get_mut(&self.score_table).unwrap();
+        if let ViewEnt::ScoreTable(table) = entity {
+            table.visible = true;
+            table.update_scoring(&game);
+        }
+       
 
         let entity = self.view_entities.get_mut(&self.turn_marker).unwrap();
         if let ViewEnt::TurnMarker(marker) = entity {
@@ -240,12 +285,14 @@ impl View {
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
-        self.message.clear_lines();
-        let font = FONT.get().unwrap();
-
-        for text in texts {
-            self.message
-                .add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
+        let entity = self.view_entities.get_mut(&self.message).unwrap();
+        if let ViewEnt::TextMulti(text_multi) = entity {
+            text_multi.clear_lines();
+            let font = FONT.get().unwrap();
+            for text in texts {
+                text_multi
+                    .add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
+            }
         }
     }
 
@@ -293,7 +340,11 @@ impl View {
 
     pub fn update_bids(&mut self, game: &Game) {
         for (p, opt_bid) in game.bids.iter().enumerate() {
-            self.bid_markers[p].update_with_bid(opt_bid.clone());
+            let id = self.bid_marker_0 + p as Id;
+            let entity = self.view_entities.get_mut(&id).unwrap();
+            if let ViewEnt::BidMarker(marker) = entity {
+                marker.update_with_bid(opt_bid.clone());
+            }
         }
     }
 
@@ -302,7 +353,11 @@ impl View {
             if game.maker.unwrap() == p {
                 continue;
             }
-            self.bid_markers[p].visible = false;
+            let id = self.bid_marker_0 + p as Id;
+            let entity = self.view_entities.get_mut(&id).unwrap();
+            if let ViewEnt::BidMarker(marker) = entity {
+                marker.visible = false;
+            }
         }
     }
 
@@ -353,15 +408,21 @@ impl View {
     }
 
     pub fn show_done_exchanging_button(&mut self, enabled: bool) {
-        self.done_exchanging_button.visible = true;
-        match enabled {
-            true => self.done_exchanging_button.state = ButtonState::Normal,
-            false => self.done_exchanging_button.state = ButtonState::Disabled,
-        }
+        let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
+        if let ViewEnt::DoneExchangingButton(button) = entity {
+            button.visible = true;
+            button.state = match enabled {
+                true => ButtonState::Normal,
+                false => ButtonState::Disabled,
+            }
+        }        
     }
 
     pub fn hide_done_exchanging_button(&mut self) {
-        self.done_exchanging_button.visible = false;
+        let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
+        if let ViewEnt::DoneExchangingButton(button) = entity {
+           button.visible = false;
+        }   
     }
 
     pub fn set_discardable_hand_cards(&mut self, game: &Game) {
@@ -392,11 +453,17 @@ impl View {
     }
 
     pub fn show_trump_marker(&mut self, visible: bool) {
-        self.trump_marker.visible = visible;
+        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        if let ViewEnt::TrumpMarker(marker) = entity {
+            marker.visible = visible
+        }
     }
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
-        self.trump_marker.set_suit(suit).await;
+        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        if let ViewEnt::TrumpMarker(marker) = entity {
+            marker.set_suit(suit).await
+        }
     }
 
     pub fn set_playable_hand_cards(&mut self, game: &Game) {
@@ -414,26 +481,39 @@ impl View {
     }
 
     pub fn show_next_hand_button(&mut self, visible: bool) {
-        self.next_hand_button.visible = visible;
+        let entity = self.view_entities.get_mut(&self.next_hand_button).unwrap();
+        if let ViewEnt::NextHandButton(button) = entity {
+            button.visible = visible
+        }
     }
 
     pub fn get_human_bid(&mut self, game: &Game) {
         // Hide bid marker for human.
-        self.bid_markers[game.active].visible = false;
+        self.hide_bid_marker(game.active);
 
-        self.bid_panel.min_bid = game.min_current_bid();
-        self.bid_panel.update_bid_amount(game.min_current_bid());
-        self.bid_panel.max_bid = game.options.max_bid;
+        let entity = self.view_entities.get_mut(&self.bid_panel).unwrap();
+        if let ViewEnt::BidPanel(panel) = entity {
+            panel.min_bid = game.min_current_bid();
+            panel.update_bid_amount(game.min_current_bid());
+            panel.max_bid = game.options.max_bid;
+            panel.visible = true;
+        }
         self.update_message(&["Your bid."]);
-        self.bid_panel.visible = true;
     }
 
     pub fn end_human_bid(&mut self, _game: &Game) {
-        self.bid_panel.visible = false;
+        let entity = self.view_entities.get_mut(&self.bid_panel).unwrap();
+        if let ViewEnt::BidPanel(panel) = entity {
+            panel.visible = false;
+        }
     }
 
     pub fn hide_bid_marker(&mut self, bidder: usize) {
-        self.bid_markers[bidder].visible = false;
+        let id = self.bid_marker_0 + bidder as Id;
+        let entity = self.view_entities.get_mut(&id).unwrap();
+        if let ViewEnt::BidMarker(marker) = entity {
+            marker.visible = false;
+        }
     }
 
     pub fn get_bot_discards(&mut self, _game: &Game) {
@@ -460,23 +540,6 @@ impl View {
             let entity = self.view_entities.get_mut(&z_order.id).unwrap();
             entity.draw();
         }
-
-        self.trump_marker.draw();
-
-        for marker in &mut self.bid_markers {
-            marker.draw();
-        }
-
-        let transform = Transform::default();
-
-        self.score_table.draw(&transform);
-
-        self.bid_panel.draw();
-        self.done_exchanging_button.draw(&transform);
-        self.next_hand_button.draw(&transform);
-
-        self.message.draw(&transform);
-
         next_frame().await;
     }
 }
