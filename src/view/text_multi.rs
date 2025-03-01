@@ -5,14 +5,14 @@ use super::{
     transform::Transform,
 };
 
-pub struct TexterMulti {
+pub struct TextMulti {
     pub visible: bool,
     pub transform: Transform,
     pub lines: Vec<Text>,
     pub spacings: Vec<f32>,
 }
 
-impl TexterMulti {
+impl TextMulti {
     pub fn new(position: Vec2) -> Self {
         Self {
             visible: true,

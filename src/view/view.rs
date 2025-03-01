@@ -10,19 +10,9 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_text::ButtonText,
-    score_table::ScoreTable,
-    sprite::Sprite,
-    texter_multi::TexterMulti,
-    trump_chooser::TrumpChooser,
-    trump_marker::TrumpMarker,
-    turn_marker::TurnMarker,
-    view_geom::{
-        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS,
-        PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
-    },
+    bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, rotation_anim::RotationAnimator, score_table::ScoreTable, sprite::Sprite, text_multi::TextMulti, transform::Transform, translation_anim::TranslationAnimator, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_geom::{
+        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
+    }
 };
 
 use super::view_entity::ViewEnt;
@@ -41,11 +31,13 @@ pub struct View {
     id: Id,
     view_entities: HashMap<Id, ViewEnt>,
     z_orders: Vec<ZOrder>,
+    z_order_needs_update: bool,
+    translation_anims: HashMap<Id, TranslationAnimator>,
+    rotation_anims: HashMap<Id, RotationAnimator>,
     turn_marker: Id,
     bid_marker: Id,
     trump_chooser: Id,
 
-    card_views: Vec<CardEnt>,
     score_table: ScoreTable,
     bid_markers: Vec<BidMarker>,
     bid_panel: BidPanel,
@@ -53,9 +45,8 @@ pub struct View {
     trump_marker: TrumpMarker,
     next_hand_button: ButtonText,
     sender: Sender<PlayerAction>,
-    z_order_needs_update: bool,
 
-    message: TexterMulti,
+    message: TextMulti,
 }
 
 impl View {
@@ -89,12 +80,14 @@ impl View {
             id: 100,
             view_entities: HashMap::<Id, ViewEnt>::new(),
             z_orders: Vec::new(),
+            z_order_needs_update: false,
+            translation_anims: HashMap::new(),
+            rotation_anims: HashMap::new(),
             // These id values are assigned in setup().
             turn_marker: 0,
             bid_marker: 0,
             trump_chooser: 0,
 
-            card_views: Vec::new(),
             score_table: ScoreTable::new(SCORE_TABLE_POS, font.clone()),
             bid_markers,
             bid_panel: BidPanel::new(BID_PANEL_POS, 0, 0),
@@ -102,8 +95,8 @@ impl View {
             trump_marker: TrumpMarker::new(PLAY_CENTER),
             next_hand_button,
             sender,
-            z_order_needs_update: false,
-            message: TexterMulti::new(MESSAGE_POS),
+           
+            message: TextMulti::new(MESSAGE_POS),
         }
     }
 
@@ -121,8 +114,8 @@ impl View {
     async fn create_turn_marker(&mut self) -> Id {
         let id = self.next_id();
         let tex = load_texture("src/assets/circle.png").await.unwrap();
-        let mut entity = TurnMarker::new(tex);
-        entity.set_translation(vec2(100.0, 100.0));
+        let mut entity = TurnMarker::new(tex, vec2(20.0, 20.0));
+        entity.set_translation(PLAY_CENTER);
 
         self.view_entities.insert(id, ViewEnt::TurnMarker(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
@@ -172,7 +165,7 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
-        for z_order in &self.z_orders {
+        for z_order in self.z_orders.iter().rev() {
             let entity = self.view_entities.get_mut(&z_order.id).unwrap();
             let done = entity.process_mouse(mouse_pos);
             if done {
@@ -180,7 +173,7 @@ impl View {
             }
         }
 
-        let transform = super::transform::Transform::default();
+        let transform = Transform::default();
 
         if self.score_table.process_mouse(&mouse_pos, &transform) {
             return;
@@ -209,6 +202,24 @@ impl View {
             self.sort_entities_by_z_order();
         }
 
+        // Update translation_anims and transforms.
+        for (id, anim) in &mut self.translation_anims {
+            anim.update(time_delta);
+            if let Some(ent) = self.view_entities.get_mut(id) {
+                ent.set_translation(anim.current);
+            }
+        }
+        self.translation_anims.retain(|_k, v| !v.completed);
+
+        // Update rotation_anims and transforms.
+        for (id, anim) in &mut self.rotation_anims {
+            anim.update(time_delta);
+            if let Some(ent) = self.view_entities.get_mut(id) {
+                ent.set_rotation(anim.current);
+            }
+        }
+        self.rotation_anims.retain(|_k, v| !v.completed);
+
         for bid_marker in &mut self.bid_markers {
             bid_marker.update(time_delta);
         }
@@ -233,15 +244,24 @@ impl View {
         let font = FONT.get().unwrap();
 
         for text in texts {
-            self.message.add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
+            self.message
+                .add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
         }
     }
 
     fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
         let entity = self.view_entities.get_mut(&id).unwrap();
         if let ViewEnt::CardEnt(card_ent) = entity {
-            //view.move_to(geom.pos, view_geom::CARD_SPEED);
-            //view.rotate_to(geom.rot, view_geom::ROT_SPEED);
+            let start = card_ent.transform.translation;
+            let end = geom.pos;
+            let trans_anim = TranslationAnimator::new(start, end, view_geom::CARD_SPEED);
+            self.translation_anims.insert(id, trans_anim);
+
+            let start = card_ent.transform.rotation;
+            let end = geom.rot;
+            let rot_anim = RotationAnimator::new(start, end, view_geom::ROT_SPEED);
+            self.rotation_anims.insert(id, rot_anim);
+
             card_ent.set_face_up(face_up);
         }
         self.set_z_order(id, geom.z);
@@ -317,9 +337,10 @@ impl View {
     // After player exchanges or plays a card, call this to reset the nest or hand.
     pub fn reset_eligibility(&mut self, cards: &[Card]) {
         for card in cards {
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                view.dimmed = false;
-                view.action = None;
+            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            if let ViewEnt::CardEnt(card_ent) = entity {
+                card_ent.dimmed = false;
+                card_ent.action = None;
             }
         }
     }
@@ -347,10 +368,11 @@ impl View {
         let maker = game.maker.unwrap();
         let hand = &game.hands[maker];
         for card in hand {
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                view.dimmed = !card.eligible;
+            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            if let ViewEnt::CardEnt(card_ent) = entity {
+                card_ent.dimmed = !card.eligible;
                 if card.eligible {
-                    view.action = Some(PlayerAction::Exchange(card.id));
+                    card_ent.action = Some(PlayerAction::Exchange(card.id));
                 }
             }
         }
@@ -379,11 +401,13 @@ impl View {
 
     pub fn set_playable_hand_cards(&mut self, game: &Game) {
         let hand = &game.hands[game.active];
+
         for card in hand {
-            if let Some(view) = self.card_views.iter_mut().find(|view| view.id == card.id) {
-                view.dimmed = !card.eligible;
+            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            if let ViewEnt::CardEnt(card_ent) = entity {
+                card_ent.dimmed = !card.eligible;
                 if card.eligible {
-                    view.action = Some(PlayerAction::PlayCard(card.id));
+                    card_ent.action = Some(PlayerAction::PlayCard(card.id));
                 }
             }
         }
@@ -443,11 +467,7 @@ impl View {
             marker.draw();
         }
 
-        for view in &mut self.card_views {
-            view.draw();
-        }
-
-        let transform = super::transform::Transform::default();
+        let transform = Transform::default();
 
         self.score_table.draw(&transform);
 

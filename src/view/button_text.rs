@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 
 use super::eventer::HitDetector;
+use super::rectangle::Rectangle;
 use super::text::Text;
 use super::transform::Transform;
 use crate::controller::SENDER;
@@ -14,7 +15,8 @@ pub struct ButtonText {
     pub state: ButtonState,
     pub transform: Transform,
     pub text: Text,
-    pub size: Vec2,
+    pub rectangle: Rectangle,
+
     pub normal_color: Color,
     pub highlighted_color: Color,
     pub disabled_color: Color,
@@ -31,7 +33,7 @@ impl ButtonText {
             state: ButtonState::Normal,
             transform: Transform::from_translation(position),
             text,
-            size,
+            rectangle: Rectangle::new(size, None, None, 2.0),
             normal_color: Color::from_rgba(220, 220, 220, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
             disabled_color: Color::from_rgba(150, 150, 150, 255),
@@ -88,9 +90,12 @@ impl ButtonText {
             _ => self.normal_color,
         };
 
-        let (pos, _rot, _scale) = transform.trans_rot_scale();
+        self.rectangle.stroke_color = Some(color);
+        self.rectangle.draw(&transform);
 
-        draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color);
+        // let (pos, _rot, _scale) = transform.trans_rot_scale();
+
+        // draw_rectangle_lines(pos.x, pos.y, self.size.x, self.size.y, 4.0, color);
 
         self.text.color = color;
         self.text.draw(&transform);

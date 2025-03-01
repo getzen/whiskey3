@@ -121,7 +121,9 @@ impl ScoreTable {
     }
 
     pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
-        if !self.visible { return false; }
+        if !self.visible {
+            return false;
+        }
         let transform = *parent_transform * self.transform;
 
         self.eventer.process_mouse(mouse_pos, &transform);

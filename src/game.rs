@@ -517,7 +517,8 @@ impl Game {
                 break;
             }
         }
-        let card = hand.remove(index);
+        let mut card = hand.remove(index);
+        card.face_up = true;
         self.trick.add(self.active, card, &self.trump_suit);
 
         self.next_player();
@@ -540,7 +541,8 @@ impl Game {
         self.scoring.update_hand_subtotals();
 
         for opt_card in &mut self.trick.cards {
-            let card = opt_card.take().unwrap();
+            let mut card = opt_card.take().unwrap();
+            card.face_up = false;
             self.taken[self.last_trick_winner].push(card);
         }
     }

@@ -9,11 +9,11 @@ pub struct TurnMarker {
 }
 
 impl TurnMarker {
-    pub fn new(texture: Texture2D) -> Self {
+    pub fn new(texture: Texture2D, size: Vec2) -> Self {
         Self {
             visible: true,
             transform: Transform::new(),
-            sprite: Sprite::new(texture),
+            sprite: Sprite::new_with_size(texture, size),
         }
     }
 
