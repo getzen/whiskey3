@@ -1,6 +1,5 @@
 use macroquad::prelude::*;
 
-use crate::card::Id;
 use crate::card::Points;
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
@@ -13,7 +12,6 @@ use super::transform::Transform;
 use super::view::FONT;
 
 pub struct CardEnt {
-    pub id: Id,
     pub transform: Transform,
     pub sprite: Sprite,
     is_face_up: bool,
@@ -30,7 +28,7 @@ pub struct CardEnt {
 }
 
 impl CardEnt {
-    pub fn new(id: Id, face: Texture2D, back: Texture2D, points: Points) -> Self {
+    pub fn new(face: Texture2D, back: Texture2D, points: Points) -> Self {
         let size_mult = 0.3333;
         let size = vec2(face.width() * size_mult, face.height() * size_mult);
 
@@ -45,7 +43,6 @@ impl CardEnt {
         }
 
         Self {
-            id,
             transform: Transform::new(),
             sprite: Sprite::new_with_size_mult(face.clone(), size_mult),
             is_face_up: true,

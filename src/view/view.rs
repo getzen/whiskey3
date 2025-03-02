@@ -85,6 +85,7 @@ impl View {
             score_table: 0,
 
             sender,
+            
         }
     }
 
@@ -204,7 +205,7 @@ impl View {
         let back = load_texture("src/assets/cards/back.png").await.unwrap();
         let face = self.texture_for(card).await;
 
-        let mut entity = CardEnt::new(card.id, face, back.clone(), card.points);
+        let mut entity = CardEnt::new(face, back.clone(), card.points);
         entity.transform.translation = view_geom::PLAY_CENTER;
         self.view_entities.insert(card.id, ViewEnt::CardEnt(entity));
         self.z_orders.push(ZOrder { id: card.id, z: 0 });

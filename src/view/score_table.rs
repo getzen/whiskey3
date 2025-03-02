@@ -8,10 +8,10 @@ use macroquad::{
 use crate::game::Game;
 
 use super::{
-    translation_anim::TranslationAnimator,
     eventer::{Eventer, HitDetector},
     text::Text,
     transform::Transform,
+    translation_anim::TranslationAnimator,
     view_geom::SCORE_TABLE_POS,
 };
 

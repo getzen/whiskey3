@@ -27,21 +27,25 @@ impl ViewEnt {
     pub fn set_translation(&mut self, translation: Vec2) {
         match self {
             ViewEnt::CardEnt(card) => card.set_translation(translation),
-            _ => { panic!() }
+            _ => {
+                panic!()
+            }
         }
     }
 
     pub fn set_rotation(&mut self, rotation: f32) {
         match self {
             ViewEnt::CardEnt(card) => card.set_rotation(rotation),
-            _ => { panic!() }
+            _ => {
+                panic!()
+            }
         }
     }
 
     pub fn update(&mut self, time_delta: f32) {
         match self {
             ViewEnt::BidMarker(marker) => marker.update(time_delta),
-            _ => { }
+            _ => {}
         }
     }
 
