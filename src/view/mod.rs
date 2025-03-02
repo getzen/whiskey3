@@ -18,6 +18,7 @@ pub mod trump_marker;
 pub mod turn_marker;
 pub mod view;
 pub mod view_entity;
+pub mod view_enum;
 pub mod view_geom;
 
 use macroquad::prelude::*;
