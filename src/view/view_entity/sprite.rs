@@ -1,9 +1,12 @@
 use macroquad::prelude::*;
 
-use super::transform::Transform;
+use crate::view::transform::Transform;
+
+use super::view_entity::ViewEntity;
 
 /// A sprite (texture) component.
 pub struct Sprite {
+    pub transform: Transform,
     pub texture: Texture2D,
     pub size: Vec2,
     pub anchor: Vec2,
@@ -18,6 +21,7 @@ impl Sprite {
 
     pub fn new_with_size(texture: Texture2D, size: Vec2) -> Self {
         Self {
+            transform: Transform::new(),
             texture,
             size,
             anchor: vec2(0.5, 0.5),
@@ -34,10 +38,13 @@ impl Sprite {
     pub fn set_size_from_multiplier(&mut self, multiplier: f32) {
         self.size = vec2(self.texture.width() * multiplier, self.texture.height() * multiplier);
     }
+}
 
-    pub fn draw(&mut self, transform: &Transform) {
-        let (mut trans, rot, scale) = transform.trans_rot_scale();
-        trans -= self.size * self.anchor;
+impl ViewEntity for Sprite {
+    fn draw(&mut self, parent_transform: &Transform) {
+        let transform = *parent_transform * self.transform;
+        let (mut pos, rot, scale) = transform.trans_rot_scale();
+        pos -= self.size * self.anchor;
 
         let params = DrawTextureParams {
             dest_size: Some(self.size * scale),
@@ -45,6 +52,6 @@ impl Sprite {
             ..Default::default()
         };
 
-        draw_texture_ex(&self.texture, trans.x, trans.y, self.color, params);
+        draw_texture_ex(&self.texture, pos.x, pos.y, self.color, params);
     }
 }

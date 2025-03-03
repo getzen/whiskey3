@@ -2,9 +2,11 @@ use macroquad::prelude::*;
 
 use crate::view::transform::Transform;
 
+use super::view_entity::ViewEntity;
+
 #[allow(unused)]
-/// A rectangle component.
 pub struct Rectangle {
+    pub transform: Transform,
     pub size: Vec2,
     pub anchor: Vec2,
     pub fill_color: Option<Color>,
@@ -15,6 +17,7 @@ pub struct Rectangle {
 impl Rectangle {
     pub fn new(size: Vec2, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {
+            transform: Transform::new(),
             size,
             anchor: Vec2::new(0.5, 0.5),
             fill_color,
@@ -22,9 +25,12 @@ impl Rectangle {
             stroke_width,
         }
     }
+}
 
-    pub fn draw(&mut self, transform: &Transform) {
-        let (trans, rot, scale) = transform.trans_rot_scale();
+impl ViewEntity for Rectangle {
+    fn draw(&mut self, parent_transform: &Transform) {
+        let transform = *parent_transform * self.transform;
+        let (pos, rot, scale) = transform.trans_rot_scale();
         let size = self.size * scale;
 
         if let Some(color) = self.fill_color {
@@ -33,7 +39,7 @@ impl Rectangle {
                 color,
                 offset: self.anchor,
             };
-            draw_rectangle_ex(trans.x, trans.y, size.x, size.y, params);
+            draw_rectangle_ex(pos.x, pos.y, size.x, size.y, params);
         }
 
         if let Some(color) = self.stroke_color {
@@ -42,7 +48,7 @@ impl Rectangle {
                 color,
                 offset: self.anchor,
             };
-            draw_rectangle_lines_ex(trans.x, trans.y, size.x, size.y, self.stroke_width, params);
+            draw_rectangle_lines_ex(pos.x, pos.y, size.x, size.y, self.stroke_width, params);
         }
     }
 }

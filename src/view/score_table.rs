@@ -8,11 +8,7 @@ use macroquad::{
 use crate::game::Game;
 
 use super::{
-    eventer::{Eventer, HitDetector},
-    text::Text,
-    transform::Transform,
-    translation_anim::TranslationAnimator,
-    view_geom::SCORE_TABLE_POS,
+    eventer::{Eventer, HitDetector}, transform::Transform, translation_anim::TranslationAnimator, view_entity::{text::Text, view_entity::ViewEntity}, view_geom::SCORE_TABLE_POS
 };
 
 pub struct ScoreTable {
@@ -153,7 +149,7 @@ impl ScoreTable {
         }
 
         let transform = *parent_transform * self.transform;
-        let (pos, _rot, _scale) = transform.trans_rot_scale();
+        let (pos, rot, scale) = transform.trans_rot_scale();
 
         draw_rectangle(
             pos.x,
@@ -163,7 +159,7 @@ impl ScoreTable {
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 
-        for texter in self.texts.as_row_major() {
+        for mut texter in self.texts.as_row_major() {
             texter.draw(&transform);
         }
     }

@@ -1,6 +1,8 @@
 use macroquad::prelude::*;
 
-use super::transform::Transform;
+use crate::view::transform::Transform;
+
+use super::view_entity::ViewEntity;
 
 #[allow(unused)]
 #[derive(Clone)]
@@ -19,7 +21,6 @@ pub enum AlignV {
 }
 
 #[derive(Clone)]
-/// A text component.
 pub struct Text {
     pub transform: Transform,
     pub text: String,
@@ -44,8 +45,10 @@ impl Text {
             color: WHITE,
         }
     }
+}
 
-    pub fn draw(&self, parent_transform: &Transform) {
+impl ViewEntity for Text {
+    fn draw(&mut self, parent_transform: &Transform) {
         let transform = *parent_transform * self.transform;
 
         // Determine the adjustment we need to make for h/v centering.

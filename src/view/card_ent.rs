@@ -3,13 +3,14 @@ use macroquad::prelude::*;
 use crate::card::Points;
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
-use crate::view::sprite::Sprite;
 
 use super::eventer::Eventer;
 use super::eventer::HitDetector;
-use super::text::Text;
 use super::transform::Transform;
 use super::view::FONT;
+use super::view_entity::sprite::Sprite;
+use super::view_entity::text::Text;
+use super::view_entity::view_entity::ViewEntity;
 
 pub struct CardEnt {
     pub transform: Transform,
@@ -96,7 +97,7 @@ impl CardEnt {
         self.sprite.draw(&self.transform);
 
         if self.is_face_up {
-            if let Some(point_text) = &self.point_text {
+            if let Some(point_text) = &mut self.point_text {
                 point_text.draw(&self.transform);
             }
         }

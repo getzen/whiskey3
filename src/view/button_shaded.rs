@@ -7,10 +7,11 @@ use crate::controller::SENDER;
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
-use crate::view::sprite::Sprite;
 use crate::view::transform::Transform;
 
 use super::eventer::HitDetector;
+use super::view_entity::sprite::Sprite;
+use super::view_entity::view_entity::ViewEntity;
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {

@@ -1,8 +1,7 @@
 use macroquad::{math::Vec2, text::Font};
 
 use super::{
-    text::{AlignH, AlignV, Text},
-    transform::Transform,
+    transform::Transform, view_entity::{text::{AlignH, AlignV, Text}, view_entity::ViewEntity},
 };
 
 pub struct TextMulti {
@@ -39,14 +38,14 @@ impl TextMulti {
         self.spacings.push(spacing);
     }
 
-    pub fn draw(&self, parent_transform: &Transform) {
+    pub fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }
 
         let transform = *parent_transform * self.transform;
 
-        for line in &self.lines {
+        for line in &mut self.lines {
             line.draw(&transform);
         }
     }

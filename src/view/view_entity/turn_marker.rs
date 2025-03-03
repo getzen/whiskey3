@@ -1,6 +1,9 @@
 use macroquad::{math::Vec2, texture::Texture2D};
 
-use super::{sprite::Sprite, transform::Transform};
+use crate::view::transform::Transform;
+
+use super::{sprite::Sprite, view_entity::ViewEntity};
+
 
 pub struct TurnMarker {
     pub visible: bool,
@@ -16,8 +19,10 @@ impl TurnMarker {
             sprite: Sprite::new_with_size(texture, size),
         }
     }
+}
 
-    pub fn draw(&mut self) {
+impl ViewEntity for TurnMarker {
+    fn draw(&mut self, _parent_transform: &Transform) {
         if self.visible {
             self.sprite.draw(&self.transform);
         }

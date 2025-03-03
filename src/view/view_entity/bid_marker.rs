@@ -4,9 +4,9 @@ use macroquad::{
     shapes::draw_circle_lines,
 };
 
-use crate::game::Bid;
+use crate::{game::Bid, view::{transform::Transform, view::FONT}};
 
-use super::{text::Text, transform::Transform, view::FONT};
+use super::{text::Text, view_entity::ViewEntity};
 
 pub struct BidMarker {
     pub visible: bool,
@@ -61,8 +61,10 @@ impl BidMarker {
         }
         self.current_bid = opt_bid;
     }
+}
 
-    pub fn update(&mut self, time_delta: f32) {
+impl ViewEntity for BidMarker {
+    fn update(&mut self, time_delta: f32) {
         if self.color_change_dur > 0.0 {
             let b = 1.0 - self.color_change_dur;
             let r = 1.0 - self.color_change_dur;
@@ -73,7 +75,7 @@ impl BidMarker {
         self.color = WHITE;
     }
 
-    pub fn draw(&mut self) {
+    fn draw(&mut self, _parent_transform: &Transform) {
         if !self.visible {
             return;
         }

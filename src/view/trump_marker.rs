@@ -2,7 +2,7 @@ use macroquad::{math::Vec2, texture::load_texture};
 
 use crate::card::Suit;
 
-use super::{sprite::Sprite, transform::Transform};
+use super::{transform::Transform, view_entity::{sprite::Sprite, view_entity::ViewEntity}};
 
 pub struct TrumpMarker {
     pub visible: bool,

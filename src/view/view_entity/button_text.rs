@@ -1,13 +1,14 @@
 use macroquad::prelude::*;
 
-use super::eventer::HitDetector;
-use super::rectangle::Rectangle;
-use super::text::Text;
-use super::transform::Transform;
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
-use crate::view::eventer::Eventer;
+use crate::view::eventer::{Eventer, HitDetector};
+use crate::view::transform::Transform;
+
+use super::rectangle::Rectangle;
+use super::text::Text;
+use super::view_entity::ViewEntity;
 
 /// A button with drawn text and border. Always centered.
 pub struct ButtonText {
@@ -41,9 +42,10 @@ impl ButtonText {
             click_action: None,
         }
     }
+}
 
-    /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+impl ViewEntity for ButtonText {
+    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
@@ -78,7 +80,7 @@ impl ButtonText {
         mouse_over
     }
 
-    pub fn draw(&mut self, parent_transform: &Transform) {
+    fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }

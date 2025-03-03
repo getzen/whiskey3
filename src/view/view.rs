@@ -1,7 +1,14 @@
 use std::{cell::RefCell, rc::Rc, sync::mpsc::Sender};
 
 use hashbrown::HashMap;
-use macroquad::prelude::*;
+use macroquad::{
+    color::{BLUE, Color},
+    input::{KeyCode, is_key_released, mouse_position},
+    math::{Vec2, vec2},
+    text::{Font, load_ttf_font},
+    texture::{Texture2D, load_texture},
+    window::{clear_background, next_frame},
+};
 
 use crate::{
     card::{Card, Id, Suit},
@@ -10,21 +17,9 @@ use crate::{
 };
 
 use super::{
-    bid_marker::BidMarker,
-    bid_panel::BidPanel,
-    button_text::ButtonText,
-    rectangle::Rectangle,
-    rotation_anim::RotationAnimator,
-    score_table::ScoreTable,
-    text_multi::TextMulti,
-    translation_anim::TranslationAnimator,
-    trump_chooser::TrumpChooser,
-    trump_marker::TrumpMarker,
-    turn_marker::TurnMarker,
-    view_geom::{
-        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER,
-        SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
-    },
+    bid_panel::BidPanel, rotation_anim::RotationAnimator, score_table::ScoreTable, text_multi::TextMulti, transform::Transform, translation_anim::TranslationAnimator, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::{bid_marker::BidMarker, button_text::ButtonText, circle::Circle, text::AlignH, turn_marker::TurnMarker, view_entity::ViewEntity}, view_geom::{
+        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
+    }
 };
 
 use super::view_enum::ViewEnum;
@@ -41,14 +36,12 @@ struct ZOrder {
 
 pub struct View {
     id: Id,
-    view_entities: HashMap<Id, ViewEnum>,
+    view_enums: HashMap<Id, ViewEnum>,
     z_orders: Vec<ZOrder>,
     z_order_needs_update: bool,
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
-    turn_marker: Id,
-    // Player 0 bid marker. Player 1 is this id + 1, etc
-    bid_marker_0: Id,
+   
     bid_panel: Id,
     trump_chooser: Id,
     trump_marker: Id,
@@ -59,7 +52,10 @@ pub struct View {
 
     sender: Sender<PlayerAction>,
 
-    test_rect: Rc<RefCell<Rectangle>>,
+    view_entities: HashMap<Id, Rc<RefCell<dyn ViewEntity>>>,
+    turn_marker: Rc<RefCell<TurnMarker>>,
+    bid_markers: Vec<Rc<RefCell<BidMarker>>>,
+    test_circle: Rc<RefCell<Circle>>,
 }
 
 impl View {
@@ -67,22 +63,45 @@ impl View {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         FONT.set(font.clone()).expect("Error setting FONT.");
 
+        let players = 4;
+
+        ///////////
         let id = 0;
-        let (id, test_rect) = View::create_test_rect(id);
+        let mut view_entities = HashMap::<Id, Rc<RefCell<dyn ViewEntity>>>::new();
+        let mut z_orders = Vec::new();
+
+        let (id, turn_marker) = View::create_turn_marker(id).await;
+        view_entities.insert(id, turn_marker.clone());
+        z_orders.push(ZOrder { id, z: 255 });
+
+        let mut bid_markers = Vec::new();
+        for p in 0..players {
+            let (id, marker) = View::create_bid_marker(id, p, players);
+            view_entities.insert(id, marker.clone());
+            z_orders.push(ZOrder { id, z: 0 });
+            bid_markers.push(marker);
+        }
+
+
+
+        let (id, test_circle) = View::create_test_circle(id);
+        view_entities.insert(id, test_circle.clone());
+        
+
         println!("id: {}", id);
+        ///////////
 
         Self {
             // Set id high enough so that we don't step on the card ids.
             id: 100,
-            view_entities: HashMap::<Id, ViewEnum>::new(),
+            view_enums: HashMap::<Id, ViewEnum>::new(),
             z_orders: Vec::new(),
             z_order_needs_update: false,
             translation_anims: HashMap::new(),
             rotation_anims: HashMap::new(),
 
             // These id values are assigned in setup().
-            turn_marker: 0,
-            bid_marker_0: 0,
+            
             bid_panel: 0,
             trump_chooser: 0,
             trump_marker: 0,
@@ -93,16 +112,19 @@ impl View {
 
             sender,
 
-            test_rect,
+            view_entities,
+            turn_marker,
+            bid_markers,
+            test_circle,
         }
     }
 
-    fn create_test_rect(id: Id) -> (Id, Rc<RefCell<Rectangle>>) {
-        let id = id + 1;
-        let rect = Rectangle::new(vec2(90., 10.), None, Some(BLUE), 2.0);
-        let rect = Rc::new(RefCell::new(rect));
-        //self.view_entitites.insert(id, rect.clone());
-        (id, rect)
+    fn create_test_circle(mut id: Id) -> (Id, Rc<RefCell<Circle>>) {
+        id += 1;
+        let mut ent = Circle::new(90.0, None, Some(BLUE), 2.0);
+        ent.transform.translation = vec2(100., 100.);
+        let ent = Rc::new(RefCell::new(ent));
+        (id, ent)
     }
 
     fn next_id(&mut self) -> Id {
@@ -112,8 +134,7 @@ impl View {
 
     pub async fn setup(&mut self, players: usize) {
         // Cards are created from Controller call in GameAction::Setup.
-        self.turn_marker = self.create_turn_marker().await;
-        self.bid_marker_0 = self.create_bid_marker(players);
+        
         self.bid_panel = self.create_bid_panel();
         self.trump_chooser = self.create_trump_chooser().await;
         self.trump_marker = self.create_trump_marker();
@@ -123,36 +144,27 @@ impl View {
         self.score_table = self.create_score_table();
     }
 
-    async fn create_turn_marker(&mut self) -> Id {
-        let id = self.next_id();
+    async fn create_turn_marker(mut id: Id) -> (Id, Rc<RefCell<TurnMarker>>) {
+        id += 1;
         let tex = load_texture("src/assets/circle.png").await.unwrap();
         let mut entity = TurnMarker::new(tex, vec2(20.0, 20.0));
         entity.transform.translation = PLAY_CENTER;
-
-        self.view_entities.insert(id, ViewEnum::TurnMarker(entity));
-        self.z_orders.push(ZOrder { id, z: 255 });
-        id
+        let entity =  Rc::new(RefCell::new(entity));
+        (id, entity)
     }
 
-    fn create_bid_marker(&mut self, players: usize) -> Id {
-        let mut p_0_id = 0;
-        for p in 0..players {
-            let geom = bid_marker_geom(p, players);
-            let entity = BidMarker::new(geom.pos);
-            let id = self.next_id();
-            if p == 0 {
-                p_0_id = id;
-            }
-            self.view_entities.insert(id, ViewEnum::BidMarker(entity));
-            self.z_orders.push(ZOrder { id, z: 0 });
-        }
-        p_0_id
+    fn create_bid_marker(mut id: Id, p: usize, players: usize) -> (Id, Rc<RefCell<BidMarker>>) {
+        id += 1;
+        let geom = bid_marker_geom(p, players);
+        let entity = BidMarker::new(geom.pos);
+        let entity = Rc::new(RefCell::new(entity));
+        (id, entity)
     }
 
     fn create_bid_panel(&mut self) -> Id {
         let id = self.next_id();
         let entity = BidPanel::new(BID_PANEL_POS, 0, 0);
-        self.view_entities.insert(id, ViewEnum::BidPanel(entity));
+        self.view_enums.insert(id, ViewEnum::BidPanel(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -160,7 +172,7 @@ impl View {
     async fn create_trump_chooser(&mut self) -> Id {
         let id = self.next_id();
         let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
-        self.view_entities.insert(id, ViewEnum::TrumpChooser(entity));
+        self.view_enums.insert(id, ViewEnum::TrumpChooser(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -168,7 +180,7 @@ impl View {
     fn create_trump_marker(&mut self) -> Id {
         let id = self.next_id();
         let entity = TrumpMarker::new(PLAY_CENTER);
-        self.view_entities.insert(id, ViewEnum::TrumpMarker(entity));
+        self.view_enums.insert(id, ViewEnum::TrumpMarker(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -179,7 +191,7 @@ impl View {
         let mut entity = ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font, 16, vec2(80.0, 40.0));
         entity.click_action = Some(PlayerAction::DoneExchanging);
         entity.visible = false;
-        self.view_entities.insert(id, ViewEnum::ButtonText(entity));
+        self.view_enums.insert(id, ViewEnum::ButtonText(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -190,7 +202,7 @@ impl View {
         let mut entity = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font, 16, vec2(120.0, 40.0));
         entity.click_action = Some(PlayerAction::NextHand);
         entity.visible = false;
-        self.view_entities.insert(id, ViewEnum::ButtonText(entity));
+        self.view_enums.insert(id, ViewEnum::ButtonText(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -198,7 +210,7 @@ impl View {
     fn create_message(&mut self) -> Id {
         let id = self.next_id();
         let entity = TextMulti::new(MESSAGE_POS);
-        self.view_entities.insert(id, ViewEnum::TextMulti(entity));
+        self.view_enums.insert(id, ViewEnum::TextMulti(entity));
         self.z_orders.push(ZOrder { id, z: 0 });
         id
     }
@@ -207,7 +219,7 @@ impl View {
         let id = self.next_id();
         let font = FONT.get().unwrap().clone();
         let entity = ScoreTable::new(SCORE_TABLE_POS, font);
-        self.view_entities.insert(id, ViewEnum::ScoreTable(entity));
+        self.view_enums.insert(id, ViewEnum::ScoreTable(entity));
         self.z_orders.push(ZOrder { id, z: 250 });
         id
     }
@@ -223,7 +235,7 @@ impl View {
 
         let mut entity = CardEnt::new(face, back.clone(), card.points);
         entity.transform.translation = view_geom::PLAY_CENTER;
-        self.view_entities.insert(card.id, ViewEnum::CardEnt(entity));
+        self.view_enums.insert(card.id, ViewEnum::CardEnt(entity));
         self.z_orders.push(ZOrder { id: card.id, z: 0 });
     }
 
@@ -234,7 +246,7 @@ impl View {
         self.z_order_needs_update = true;
     }
 
-    fn sort_entities_by_z_order(&mut self) {
+    fn sort_z_orders(&mut self) {
         self.z_orders.sort_by_key(|f| f.z);
         self.z_order_needs_update = false;
     }
@@ -247,8 +259,15 @@ impl View {
 
         let mouse_pos: Vec2 = mouse_position().into();
 
+        /////
+        let transform = Transform::new();
+        for (_id, ent) in &self.view_entities {
+            ent.borrow_mut().process_mouse(&mouse_pos, &transform);
+        }
+        /////
+
         for z_order in self.z_orders.iter().rev() {
-            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            let entity = self.view_enums.get_mut(&z_order.id).unwrap();
             let done = entity.process_mouse(mouse_pos);
             if done {
                 break;
@@ -257,19 +276,26 @@ impl View {
     }
 
     pub fn update(&mut self, time_delta: f32) {
+        /////
+        for (_id, ent) in &self.view_entities {
+            ent.borrow_mut().update(time_delta);
+        }
+        self.test_circle.borrow_mut().stroke_width = 1.0;
+        /////
+
         for z_order in &self.z_orders {
-            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            let entity = self.view_enums.get_mut(&z_order.id).unwrap();
             entity.update(time_delta);
         }
 
         if self.z_order_needs_update {
-            self.sort_entities_by_z_order();
+            self.sort_z_orders();
         }
 
         // Update translation_anims and transforms.
         for (id, anim) in &mut self.translation_anims {
             anim.update(time_delta);
-            if let Some(ent) = self.view_entities.get_mut(id) {
+            if let Some(ent) = self.view_enums.get_mut(id) {
                 ent.set_translation(anim.current);
             }
         }
@@ -278,7 +304,7 @@ impl View {
         // Update rotation_anims and transforms.
         for (id, anim) in &mut self.rotation_anims {
             anim.update(time_delta);
-            if let Some(ent) = self.view_entities.get_mut(id) {
+            if let Some(ent) = self.view_enums.get_mut(id) {
                 ent.set_rotation(anim.current);
             }
         }
@@ -286,13 +312,13 @@ impl View {
     }
 
     pub fn update_info(&mut self, game: &Game) {
-        let entity = self.view_entities.get_mut(&self.score_table).unwrap();
+        let entity = self.view_enums.get_mut(&self.score_table).unwrap();
         if let ViewEnum::ScoreTable(table) = entity {
             table.visible = true;
             table.update_scoring(&game);
         }
 
-        let entity = self.view_entities.get_mut(&self.turn_marker).unwrap();
+        let entity = self.view_enums.get_mut(&self.turn_marker).unwrap();
         if let ViewEnum::TurnMarker(marker) = entity {
             marker.visible = true;
             let geom = view_geom::turn_marker_geom(game.active, game.options.players);
@@ -301,18 +327,18 @@ impl View {
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
-        let entity = self.view_entities.get_mut(&self.message).unwrap();
+        let entity = self.view_enums.get_mut(&self.message).unwrap();
         if let ViewEnum::TextMulti(text_multi) = entity {
             text_multi.clear_lines();
             let font = FONT.get().unwrap();
             for text in texts {
-                text_multi.add_line(text, font.clone(), 18, super::text::AlignH::Center, 20.0);
+                text_multi.add_line(text, font.clone(), 18, AlignH::Center, 20.0);
             }
         }
     }
 
     fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
-        let entity = self.view_entities.get_mut(&id).unwrap();
+        let entity = self.view_enums.get_mut(&id).unwrap();
         if let ViewEnum::CardEnt(card_ent) = entity {
             let start = card_ent.transform.translation;
             let end = geom.pos;
@@ -356,7 +382,7 @@ impl View {
     pub fn update_bids(&mut self, game: &Game) {
         for (p, opt_bid) in game.bids.iter().enumerate() {
             let id = self.bid_marker_0 + p as Id;
-            let entity = self.view_entities.get_mut(&id).unwrap();
+            let entity = self.view_enums.get_mut(&id).unwrap();
             if let ViewEnum::BidMarker(marker) = entity {
                 marker.update_with_bid(opt_bid.clone());
             }
@@ -369,7 +395,7 @@ impl View {
                 continue;
             }
             let id = self.bid_marker_0 + p as Id;
-            let entity = self.view_entities.get_mut(&id).unwrap();
+            let entity = self.view_enums.get_mut(&id).unwrap();
             if let ViewEnum::BidMarker(marker) = entity {
                 marker.visible = false;
             }
@@ -407,7 +433,7 @@ impl View {
     // After player exchanges or plays a card, call this to reset the nest or hand.
     pub fn reset_eligibility(&mut self, cards: &[Card]) {
         for card in cards {
-            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            let entity = self.view_enums.get_mut(&card.id).unwrap();
             if let ViewEnum::CardEnt(card_ent) = entity {
                 card_ent.dimmed = false;
                 card_ent.action = None;
@@ -423,7 +449,7 @@ impl View {
     }
 
     pub fn show_done_exchanging_button(&mut self, enabled: bool) {
-        let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
+        let entity = self.view_enums.get_mut(&self.done_exchanging_button).unwrap();
         if let ViewEnum::ButtonText(button) = entity {
             button.visible = true;
             button.state = match enabled {
@@ -434,7 +460,7 @@ impl View {
     }
 
     pub fn hide_done_exchanging_button(&mut self) {
-        let entity = self.view_entities.get_mut(&self.done_exchanging_button).unwrap();
+        let entity = self.view_enums.get_mut(&self.done_exchanging_button).unwrap();
         if let ViewEnum::ButtonText(button) = entity {
             button.visible = false;
         }
@@ -444,7 +470,7 @@ impl View {
         let maker = game.maker.unwrap();
         let hand = &game.hands[maker];
         for card in hand {
-            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            let entity = self.view_enums.get_mut(&card.id).unwrap();
             if let ViewEnum::CardEnt(card_ent) = entity {
                 card_ent.dimmed = !card.eligible;
                 if card.eligible {
@@ -455,7 +481,7 @@ impl View {
     }
 
     pub fn show_trump_chooser(&mut self, visible: bool) {
-        let entity = self.view_entities.get_mut(&self.trump_chooser).unwrap();
+        let entity = self.view_enums.get_mut(&self.trump_chooser).unwrap();
         if let ViewEnum::TrumpChooser(chooser) = entity {
             chooser.visible = visible
         }
@@ -468,14 +494,14 @@ impl View {
     }
 
     pub fn show_trump_marker(&mut self, visible: bool) {
-        let entity = self.view_entities.get_mut(&self.trump_marker).unwrap();
+        let entity = self.view_enums.get_mut(&self.trump_marker).unwrap();
         if let ViewEnum::TrumpMarker(marker) = entity {
             marker.visible = visible
         }
     }
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
-        let entity = self.view_entities.get_mut(&self.trump_marker).unwrap();
+        let entity = self.view_enums.get_mut(&self.trump_marker).unwrap();
         if let ViewEnum::TrumpMarker(marker) = entity {
             marker.set_suit(suit).await
         }
@@ -485,7 +511,7 @@ impl View {
         let hand = &game.hands[game.active];
 
         for card in hand {
-            let entity = self.view_entities.get_mut(&card.id).unwrap();
+            let entity = self.view_enums.get_mut(&card.id).unwrap();
             if let ViewEnum::CardEnt(card_ent) = entity {
                 card_ent.dimmed = !card.eligible;
                 if card.eligible {
@@ -496,7 +522,7 @@ impl View {
     }
 
     pub fn show_next_hand_button(&mut self, visible: bool) {
-        let entity = self.view_entities.get_mut(&self.next_hand_button).unwrap();
+        let entity = self.view_enums.get_mut(&self.next_hand_button).unwrap();
         if let ViewEnum::ButtonText(button) = entity {
             button.visible = visible
         }
@@ -506,7 +532,7 @@ impl View {
         // Hide bid marker for human.
         self.hide_bid_marker(game.active);
 
-        let entity = self.view_entities.get_mut(&self.bid_panel).unwrap();
+        let entity = self.view_enums.get_mut(&self.bid_panel).unwrap();
         if let ViewEnum::BidPanel(panel) = entity {
             panel.min_bid = game.min_current_bid();
             panel.update_bid_amount(game.min_current_bid());
@@ -517,7 +543,7 @@ impl View {
     }
 
     pub fn end_human_bid(&mut self, _game: &Game) {
-        let entity = self.view_entities.get_mut(&self.bid_panel).unwrap();
+        let entity = self.view_enums.get_mut(&self.bid_panel).unwrap();
         if let ViewEnum::BidPanel(panel) = entity {
             panel.visible = false;
         }
@@ -525,7 +551,7 @@ impl View {
 
     pub fn hide_bid_marker(&mut self, bidder: usize) {
         let id = self.bid_marker_0 + bidder as Id;
-        let entity = self.view_entities.get_mut(&id).unwrap();
+        let entity = self.view_enums.get_mut(&id).unwrap();
         if let ViewEnum::BidMarker(marker) = entity {
             marker.visible = false;
         }
@@ -551,8 +577,15 @@ impl View {
     pub async fn draw(&mut self) {
         clear_background(Color::from_rgba(100, 100, 100, 255));
 
+        /////
+        let transform = Transform::new();
+        for (_id, ent) in &self.view_entities {
+            ent.borrow_mut().draw(&transform);
+        }
+        /////
+
         for z_order in &self.z_orders {
-            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            let entity = self.view_enums.get_mut(&z_order.id).unwrap();
             entity.draw();
         }
         next_frame().await;

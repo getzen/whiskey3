@@ -5,7 +5,7 @@ use crate::{
     game::{Bid, PlayerAction},
 };
 
-use super::{button_text::ButtonText, text::Text, transform::Transform, view::FONT};
+use super::{transform::Transform, view::FONT, view_entity::{button_text::ButtonText, text::Text, view_entity::ViewEntity}};
 
 pub struct BidPanel {
     pub min_bid: Points,
