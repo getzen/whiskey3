@@ -7,7 +7,6 @@ use crate::{card::Suit, game::PlayerAction, view::transform::Transform};
 
 use super::{button_shaded::ButtonShaded, view_entity::ViewEntity};
 
-
 pub struct TrumpChooser {
     pub visible: bool,
     transform: Transform,
@@ -62,7 +61,10 @@ impl TrumpChooser {
 }
 
 impl ViewEntity for TrumpChooser {
-
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;

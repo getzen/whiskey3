@@ -52,7 +52,6 @@ impl Controller {
         let game = Game::new();
         let players = game.options.players;
         let mut view = View::new(sender.clone()).await;
-        view.setup(players).await;
 
         Self {
             game,

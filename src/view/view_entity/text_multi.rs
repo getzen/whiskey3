@@ -1,8 +1,10 @@
 use macroquad::{math::Vec2, text::Font};
 
-use super::{
-    transform::Transform, view_entity::{text::{AlignH, AlignV, Text}, view_entity::ViewEntity},
-};
+use crate::view::transform::Transform;
+
+use super::{text::{AlignH, AlignV, Text}, view_entity::ViewEntity};
+
+
 
 pub struct TextMulti {
     pub visible: bool,
@@ -37,8 +39,14 @@ impl TextMulti {
         self.lines.push(line);
         self.spacings.push(spacing);
     }
+}
 
-    pub fn draw(&mut self, parent_transform: &Transform) {
+impl ViewEntity for TextMulti {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
+    fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }

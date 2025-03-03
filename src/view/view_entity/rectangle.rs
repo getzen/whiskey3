@@ -28,6 +28,10 @@ impl Rectangle {
 }
 
 impl ViewEntity for Rectangle {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn draw(&mut self, parent_transform: &Transform) {
         let transform = *parent_transform * self.transform;
         let (pos, rot, scale) = transform.trans_rot_scale();

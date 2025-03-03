@@ -5,14 +5,13 @@ use macroquad::prelude::Texture2D;
 
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
-use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
 use crate::view::eventer::HitDetector;
 use crate::view::transform::Transform;
 
+use super::button_state::ButtonState;
 use super::sprite::Sprite;
 use super::view_entity::ViewEntity;
-
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
@@ -45,6 +44,10 @@ impl ButtonShaded {
 }
 
 impl ViewEntity for ButtonShaded {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;

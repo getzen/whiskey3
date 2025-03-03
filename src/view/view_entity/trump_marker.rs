@@ -1,8 +1,8 @@
 use macroquad::{math::Vec2, texture::load_texture};
 
-use crate::card::Suit;
+use crate::{card::Suit, view::transform::Transform};
 
-use super::{transform::Transform, view_entity::{sprite::Sprite, view_entity::ViewEntity}};
+use super::{sprite::Sprite, view_entity::ViewEntity};
 
 pub struct TrumpMarker {
     pub visible: bool,
@@ -35,8 +35,14 @@ impl TrumpMarker {
             self.sprite = None;
         }
     }
+}
 
-    pub fn draw(&mut self) {
+impl ViewEntity for TrumpMarker {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
+    fn draw(&mut self, _parent_transform: &Transform) {
         if !self.visible {
             return;
         }

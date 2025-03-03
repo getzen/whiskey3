@@ -2,10 +2,10 @@ use macroquad::prelude::*;
 
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
-use crate::view::button_state::ButtonState;
 use crate::view::eventer::{Eventer, HitDetector};
 use crate::view::transform::Transform;
 
+use super::button_state::ButtonState;
 use super::rectangle::Rectangle;
 use super::text::Text;
 use super::view_entity::ViewEntity;
@@ -45,6 +45,10 @@ impl ButtonText {
 }
 
 impl ViewEntity for ButtonText {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;

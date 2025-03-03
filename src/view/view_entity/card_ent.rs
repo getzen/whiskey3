@@ -3,14 +3,13 @@ use macroquad::prelude::*;
 use crate::card::Points;
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
+use crate::view::eventer::{Eventer, HitDetector};
+use crate::view::transform::Transform;
+use crate::view::view::FONT;
 
-use super::eventer::Eventer;
-use super::eventer::HitDetector;
-use super::transform::Transform;
-use super::view::FONT;
-use super::view_entity::sprite::Sprite;
-use super::view_entity::text::Text;
-use super::view_entity::view_entity::ViewEntity;
+use super::sprite::Sprite;
+use super::text::Text;
+use super::view_entity::ViewEntity;
 
 pub struct CardEnt {
     pub transform: Transform,
@@ -74,9 +73,14 @@ impl CardEnt {
             false => self.back_texture.clone(),
         }
     }
+}
 
-    /// Returns true if the sprite is visible and transform contains the mouse_pos.
-    pub fn process_mouse(&mut self, mouse_pos: Vec2) -> bool {
+impl ViewEntity for CardEnt {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
+    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         let mouse_over = self.eventer.process_mouse(&mouse_pos, &self.transform);
 
         if self.eventer.left_mouse_released {
@@ -89,7 +93,7 @@ impl CardEnt {
         mouse_over
     }
 
-    pub fn draw(&mut self) {
+    fn draw(&mut self, _parent_transform: &Transform) {
         self.sprite.color = match self.dimmed {
             true => self.dimmed_color,
             false => WHITE,

@@ -2,7 +2,8 @@ use macroquad::math::{Vec2, vec2};
 
 use crate::{
     card::Points,
-    game::{Bid, PlayerAction}, view::{transform::Transform, view::FONT},
+    game::{Bid, PlayerAction},
+    view::{transform::Transform, view::FONT},
 };
 
 use super::{button_text::ButtonText, text::Text, view_entity::ViewEntity};
@@ -62,6 +63,10 @@ impl BidPanel {
 }
 
 impl ViewEntity for BidPanel {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;

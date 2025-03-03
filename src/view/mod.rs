@@ -1,16 +1,10 @@
 
-pub mod button_state;
-pub mod card_ent;
 pub mod eventer;
 pub mod rotation_anim;
-pub mod score_table;
-pub mod text_multi;
 pub mod transform;
 pub mod translation_anim;
-pub mod trump_marker;
 pub mod view;
 pub mod view_entity;
-pub mod view_enum;
 pub mod view_geom;
 
 use macroquad::prelude::*;

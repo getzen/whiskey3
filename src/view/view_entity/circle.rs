@@ -26,7 +26,10 @@ impl Circle {
 }
 
 impl ViewEntity for Circle {
-    #[allow(unused)]
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn draw(&mut self, parent_transform: &Transform) {
         let transform = *parent_transform * self.transform;
         let (pos, _rot, scale) = transform.trans_rot_scale();

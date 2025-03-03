@@ -1,9 +1,6 @@
 use macroquad::math::Vec2;
 
-use super::{
-    card_ent::CardEnt, score_table::ScoreTable,
-    text_multi::TextMulti, transform::Transform, trump_marker::TrumpMarker,
-};
+use super::{card_ent::CardEnt, score_table::ScoreTable, transform::Transform};
 
 // To get a concrete entity when stored as an enum:
 // let entity = self.view_entities.get_mut(&id).unwrap();
@@ -11,7 +8,6 @@ use super::{
 //     marker.foo()
 // }
 pub enum ViewEnum {
-    TrumpMarker(TrumpMarker),
     TextMulti(TextMulti),
     ScoreTable(ScoreTable),
     CardEnt(CardEnt),
@@ -53,7 +49,6 @@ impl ViewEnum {
     pub fn draw(&mut self) {
         let transform = Transform::default();
         match self {
-            ViewEnum::TrumpMarker(marker) => marker.draw(),
             ViewEnum::TextMulti(text_multi) => text_multi.draw(&transform),
             ViewEnum::ScoreTable(table) => table.draw(&transform),
             ViewEnum::CardEnt(card) => card.draw(),

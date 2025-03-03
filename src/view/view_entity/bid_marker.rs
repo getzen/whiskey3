@@ -4,7 +4,10 @@ use macroquad::{
     shapes::draw_circle_lines,
 };
 
-use crate::{game::Bid, view::{transform::Transform, view::FONT}};
+use crate::{
+    game::Bid,
+    view::{transform::Transform, view::FONT},
+};
 
 use super::{text::Text, view_entity::ViewEntity};
 
@@ -64,6 +67,10 @@ impl BidMarker {
 }
 
 impl ViewEntity for BidMarker {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn update(&mut self, time_delta: f32) {
         if self.color_change_dur > 0.0 {
             let b = 1.0 - self.color_change_dur;

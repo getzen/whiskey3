@@ -5,11 +5,10 @@ use macroquad::{
     text::Font,
 };
 
-use crate::game::Game;
+use crate::{game::Game, view::{eventer::{Eventer, HitDetector}, transform::Transform, translation_anim::TranslationAnimator, view_geom::SCORE_TABLE_POS}};
 
-use super::{
-    eventer::{Eventer, HitDetector}, transform::Transform, translation_anim::TranslationAnimator, view_entity::{text::Text, view_entity::ViewEntity}, view_geom::SCORE_TABLE_POS
-};
+use super::{text::Text, view_entity::ViewEntity};
+
 
 pub struct ScoreTable {
     pub visible: bool,
@@ -106,8 +105,14 @@ impl ScoreTable {
         self.texts[(2, col)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
         self.texts[(3, col)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
     }
+}
 
-    pub fn update(&mut self, time_delta: f32) {
+impl ViewEntity for ScoreTable {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
+    fn update(&mut self, time_delta: f32) {
         if let Some(translator) = &mut self.trans_anim {
             self.transform.translation = translator.update(time_delta);
             if translator.completed {
@@ -116,7 +121,7 @@ impl ScoreTable {
         }
     }
 
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
@@ -143,13 +148,13 @@ impl ScoreTable {
         false
     }
 
-    pub fn draw(&mut self, parent_transform: &Transform) {
+    fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }
 
         let transform = *parent_transform * self.transform;
-        let (pos, rot, scale) = transform.trans_rot_scale();
+        let (pos, _rot, _scale) = transform.trans_rot_scale();
 
         draw_rectangle(
             pos.x,

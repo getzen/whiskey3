@@ -6,11 +6,11 @@ use crate::view::transform::Transform;
 
 /// ViewEntities are drawables.
 /// To get a concrete type from a trait object, implement as_any() below, then:
-/// if let Some(sprite) = my_trait_obj.as_any().downcast_ref::<Sprite>().expect("Failed to downcast.") {
-///     sprite...
+/// if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
+///     card_ent...
 /// }
 pub trait ViewEntity {
-    //fn as_any(&self) -> &dyn std::any::Any; // simply return 'self'
+    fn as_any(&mut self) -> &mut dyn std::any::Any; // simply return 'self'
 
     fn set_translation(&mut self, translation: Vec2) {
         //self.transform.translation = _translation;

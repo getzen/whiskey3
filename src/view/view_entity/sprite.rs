@@ -41,6 +41,10 @@ impl Sprite {
 }
 
 impl ViewEntity for Sprite {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    
     fn draw(&mut self, parent_transform: &Transform) {
         let transform = *parent_transform * self.transform;
         let (mut pos, rot, scale) = transform.trans_rot_scale();
