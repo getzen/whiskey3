@@ -1,8 +1,8 @@
 use macroquad::math::Vec2;
 
 use super::{
-    bid_panel::BidPanel, card_ent::CardEnt, score_table::ScoreTable,
-    text_multi::TextMulti, transform::Transform, trump_chooser::TrumpChooser, trump_marker::TrumpMarker,
+    card_ent::CardEnt, score_table::ScoreTable,
+    text_multi::TextMulti, transform::Transform, trump_marker::TrumpMarker,
 };
 
 // To get a concrete entity when stored as an enum:
@@ -11,8 +11,6 @@ use super::{
 //     marker.foo()
 // }
 pub enum ViewEnum {
-    BidPanel(BidPanel),
-    TrumpChooser(TrumpChooser),
     TrumpMarker(TrumpMarker),
     TextMulti(TextMulti),
     ScoreTable(ScoreTable),
@@ -47,8 +45,6 @@ impl ViewEnum {
     pub fn process_mouse(&mut self, mouse_pos: Vec2) -> bool {
         let transform = Transform::default();
         match self {
-            ViewEnum::BidPanel(panel) => panel.process_mouse(&mouse_pos),
-            ViewEnum::TrumpChooser(chooser) => chooser.process_mouse(mouse_pos),
             ViewEnum::CardEnt(card) => card.process_mouse(mouse_pos),
             _ => false,
         }
@@ -57,8 +53,6 @@ impl ViewEnum {
     pub fn draw(&mut self) {
         let transform = Transform::default();
         match self {
-            ViewEnum::BidPanel(panel) => panel.draw(),
-            ViewEnum::TrumpChooser(chooser) => chooser.draw(),
             ViewEnum::TrumpMarker(marker) => marker.draw(),
             ViewEnum::TextMulti(text_multi) => text_multi.draw(&transform),
             ViewEnum::ScoreTable(table) => table.draw(&transform),

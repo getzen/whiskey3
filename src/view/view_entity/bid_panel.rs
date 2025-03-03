@@ -2,10 +2,10 @@ use macroquad::math::{Vec2, vec2};
 
 use crate::{
     card::Points,
-    game::{Bid, PlayerAction},
+    game::{Bid, PlayerAction}, view::{transform::Transform, view::FONT},
 };
 
-use super::{transform::Transform, view::FONT, view_entity::{button_text::ButtonText, text::Text, view_entity::ViewEntity}};
+use super::{button_text::ButtonText, text::Text, view_entity::ViewEntity};
 
 pub struct BidPanel {
     pub min_bid: Points,
@@ -59,9 +59,10 @@ impl BidPanel {
         self.bid_text.text = format!("{}", new_amount);
         self.bid_button.click_action = Some(PlayerAction::Bid(Bid::Points(new_amount)));
     }
+}
 
-    /// Returns true if event found.
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2) -> bool {
+impl ViewEntity for BidPanel {
+    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
@@ -84,7 +85,7 @@ impl BidPanel {
         mouse_over
     }
 
-    pub fn draw(&mut self) {
+    fn draw(&mut self, _parent_transform: &Transform) {
         if !self.visible {
             return;
         }

@@ -3,9 +3,10 @@ use macroquad::{
     texture::load_texture,
 };
 
-use crate::{card::Suit, game::PlayerAction};
+use crate::{card::Suit, game::PlayerAction, view::transform::Transform};
 
-use super::{button_shaded::ButtonShaded, transform::Transform};
+use super::{button_shaded::ButtonShaded, view_entity::ViewEntity};
+
 
 pub struct TrumpChooser {
     pub visible: bool,
@@ -58,8 +59,11 @@ impl TrumpChooser {
             ),
         }
     }
+}
 
-    pub fn process_mouse(&mut self, mouse_pos: Vec2) -> bool {
+impl ViewEntity for TrumpChooser {
+
+    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
@@ -70,7 +74,7 @@ impl TrumpChooser {
         mouse_over
     }
 
-    pub fn draw(&mut self) {
+    fn draw(&mut self, _parent_transform: &Transform) {
         if !self.visible {
             return;
         }

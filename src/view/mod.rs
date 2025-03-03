@@ -1,6 +1,4 @@
 
-pub mod bid_panel;
-pub mod button_shaded;
 pub mod button_state;
 pub mod card_ent;
 pub mod eventer;
@@ -9,7 +7,6 @@ pub mod score_table;
 pub mod text_multi;
 pub mod transform;
 pub mod translation_anim;
-pub mod trump_chooser;
 pub mod trump_marker;
 pub mod view;
 pub mod view_entity;

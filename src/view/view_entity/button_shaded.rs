@@ -7,11 +7,12 @@ use crate::controller::SENDER;
 use crate::game::PlayerAction;
 use crate::view::button_state::ButtonState;
 use crate::view::eventer::Eventer;
+use crate::view::eventer::HitDetector;
 use crate::view::transform::Transform;
 
-use super::eventer::HitDetector;
-use super::view_entity::sprite::Sprite;
-use super::view_entity::view_entity::ViewEntity;
+use super::sprite::Sprite;
+use super::view_entity::ViewEntity;
+
 
 /// A button that uses a single texture with color shades to show the ButtonState.
 pub struct ButtonShaded {
@@ -41,8 +42,10 @@ impl ButtonShaded {
             click_action,
         }
     }
+}
 
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+impl ViewEntity for ButtonShaded {
+    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
@@ -77,7 +80,7 @@ impl ButtonShaded {
         mouse_over
     }
 
-    pub fn draw(&mut self, parent_transform: &Transform) {
+    fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;
         }

@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::{
-    bid_panel::BidPanel, rotation_anim::RotationAnimator, score_table::ScoreTable, text_multi::TextMulti, transform::Transform, translation_anim::TranslationAnimator, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, view_entity::{bid_marker::BidMarker, button_text::ButtonText, circle::Circle, text::AlignH, turn_marker::TurnMarker, view_entity::ViewEntity}, view_geom::{
+    rotation_anim::RotationAnimator, score_table::ScoreTable, text_multi::TextMulti, transform::Transform, translation_anim::TranslationAnimator, trump_marker::TrumpMarker, view_entity::{bid_marker::BidMarker, bid_panel::BidPanel, button_text::ButtonText, circle::Circle, text::AlignH, trump_chooser::TrumpChooser, turn_marker::TurnMarker, view_entity::ViewEntity}, view_geom::{
         self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
     }
 };
@@ -42,8 +42,7 @@ pub struct View {
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
    
-    bid_panel: Id,
-    trump_chooser: Id,
+    
     trump_marker: Id,
     done_exchanging_button: Id,
     next_hand_button: Id,
@@ -55,6 +54,11 @@ pub struct View {
     view_entities: HashMap<Id, Rc<RefCell<dyn ViewEntity>>>,
     turn_marker: Rc<RefCell<TurnMarker>>,
     bid_markers: Vec<Rc<RefCell<BidMarker>>>,
+    bid_panel: Rc<RefCell<BidPanel>>,
+    trump_chooser: Rc<RefCell<TrumpChooser>>,
+
+
+
     test_circle: Rc<RefCell<Circle>>,
 }
 
@@ -82,6 +86,13 @@ impl View {
             bid_markers.push(marker);
         }
 
+        let (id, bid_panel) = View::create_bid_panel(id);
+        view_entities.insert(id, bid_panel.clone());
+        z_orders.push(ZOrder { id, z: 0 });
+
+        let (id, trump_chooser) = View::create_trump_chooser(id).await;
+        view_entities.insert(id, bid_panel.clone());
+        z_orders.push(ZOrder { id, z: 0 });
 
 
         let (id, test_circle) = View::create_test_circle(id);
@@ -102,8 +113,7 @@ impl View {
 
             // These id values are assigned in setup().
             
-            bid_panel: 0,
-            trump_chooser: 0,
+            
             trump_marker: 0,
             done_exchanging_button: 0,
             next_hand_button: 0,
@@ -115,6 +125,9 @@ impl View {
             view_entities,
             turn_marker,
             bid_markers,
+            bid_panel,
+            trump_chooser,
+
             test_circle,
         }
     }
@@ -132,11 +145,9 @@ impl View {
         self.id
     }
 
-    pub async fn setup(&mut self, players: usize) {
+    pub async fn setup(&mut self, _players: usize) {
         // Cards are created from Controller call in GameAction::Setup.
         
-        self.bid_panel = self.create_bid_panel();
-        self.trump_chooser = self.create_trump_chooser().await;
         self.trump_marker = self.create_trump_marker();
         self.done_exchanging_button = self.create_done_exchanging_button();
         self.next_hand_button = self.create_next_hand_button();
@@ -161,20 +172,18 @@ impl View {
         (id, entity)
     }
 
-    fn create_bid_panel(&mut self) -> Id {
-        let id = self.next_id();
+    fn create_bid_panel(mut id: Id) -> (Id, Rc<RefCell<BidPanel>>) {
+        id += 1;
         let entity = BidPanel::new(BID_PANEL_POS, 0, 0);
-        self.view_enums.insert(id, ViewEnum::BidPanel(entity));
-        self.z_orders.push(ZOrder { id, z: 0 });
-        id
+        let entity = Rc::new(RefCell::new(entity));
+        (id, entity)
     }
 
-    async fn create_trump_chooser(&mut self) -> Id {
-        let id = self.next_id();
+    async fn create_trump_chooser(mut id: Id) -> (Id, Rc<RefCell<TrumpChooser>>) {
+        id += 1;
         let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
-        self.view_enums.insert(id, ViewEnum::TrumpChooser(entity));
-        self.z_orders.push(ZOrder { id, z: 0 });
-        id
+        let entity = Rc::new(RefCell::new(entity));
+        (id, entity)
     }
 
     fn create_trump_marker(&mut self) -> Id {
