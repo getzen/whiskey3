@@ -2,9 +2,10 @@ use macroquad::{math::Vec2, text::Font};
 
 use crate::view::transform::Transform;
 
-use super::{text::{AlignH, AlignV, Text}, view_entity::ViewEntity};
-
-
+use super::{
+    text::{AlignH, AlignV, Text},
+    view_entity::ViewEntity,
+};
 
 pub struct TextMulti {
     pub visible: bool,
@@ -45,7 +46,7 @@ impl ViewEntity for TextMulti {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn draw(&mut self, parent_transform: &Transform) {
         if !self.visible {
             return;

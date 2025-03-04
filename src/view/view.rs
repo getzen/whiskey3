@@ -20,10 +20,13 @@ use super::{
     transform::Transform,
     translation_anim::TranslationAnimator,
     view_entity::{
-        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText, card_ent::CardEnt, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity
+        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText,
+        card_ent::CardEnt, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser,
+        trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity,
     },
     view_geom::{
-        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
+        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER,
+        SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
     },
 };
 
@@ -38,14 +41,10 @@ struct ZOrder {
 }
 
 pub struct View {
+    view_entities: HashMap<Id, Rc<RefCell<dyn ViewEntity>>>,
     z_orders: Vec<ZOrder>,
     z_order_needs_update: bool,
-    translation_anims: HashMap<Id, TranslationAnimator>,
-    rotation_anims: HashMap<Id, RotationAnimator>,
-
-    sender: Sender<PlayerAction>,
-
-    view_entities: HashMap<Id, Rc<RefCell<dyn ViewEntity>>>,
+   
     turn_marker: Rc<RefCell<TurnMarker>>,
     bid_markers: Vec<Rc<RefCell<BidMarker>>>,
     bid_panel: Rc<RefCell<BidPanel>>,
@@ -54,7 +53,12 @@ pub struct View {
     done_exchanging_button: Rc<RefCell<ButtonText>>,
     next_hand_button: Rc<RefCell<ButtonText>>,
     message: Rc<RefCell<TextMulti>>,
-    score_table:  Rc<RefCell<ScoreTable>>,
+    score_table: Rc<RefCell<ScoreTable>>,
+
+    translation_anims: HashMap<Id, TranslationAnimator>,
+    rotation_anims: HashMap<Id, RotationAnimator>,
+
+    sender: Sender<PlayerAction>,
 }
 
 impl View {
@@ -64,62 +68,66 @@ impl View {
 
         let players = 4;
 
-        let id = 0;
+        let mut id = 100; // above cards
         let mut view_entities = HashMap::<Id, Rc<RefCell<dyn ViewEntity>>>::new();
         let mut z_orders = Vec::new();
 
-        let (id, turn_marker) = View::create_turn_marker(id).await;
+        let turn_marker = View::create_turn_marker().await;
         view_entities.insert(id, turn_marker.clone());
         z_orders.push(ZOrder { id, z: 255 });
+        id += 1;
 
         let mut bid_markers = Vec::new();
         for p in 0..players {
-            let (id, marker) = View::create_bid_marker(id, p, players);
+            let marker = View::create_bid_marker(p, players);
             view_entities.insert(id, marker.clone());
             z_orders.push(ZOrder { id, z: 0 });
+            id += 1;
             bid_markers.push(marker);
         }
 
-        let (id, bid_panel) = View::create_bid_panel(id);
+        let bid_panel = View::create_bid_panel();
         view_entities.insert(id, bid_panel.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, trump_chooser) = View::create_trump_chooser(id).await;
+        let trump_chooser = View::create_trump_chooser().await;
         view_entities.insert(id, trump_chooser.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, trump_marker) = View::create_trump_marker(id);
+        let trump_marker = View::create_trump_marker();
         view_entities.insert(id, trump_marker.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, done_exchanging_button) = View::create_done_exchanging_button(id);
+        let done_exchanging_button = View::create_done_exchanging_button();
         view_entities.insert(id, done_exchanging_button.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, next_hand_button) = View::create_next_hand_button(id);
+        let next_hand_button = View::create_next_hand_button();
         view_entities.insert(id, next_hand_button.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, message) = View::create_message(id);
+        let message = View::create_message();
         view_entities.insert(id, message.clone());
         z_orders.push(ZOrder { id, z: 0 });
+        id += 1;
 
-        let (id, score_table) = View::create_score_table(id);
+        let score_table = View::create_score_table();
         view_entities.insert(id, score_table.clone());
         z_orders.push(ZOrder { id, z: 255 });
+        id += 1;
 
-        println!("id: {}", id);
-        ///////////
+        println!("final id: {}", id);
 
         Self {
-            z_orders: Vec::new(),
-            z_order_needs_update: false,
-            translation_anims: HashMap::new(),
-            rotation_anims: HashMap::new(),
-
-            sender,
-
             view_entities,
+            z_orders,
+            z_order_needs_update: true,
+            
             turn_marker,
             bid_markers,
             bid_panel,
@@ -129,80 +137,68 @@ impl View {
             next_hand_button,
             message,
             score_table,
+
+            translation_anims: HashMap::new(),
+            rotation_anims: HashMap::new(),
+
+            sender,
         }
     }
 
-    async fn create_turn_marker(mut id: Id) -> (Id, Rc<RefCell<TurnMarker>>) {
-        id += 1;
+    async fn create_turn_marker() -> Rc<RefCell<TurnMarker>> {
         let tex = load_texture("src/assets/circle.png").await.unwrap();
         let mut entity = TurnMarker::new(tex, vec2(20.0, 20.0));
         entity.transform.translation = PLAY_CENTER;
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_bid_marker(mut id: Id, p: usize, players: usize) -> (Id, Rc<RefCell<BidMarker>>) {
-        id += 1;
+    fn create_bid_marker(p: usize, players: usize) -> Rc<RefCell<BidMarker>> {
         let geom = bid_marker_geom(p, players);
         let entity = BidMarker::new(geom.pos);
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_bid_panel(mut id: Id) -> (Id, Rc<RefCell<BidPanel>>) {
-        id += 1;
+    fn create_bid_panel() -> Rc<RefCell<BidPanel>> {
         let entity = BidPanel::new(BID_PANEL_POS, 0, 0);
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
+
     }
 
-    async fn create_trump_chooser(mut id: Id) -> (Id, Rc<RefCell<TrumpChooser>>) {
-        id += 1;
+    async fn create_trump_chooser() -> Rc<RefCell<TrumpChooser>> {
         let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_trump_marker(mut id: Id) -> (Id, Rc<RefCell<TrumpMarker>>) {
-        id += 1;
+    fn create_trump_marker() -> Rc<RefCell<TrumpMarker>> {
         let entity = TrumpMarker::new(PLAY_CENTER);
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_done_exchanging_button(mut id: Id) -> (Id, Rc<RefCell<ButtonText>>) {
-        id += 1;
+    fn create_done_exchanging_button() -> Rc<RefCell<ButtonText>> {
         let font = FONT.get().unwrap().clone();
         let mut entity = ButtonText::new(DONE_EXCHANGING_BUTTON_POS, "Done", font, 16, vec2(80.0, 40.0));
         entity.click_action = Some(PlayerAction::DoneExchanging);
         entity.visible = false;
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_next_hand_button(mut id: Id) -> (Id, Rc<RefCell<ButtonText>>) {
-        id += 1;
+    fn create_next_hand_button() -> Rc<RefCell<ButtonText>> {
         let font = FONT.get().unwrap().clone();
         let mut entity = ButtonText::new(NEXT_HAND_BUTTON_POS, "Next Hand", font, 16, vec2(120.0, 40.0));
         entity.click_action = Some(PlayerAction::NextHand);
         entity.visible = false;
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_message(mut id: Id) -> (Id, Rc<RefCell<TextMulti>>) {
-        id += 1;
+    fn create_message() -> Rc<RefCell<TextMulti>> {
         let entity = TextMulti::new(MESSAGE_POS);
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
-    fn create_score_table(mut id: Id) -> (Id, Rc<RefCell<ScoreTable>>) {
-        id += 1;
+    fn create_score_table() -> Rc<RefCell<ScoreTable>> {
         let font = FONT.get().unwrap().clone();
         let entity = ScoreTable::new(SCORE_TABLE_POS, font);
-        let entity = Rc::new(RefCell::new(entity));
-        (id, entity)
+        Rc::new(RefCell::new(entity))
     }
 
     async fn texture_for(&self, card: &Card) -> Texture2D {
@@ -254,7 +250,7 @@ impl View {
 
     pub fn update(&mut self, time_delta: f32) {
         for z_order in &self.z_orders {
-            let entity = self.view_entities.get_mut(&z_order.id).unwrap();
+            let entity = self.view_entities.get(&z_order.id).unwrap();
             entity.borrow_mut().update(time_delta);
         }
 
@@ -264,8 +260,9 @@ impl View {
 
         // Update translation_anims and transforms.
         for (id, anim) in &mut self.translation_anims {
+            // println!("anim id: {}", id);
             anim.update(time_delta);
-            if let Some(entity) = self.view_entities.get_mut(id) {
+            if let Some(entity) = self.view_entities.get(id) {
                 entity.borrow_mut().set_translation(anim.current);
             }
         }
@@ -274,7 +271,7 @@ impl View {
         // Update rotation_anims and transforms.
         for (id, anim) in &mut self.rotation_anims {
             anim.update(time_delta);
-            if let Some(entity) = self.view_entities.get_mut(id) {
+            if let Some(entity) = self.view_entities.get(id) {
                 entity.borrow_mut().set_rotation(anim.current);
             }
         }
@@ -287,21 +284,22 @@ impl View {
 
         self.turn_marker.borrow_mut().visible = true;
         let geom = view_geom::turn_marker_geom(game.active, game.options.players);
-        self.turn_marker.borrow_mut().transform.translation = geom.pos;        
+        self.turn_marker.borrow_mut().transform.translation = geom.pos;
     }
 
     pub fn update_message(&mut self, texts: &[&str]) {
         self.message.borrow_mut().clear_lines();
         let font = FONT.get().unwrap();
         for text in texts {
-            self.message.borrow_mut().add_line(text, font.clone(), 18, AlignH::Center, 20.0);
+            self.message
+                .borrow_mut()
+                .add_line(text, font.clone(), 18, AlignH::Center, 20.0);
         }
     }
 
     fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
         let entity = self.view_entities.get(&id).unwrap();
         if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
-
             let start = card_ent.transform.translation;
             let end = geom.pos;
             let trans_anim = TranslationAnimator::new(start, end, view_geom::CARD_SPEED);
@@ -313,7 +311,6 @@ impl View {
             self.rotation_anims.insert(id, rot_anim);
 
             card_ent.set_face_up(face_up);
-            
         }
         self.set_z_order(id, geom.z);
     }
@@ -471,13 +468,13 @@ impl View {
         self.hide_bid_marker(game.active);
 
         {
-        let mut panel = self.bid_panel.borrow_mut();
-        panel.min_bid = game.min_current_bid();
-        panel.update_bid_amount(game.min_current_bid());
-        panel.max_bid = game.options.max_bid;
-        panel.visible = true;
+            let mut panel = self.bid_panel.borrow_mut();
+            panel.min_bid = game.min_current_bid();
+            panel.update_bid_amount(game.min_current_bid());
+            panel.max_bid = game.options.max_bid;
+            panel.visible = true;
         }
-        
+
         self.update_message(&["Your bid."]);
     }
 
@@ -513,7 +510,10 @@ impl View {
         for z_order in &self.z_orders {
             let entity = self.view_entities.get(&z_order.id).unwrap();
             entity.borrow_mut().draw(&transform);
+            //println!("id: {}", z_order.id);
         }
+
+        // self.score_table.borrow_mut().draw(&transform);
         next_frame().await;
     }
 }

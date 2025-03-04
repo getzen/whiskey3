@@ -24,7 +24,7 @@ impl ViewEntity for TurnMarker {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn draw(&mut self, _parent_transform: &Transform) {
         if self.visible {
             self.sprite.draw(&self.transform);

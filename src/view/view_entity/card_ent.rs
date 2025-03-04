@@ -79,7 +79,15 @@ impl ViewEntity for CardEnt {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
+    fn set_translation(&mut self, translation: Vec2) {
+        self.transform.translation = translation;
+    }
+
+    fn set_rotation(&mut self, rotation: f32) {
+        self.transform.rotation = rotation;
+    }
+
     fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         let mouse_over = self.eventer.process_mouse(&mouse_pos, &self.transform);
 

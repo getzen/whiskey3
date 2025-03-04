@@ -70,7 +70,7 @@ impl ViewEntity for BidMarker {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn update(&mut self, time_delta: f32) {
         if self.color_change_dur > 0.0 {
             let b = 1.0 - self.color_change_dur;

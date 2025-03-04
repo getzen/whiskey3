@@ -5,10 +5,17 @@ use macroquad::{
     text::Font,
 };
 
-use crate::{game::Game, view::{eventer::{Eventer, HitDetector}, transform::Transform, translation_anim::TranslationAnimator, view_geom::SCORE_TABLE_POS}};
+use crate::{
+    game::Game,
+    view::{
+        eventer::{Eventer, HitDetector},
+        transform::Transform,
+        translation_anim::TranslationAnimator,
+        view_geom::SCORE_TABLE_POS,
+    },
+};
 
 use super::{text::Text, view_entity::ViewEntity};
-
 
 pub struct ScoreTable {
     pub visible: bool,
@@ -111,7 +118,7 @@ impl ViewEntity for ScoreTable {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn update(&mut self, time_delta: f32) {
         if let Some(translator) = &mut self.trans_anim {
             self.transform.translation = translator.update(time_delta);

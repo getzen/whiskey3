@@ -64,7 +64,7 @@ impl ViewEntity for TrumpChooser {
     fn as_any(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
