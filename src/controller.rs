@@ -51,7 +51,7 @@ impl Controller {
 
         let game = Game::new();
         let players = game.options.players;
-        let mut view = View::new(sender.clone()).await;
+        let view = View::new(players, sender.clone()).await;
 
         Self {
             game,
@@ -116,7 +116,9 @@ impl Controller {
             } else {
                 // Here is where the sausage is made.
                 if let Some(action) = &self.game_action {
-                    println!("{:?}", action);
+                    if crate::game::DEBUGGING {
+                        println!("{:?}", action);
+                    }
                     match action {
                         GameAction::Setup => {
                             self.game.create_deck();

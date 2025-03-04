@@ -3,10 +3,10 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc::Sender};
 use hashbrown::HashMap;
 use macroquad::{
     color::Color,
-    input::{KeyCode, is_key_released, mouse_position},
-    math::{Vec2, vec2},
-    text::{Font, load_ttf_font},
-    texture::{Texture2D, load_texture},
+    input::{is_key_released, mouse_position, KeyCode},
+    math::{vec2, Vec2},
+    text::{load_ttf_font, Font},
+    texture::{load_texture, Texture2D},
     window::{clear_background, next_frame},
 };
 
@@ -20,13 +20,10 @@ use super::{
     transform::Transform,
     translation_anim::TranslationAnimator,
     view_entity::{
-        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText,
-        card_ent::CardEnt, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser,
-        trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity,
+        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText, card_ent::CardEnt, circle::Circle, rectangle::Rectangle, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity
     },
     view_geom::{
-        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER,
-        SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
+        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
     },
 };
 
@@ -59,14 +56,15 @@ pub struct View {
     rotation_anims: HashMap<Id, RotationAnimator>,
 
     sender: Sender<PlayerAction>,
+
+    alt_ents: HashMap<Id, Box<dyn ViewEntity>>,
+    circle_id: Id,
 }
 
 impl View {
-    pub async fn new(sender: Sender<PlayerAction>) -> Self {
+    pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         FONT.set(font.clone()).expect("Error setting FONT.");
-
-        let players = 4;
 
         let mut id = 100; // above cards
         let mut view_entities = HashMap::<Id, Rc<RefCell<dyn ViewEntity>>>::new();
@@ -121,7 +119,25 @@ impl View {
         z_orders.push(ZOrder { id, z: 255 });
         id += 1;
 
-        println!("final id: {}", id);
+        //////////////////
+        let mut alt_ents = HashMap::<Id, Box<dyn ViewEntity>>::new();
+        let circle = Circle::new(10.0, None, None, 1.0);
+        alt_ents.insert(id, Box::new(circle));
+        let circle_id = id;
+        id += 1;
+
+        let rect = Rectangle::new(vec2(10., 10.), None, None, 1.0);
+        alt_ents.insert(id, Box::new(rect));
+
+        // Two ways to retrive:
+        let entity = alt_ents.get_mut(&circle_id).unwrap();
+        // A one-liner:
+        entity.as_any_mut().downcast_mut::<Circle>().unwrap().radius = 50.;
+        // A scoped ref:
+        if let Some(circle) = entity.as_any_mut().downcast_mut::<Circle>() {
+            circle.radius = 200.0;
+        }
+        //////////////////
 
         Self {
             view_entities,
@@ -142,6 +158,9 @@ impl View {
             rotation_anims: HashMap::new(),
 
             sender,
+
+            alt_ents,
+            circle_id,
         }
     }
 
@@ -161,7 +180,6 @@ impl View {
     fn create_bid_panel() -> Rc<RefCell<BidPanel>> {
         let entity = BidPanel::new(BID_PANEL_POS, 0, 0);
         Rc::new(RefCell::new(entity))
-
     }
 
     async fn create_trump_chooser() -> Rc<RefCell<TrumpChooser>> {
@@ -297,9 +315,14 @@ impl View {
         }
     }
 
+    // fn get_card_ent(&mut self, id: Id) -> Option<&mut CardEnt> { // don't make id: Id --> id: &Id
+    //     let entity = self.alt_ents.get_mut(&id).unwrap();
+    //     entity.as_any_mut().downcast_mut::<CardEnt>()
+    // }
+
     fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
         let entity = self.view_entities.get(&id).unwrap();
-        if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
+        if let Some(card_ent) = entity.borrow_mut().as_any_mut().downcast_mut::<CardEnt>() {
             let start = card_ent.transform.translation;
             let end = geom.pos;
             let trans_anim = TranslationAnimator::new(start, end, view_geom::CARD_SPEED);
@@ -386,7 +409,7 @@ impl View {
     pub fn reset_eligibility(&mut self, cards: &[Card]) {
         for card in cards {
             let entity = self.view_entities.get(&card.id).unwrap();
-            if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
+            if let Some(card_ent) = entity.borrow_mut().as_any_mut().downcast_mut::<CardEnt>() {
                 card_ent.dimmed = false;
                 card_ent.action = None;
             }
@@ -418,7 +441,7 @@ impl View {
         let hand = &game.hands[maker];
         for card in hand {
             let entity = self.view_entities.get(&card.id).unwrap();
-            if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
+            if let Some(card_ent) = entity.borrow_mut().as_any_mut().downcast_mut::<CardEnt>() {
                 card_ent.dimmed = !card.eligible;
                 if card.eligible {
                     card_ent.action = Some(PlayerAction::Exchange(card.id));
@@ -450,7 +473,7 @@ impl View {
 
         for card in hand {
             let entity = self.view_entities.get(&card.id).unwrap();
-            if let Some(card_ent) = entity.borrow_mut().as_any().downcast_mut::<CardEnt>() {
+            if let Some(card_ent) = entity.borrow_mut().as_any_mut().downcast_mut::<CardEnt>() {
                 card_ent.dimmed = !card.eligible;
                 if card.eligible {
                     card_ent.action = Some(PlayerAction::PlayCard(card.id));

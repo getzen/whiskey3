@@ -45,7 +45,7 @@ impl ButtonText {
 }
 
 impl ViewEntity for ButtonText {
-    fn as_any(&mut self) -> &mut dyn std::any::Any {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 

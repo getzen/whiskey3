@@ -76,7 +76,7 @@ impl CardEnt {
 }
 
 impl ViewEntity for CardEnt {
-    fn as_any(&mut self) -> &mut dyn std::any::Any {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 
