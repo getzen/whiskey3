@@ -315,12 +315,20 @@ impl View {
         }
     }
 
-    // fn get_card_ent(&mut self, id: Id) -> Option<&mut CardEnt> { // don't make id: Id --> id: &Id
-    //     let entity = self.alt_ents.get_mut(&id).unwrap();
-    //     entity.as_any_mut().downcast_mut::<CardEnt>()
-    // }
+    fn get_card_ent_mut(&mut self, id: Id) -> Option<&mut CardEnt> { // don't make id: Id --> id: &Id
+        let entity = self.alt_ents.get_mut(&id).unwrap();
+        entity.as_any_mut().downcast_mut::<CardEnt>()
+    }
+
+    fn get_card_ent_mut2(&mut self, id: Id) -> &mut CardEnt { // don't make id: Id --> id: &Id
+        let entity = self.alt_ents.get_mut(&id).unwrap();
+        entity.as_any_mut().downcast_mut::<CardEnt>().unwrap()
+    }
 
     fn update_card_ent(&mut self, id: Id, geom: ViewGeom, face_up: bool) {
+        let card_ent = self.get_card_ent_mut(id).unwrap();
+        card_ent.dimmed = true;
+
         let entity = self.view_entities.get(&id).unwrap();
         if let Some(card_ent) = entity.borrow_mut().as_any_mut().downcast_mut::<CardEnt>() {
             let start = card_ent.transform.translation;
