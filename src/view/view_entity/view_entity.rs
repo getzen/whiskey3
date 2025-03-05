@@ -4,11 +4,16 @@ use crate::view::transform::Transform;
 
 #[allow(unused)]
 
-/// ViewEntities are drawables.
-/// To get a concrete type from a trait object, implement as_any() below, then:
-/// if let Some(card_ent) = entity.as_any_mut().downcast_mut::<CardEnt>() {
-///     card_ent...
-/// }
+/// ViewEntities are drawable objects.
+/*
+To retrieve concrete struct from view_entities:
+let entity = self.view_entities.get_mut(&self.foo_id).unwrap();
+entity.as_any_mut().downcast_mut::<Foo>().unwrap().radius = 50.;
+-- OR --
+if let Some(foo) = entity.as_any_mut().downcast_mut::<Foo>() {
+    foo.radius = 50.;
+}
+*/
 pub trait ViewEntity {
     //fn as_any(&self) -> &dyn std::any::Any; // simply return 'self'
 
