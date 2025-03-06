@@ -1,8 +1,6 @@
-use array2d::Array2D;
 use macroquad::{
     math::{Vec2, vec2},
     shapes::draw_rectangle,
-    text::Font,
 };
 
 use crate::{
@@ -11,106 +9,89 @@ use crate::{
         eventer::{Eventer, HitDetector},
         transform::Transform,
         translation_anim::TranslationAnimator,
+        view::FONT,
         view_geom::SCORE_TABLE_POS,
     },
 };
 
-use super::{text::Text, view_entity::ViewEntity};
+use super::{
+    text::{AlignH, AlignV, Text},
+    view_entity::ViewEntity,
+};
 
 pub struct ScoreTable {
     pub visible: bool,
-    size: Vec2,
+    rect_size: Vec2,
     transform: Transform,
     eventer: Eventer,
     trans_anim: Option<TranslationAnimator>,
-    texts: Array2D<Text>,
+    texts: Vec<Text>,
 }
 
 impl ScoreTable {
-    pub fn new(position: Vec2, font: Font) -> Self {
-        let default_texter = Text::new(Vec2::ZERO, "-", font, 14);
-        let mut texters = Array2D::filled_with(default_texter, 4, 9);
+    pub fn new(position: Vec2) -> Self {
+        let mut inset_position = Vec2::new(10.0, 10.0);
+        let row_height = 20.0;
+        let font = FONT.get().unwrap().clone();
 
-        let column_widths = vec![50, 75, 60, 75, 75, 75, 75, 80, 66, 75];
-        let row_heights = vec![20, 20, 20, 20];
-        let starting_pos = vec2(0.0, 0.0);
+        let mut default_text = Text::new(Vec2::ZERO, "", font.clone(), 14);
+        default_text.align_h = AlignH::Left;
+        default_text.align_v = AlignV::Top;
 
-        let col_headings0 = ["", "Taken", "#", "Majority", "Nest", "Total", "Slam", "Hand", "Game"];
-        let col_headings1 = ["", "Pts", "Tricks", "Bonus", "Pts", "/ Bid", "Bonus", "Score", "/ Win"];
-        for i in 0..col_headings0.len() {
-            texters[(0, i)].text = col_headings0[i].to_string();
-            texters[(1, i)].text = col_headings1[i].to_string();
+        let mut texts = Vec::new();
+
+        for _row in 0..3 {
+            let mut text = default_text.clone();
+            text.transform.translation = inset_position;
+            inset_position.y += row_height;
+            texts.push(text);
         }
 
-        let row_headings = ["", "", "We", "They"];
-        for row in 0..row_headings.len() {
-            texters[(row, 0)].text = row_headings[row].to_string();
-        }
+        let rect_size = vec2(440.0, 70.0);
 
-        // Position all the texters and determine the overall size.
-        let mut pos = starting_pos;
-        let mut size = Vec2::ZERO;
-        for row in 0..texters.num_rows() {
-            pos.y += row_heights[row] as f32;
-            for col in 0..texters.num_columns() {
-                pos.x += column_widths[col] as f32;
-                texters[(row, col)].transform.translation = pos;
-            }
-            size.x = pos.x;
-            pos.x = starting_pos.x;
-        }
-        size.y = pos.y;
-        // Expand the size to give a margin.
-        size += vec2(40.0, 20.0);
-
-        let mut eventer = Eventer::new(HitDetector::Rect(size, Vec2::ZERO));
+        let mut eventer = Eventer::new(HitDetector::Rect(rect_size, Vec2::ZERO));
         eventer.enabled = false;
 
         Self {
             visible: false,
-            size,
+            rect_size,
             transform: Transform::from_translation(position),
             eventer,
             trans_anim: None,
-            texts: texters,
+            texts,
         }
     }
 
     pub fn update_scoring(&mut self, game: &Game) {
         let scoring = &game.scoring;
-        let mut col = 1;
-        self.texts[(2, col)].text = scoring.points_taken[0].to_string();
-        self.texts[(3, col)].text = scoring.points_taken[1].to_string();
-        col += 1;
+        let row_labels = ["We", "They"];
 
-        self.texts[(2, col)].text = scoring.trick_count[0].to_string();
-        self.texts[(3, col)].text = scoring.trick_count[1].to_string();
-        col += 1;
+        // There is no way to save the format string "{:<5}..." to a variable and use it with format!().
+        // I couldn't find a crate that does it and can handle centering {:^7} commands.
 
-        self.texts[(2, col)].text = scoring.majority_bonus[0].to_string();
-        self.texts[(3, col)].text = scoring.majority_bonus[1].to_string();
-        col += 1;
-
-        self.texts[(2, col)].text = scoring.nest[0].to_string();
-        self.texts[(3, col)].text = scoring.nest[1].to_string();
-        col += 1;
-
-        let total0 = scoring.hand_subtotal[0];
-        let total1 = scoring.hand_subtotal[1];
-        self.texts[(2, col)].text = format!("{}/{}", total0, scoring.bid[0]);
-        self.texts[(3, col)].text = format!("{}/{}", total1, scoring.bid[1]);
-        col += 1;
-
-        self.texts[(2, col)].text = scoring.slam_bonus[0].to_string();
-        self.texts[(3, col)].text = scoring.slam_bonus[1].to_string();
-        col += 1;
-
-        self.texts[(2, col)].text = scoring.hand_final[0].to_string();
-        self.texts[(3, col)].text = scoring.hand_final[1].to_string();
-        col += 1;
-
-        self.texts[(2, col)].text = format!("{}/{}", scoring.game[0], game.options.points_to_win_game);
-        self.texts[(3, col)].text = format!("{}/{}", scoring.game[1], game.options.points_to_win_game);
+        for i in 0..3 {
+            let text = match i {
+                0 => format!(
+                    "{:<5}{:^8}{:^7}{:^12}{:^7}{:^12}",
+                    "", "Taken", "Nest", "Total/Bid", "Hand", "Total/Win"
+                ),
+                _ => {
+                    let p = i - 1;
+                    let subtotal_bid = format!("{}/{}", scoring.hand_subtotal[p], scoring.bid[p]);
+                    let total_game = format!("{}/{}", scoring.game[p], game.options.points_to_win_game);
+                    format!(
+                        "{:<5}{:^8}{:^7}{:^12}{:^7}{:^12}",
+                        row_labels[p],
+                        scoring.points_taken[p],
+                        scoring.nest[p],
+                        subtotal_bid,
+                        scoring.hand_final[p],
+                        total_game
+                    )
+                }
+            };
+            self.texts[i].text = text;
+        }
     }
 }
 
@@ -166,13 +147,13 @@ impl ViewEntity for ScoreTable {
         draw_rectangle(
             pos.x,
             pos.y,
-            self.size.x,
-            self.size.y,
+            self.rect_size.x,
+            self.rect_size.y,
             macroquad::color::Color::from_rgba(50, 50, 50, 190),
         );
 
-        for mut texter in self.texts.as_row_major() {
-            texter.draw(&transform);
+        for text in &mut self.texts {
+            text.draw(&transform);
         }
     }
 }

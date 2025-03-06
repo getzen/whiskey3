@@ -26,7 +26,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Convenience creator from translation x, y.
+    /// Create from translation x, y.
     pub fn from_x_y(x: f32, y: f32) -> Self {
         Self {
             translation: vec2(x, y),
@@ -35,7 +35,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Convenience creator from translation x, y, and rotation.
+    /// Create from translation x, y, and rotation.
     pub fn from_x_y_r(x: f32, y: f32, rotation: f32) -> Self {
         Self {
             translation: vec2(x, y),
@@ -45,7 +45,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Convenience creator from translation x, y, rotation, and scale x, y.
+    /// Create from translation x, y, rotation, and scale x, y.
     pub fn from_x_y_r_scale(x: f32, y: f32, rotation: f32, scale_x: f32, scale_y: f32) -> Self {
         Self {
             translation: vec2(x, y),

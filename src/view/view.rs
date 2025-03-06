@@ -3,10 +3,10 @@ use std::sync::mpsc::Sender;
 use hashbrown::HashMap;
 use macroquad::{
     color::Color,
-    input::{is_key_released, mouse_position, KeyCode},
-    math::{vec2, Vec2},
-    text::{load_ttf_font, Font},
-    texture::{load_texture, Texture2D},
+    input::{KeyCode, is_key_released, mouse_position},
+    math::{Vec2, vec2},
+    text::{Font, load_ttf_font},
+    texture::{Texture2D, load_texture},
     window::{clear_background, next_frame},
 };
 
@@ -20,10 +20,13 @@ use super::{
     transform::Transform,
     translation_anim::TranslationAnimator,
     view_entity::{
-        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText, card_ent::CardEnt, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser, trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity
+        bid_marker::BidMarker, bid_panel::BidPanel, button_state::ButtonState, button_text::ButtonText,
+        card_ent::CardEnt, score_table::ScoreTable, text::AlignH, text_multi::TextMulti, trump_chooser::TrumpChooser,
+        trump_marker::TrumpMarker, turn_marker::TurnMarker, view_entity::ViewEntity,
     },
     view_geom::{
-        self, bid_marker_geom, ViewGeom, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER, SCORE_TABLE_POS, TRUMP_CHOOSER_POS, Z
+        self, BID_PANEL_POS, DONE_EXCHANGING_BUTTON_POS, MESSAGE_POS, NEXT_HAND_BUTTON_POS, PLAY_CENTER,
+        SCORE_TABLE_POS, TRUMP_CHOOSER_POS, ViewGeom, Z, bid_marker_geom,
     },
 };
 
@@ -50,16 +53,16 @@ pub struct View {
     view_entities: HashMap<Id, Box<dyn ViewEntity>>,
     z_orders: Vec<ZOrder>,
     z_order_needs_update: bool,
-   
+
     turn_marker: Id,
     bid_markers: Vec<Id>,
     bid_panel: Id,
     trump_chooser: Id,
     trump_marker: Id,
     done_exchanging_button: Id,
-    next_hand_button:Id,
+    next_hand_button: Id,
     message: Id,
-    score_table:Id,
+    score_table: Id,
 
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
@@ -137,7 +140,7 @@ impl View {
             view_entities,
             z_orders,
             z_order_needs_update: true,
-            
+
             turn_marker,
             bid_markers,
             bid_panel,
@@ -173,7 +176,7 @@ impl View {
         Box::new(entity)
     }
 
-    async fn create_trump_chooser() ->Box<dyn ViewEntity> {
+    async fn create_trump_chooser() -> Box<dyn ViewEntity> {
         let entity = TrumpChooser::new(TRUMP_CHOOSER_POS).await;
         Box::new(entity)
     }
@@ -205,8 +208,7 @@ impl View {
     }
 
     fn create_score_table() -> Box<dyn ViewEntity> {
-        let font = FONT.get().unwrap().clone();
-        let entity = ScoreTable::new(SCORE_TABLE_POS, font);
+        let entity = ScoreTable::new(SCORE_TABLE_POS);
         Box::new(entity)
     }
 
@@ -312,7 +314,8 @@ impl View {
         }
     }
 
-    fn get_card_ent_mut(&mut self, id: Id) -> &mut CardEnt { // don't make id: Id --> id: &Id
+    fn get_card_ent_mut(&mut self, id: Id) -> &mut CardEnt {
+        // don't make id: Id --> id: &Id
         let entity = self.view_entities.get_mut(&id).unwrap();
         entity.as_any_mut().downcast_mut::<CardEnt>().unwrap()
     }
@@ -324,12 +327,12 @@ impl View {
             let end = geom.pos;
             let trans_anim = TranslationAnimator::new(start, end, view_geom::CARD_SPEED);
             self.translation_anims.insert(id, trans_anim);
-    
+
             let start = card_ent.transform.rotation;
             let end = geom.rot;
             let rot_anim = RotationAnimator::new(start, end, view_geom::ROT_SPEED);
             self.rotation_anims.insert(id, rot_anim);
-    
+
             card_ent.set_face_up(face_up);
         }
         self.set_z_order(id, geom.z);
@@ -416,7 +419,6 @@ impl View {
             let card_ent = self.get_card_ent_mut(card.id);
             card_ent.dimmed = false;
             card_ent.action = None;
-            
         }
     }
 
@@ -473,7 +475,12 @@ impl View {
 
     pub async fn set_trump_suit(&mut self, suit: Option<Suit>) {
         let entity = self.view_entities.get_mut(&self.trump_marker).unwrap();
-        entity.as_any_mut().downcast_mut::<TrumpMarker>().unwrap().set_suit(suit).await;
+        entity
+            .as_any_mut()
+            .downcast_mut::<TrumpMarker>()
+            .unwrap()
+            .set_suit(suit)
+            .await;
     }
 
     pub fn set_playable_hand_cards(&mut self, game: &Game) {
@@ -542,10 +549,8 @@ impl View {
         for z_order in &self.z_orders {
             let entity = self.view_entities.get_mut(&z_order.id).unwrap();
             entity.draw(&transform);
-            //println!("id: {}", z_order.id);
         }
 
-        // self.score_table.borrow_mut().draw(&transform);
         next_frame().await;
     }
 }

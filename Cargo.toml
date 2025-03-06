@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-array2d = "0.3.2"
 combination = "0.2.2"
+dyn-fmt = "0.4.3"
 fastrand = "2.1.1"
 hashbrown = "0.15.2"
 macroquad = "0.4.13"
