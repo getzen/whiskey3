@@ -66,8 +66,8 @@ impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
         // let options = GameOptions::whiskey_4();
-        let options = GameOptions::dixie();
-        // let options = GameOptions::one_high_partnership();
+        // let options = GameOptions::dixie();
+        let options = GameOptions::two_finger_whiskey();
         // let options = GameOptions::kentucky_discard();
         options.write_to_yaml("default.txt");
 
@@ -584,9 +584,11 @@ impl Game {
         let maker_team = self.team_index(maker);
         let defen_team = self.opponent_index(maker);
 
-        // Award last trick bonus
+        // Award last trick bonus -- EXPERIMENT, SEE BELOW.
         let last_trick_team = self.team_index(self.last_trick_winner);
-        self.scoring.last_trick[last_trick_team] = self.options.last_trick_pts;
+        // self.scoring.last_trick[last_trick_team] = self.options.last_trick_pts;
+        // Award last trick bonus to NEST.
+        self.scoring.nest[last_trick_team] += self.options.last_trick_pts;
 
         // Award points for taking the majority of tricks
         if self.scoring.trick_count[maker_team] > self.scoring.trick_count[defen_team] {

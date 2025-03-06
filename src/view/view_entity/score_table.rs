@@ -47,7 +47,7 @@ impl ScoreTable {
             texts.push(text);
         }
 
-        let rect_size = vec2(440.0, 70.0);
+        let rect_size = vec2(555.0, 70.0);
 
         let mut eventer = Eventer::new(HitDetector::Rect(rect_size, Vec2::ZERO));
         eventer.enabled = false;
@@ -72,18 +72,19 @@ impl ScoreTable {
         for i in 0..3 {
             let text = match i {
                 0 => format!(
-                    "{:<5}{:^8}{:^7}{:^12}{:^7}{:^12}",
-                    "", "Taken", "Nest", "Total/Bid", "Hand", "Total/Win"
+                    "{:<5}{:^8}{:^7}{:^14}{:^12}{:^7}{:^12}",
+                    "", "Taken", "Nest", "Most Tricks", "Total/Bid", "Hand", "Total/Win"
                 ),
                 _ => {
                     let p = i - 1;
                     let subtotal_bid = format!("{}/{}", scoring.hand_subtotal[p], scoring.bid[p]);
                     let total_game = format!("{}/{}", scoring.game[p], game.options.points_to_win_game);
                     format!(
-                        "{:<5}{:^8}{:^7}{:^12}{:^7}{:^12}",
+                        "{:<5}{:^8}{:^7}{:^14}{:^12}{:^7}{:^12}",
                         row_labels[p],
                         scoring.points_taken[p],
                         scoring.nest[p],
+                        scoring.majority_bonus[p],
                         subtotal_bid,
                         scoring.hand_final[p],
                         total_game

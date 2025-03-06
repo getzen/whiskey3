@@ -58,14 +58,6 @@ impl CardEnt {
         }
     }
 
-    pub fn set_translation(&mut self, translation: Vec2) {
-        self.transform.translation = translation;
-    }
-
-    pub fn set_rotation(&mut self, rotation: f32) {
-        self.transform.rotation = rotation;
-    }
-
     pub fn set_face_up(&mut self, face_up: bool) {
         self.is_face_up = face_up;
         self.sprite.texture = match face_up {
