@@ -45,7 +45,7 @@ impl Eventer {
         }
     }
 
-    pub fn process_mouse(&mut self, mouse_pos: &Vec2, transform: &Transform) -> bool {
+    pub fn process_mouse(&mut self, position: &Vec2, transform: &Transform) -> bool {
         if !self.enabled {
             return false;
         }
@@ -56,7 +56,7 @@ impl Eventer {
         self.left_mouse_pressed = false;
         self.left_mouse_released = false;
 
-        let mouse_over = self.contains_point(mouse_pos, transform);
+        let mouse_over = self.contains_point(position, transform);
 
         if mouse_over && !self.mouse_over {
             self.mouse_entered = true;
@@ -86,7 +86,7 @@ impl Eventer {
         // Get the adjusted test point relative to the translation.
         let mut adj_pt = vec2(point.x - transform.translation.x, point.y - transform.translation.y);
 
-        // Rotate the point clockwise (Notan and Macroquad both rotate clockwise).
+        // Rotate the point clockwise. (Notan and Macroquad both rotate clockwise).
         let theta = transform.rotation;
         adj_pt = vec2(
             adj_pt.x * f32::cos(theta) + adj_pt.y * f32::sin(theta),

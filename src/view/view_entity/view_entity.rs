@@ -20,15 +20,15 @@ pub trait ViewEntity {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any; // simply return 'self'
 
     fn set_translation(&mut self, translation: Vec2) {
-        //self.transform.translation = _translation;
+        //self.transform.translation = translation;
     }
 
     fn set_rotation(&mut self, rotation: f32) {
-        //self.transform.rotation = _rotation;
+        //self.transform.rotation = rotation;
     }
 
     /// For top-level entities, pass in Transform::new().
-    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+    fn process_mouse(&mut self, position: &Vec2, parent_transform: &Transform) -> bool {
         false
         /* Typical:
         let mouse_over = self.eventer.process_mouse(&_mouse_pos, &self.transform);

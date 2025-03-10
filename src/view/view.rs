@@ -551,6 +551,13 @@ impl View {
             entity.draw(&transform);
         }
 
+        // let vertices = vec![vec2(100., 100.), vec2(200., 200.), vec2(180., 300.), vec2(140.0, 150.)];
+        // let color = match polygon_contains_point(&vertices, mouse_position().into()) {
+        //     true => macroquad::color::BLUE,
+        //     false => macroquad::color::GREEN,
+        // };
+        // super::utility_graphics::draw_polygon_lines(&vertices, 1.0, color);
+
         next_frame().await;
     }
 }

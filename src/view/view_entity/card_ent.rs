@@ -17,14 +17,13 @@ pub struct CardEnt {
     is_face_up: bool,
     pub face_texture: Texture2D,
     pub back_texture: Texture2D,
-
-    pub dimmed_color: Color,
     pub dimmed: bool,
+    pub dimmed_color: Color,
+
+    pub point_text: Option<Text>,
 
     pub eventer: Eventer,
     pub action: Option<PlayerAction>,
-
-    pub point_text: Option<Text>,
 }
 
 impl CardEnt {
@@ -48,9 +47,9 @@ impl CardEnt {
             is_face_up: true,
             face_texture: face,
             back_texture: back,
-            dimmed_color: Color::from_rgba(200, 200, 200, 255),
             dimmed: false,
-
+            dimmed_color: Color::from_rgba(200, 200, 200, 255),
+            
             point_text,
 
             eventer: Eventer::new(HitDetector::Rect(size, vec2(0.5, 0.5))),

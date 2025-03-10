@@ -96,9 +96,7 @@ impl Transform {
         let scale = Vec3::new(self.scale.x, self.scale.y, 1.0);
         let translation = Vec3::new(self.translation.x, self.translation.y, 0.0);
         let rotation = Quat::from_rotation_z(self.rotation);
-        let m = Mat4::from_scale_rotation_translation(scale, rotation, translation);
-        let m = Mat4::from_scale_rotation_translation(scale, rotation, translation);
-        m * m
+        Mat4::from_scale_rotation_translation(scale, rotation, translation)
     }
 }
 

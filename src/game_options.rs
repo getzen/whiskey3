@@ -199,7 +199,7 @@ impl GameOptions {
             bidders_lose: BiddersLose::Zero,
             defenders_win: DefendersWin::PointsTaken,
             defenders_lose: DefendersLose::PointsTaken,
-            slam_bonus: 50,
+            slam_bonus: 0,
             points_to_win_game: 300,
             cards_in_deck: vec![
                 (Suit::Club, 5, 5),
@@ -251,18 +251,18 @@ impl GameOptions {
         Self {
             players: 4,
             hand_size: 12,
-            exchange_size: 3,
-            exchange_face_up: 0,
-            nest_size: 2,
-            nest_face_up: 2,
+            exchange_size: 4,
+            exchange_face_up: 1,
+            nest_size: 1,
+            nest_face_up: 0,
             min_bid: 100,
             max_bid: 200,
             bid_after_passing: false,
-            discard_point_cards: DiscardedPointCards::Allowed(true),
+            discard_point_cards: DiscardedPointCards::OnlyWhenForced(true),
             nest_awarded: NestAwarded::ToLastTrickWinner,
             first_player: FirstPlayer::Bidder,
-            last_trick_pts: 0,
-            majority_of_tricks_pts: 20,
+            last_trick_pts: 20,
+            majority_of_tricks_pts: 0,
             majority_tricks_tie: MajorityTricksTie::ToDefenders,
             bidders_win: BiddersWin::PointsTaken,
             bidders_lose: BiddersLose::Zero,
@@ -270,7 +270,7 @@ impl GameOptions {
             defenders_lose: DefendersLose::PointsTaken,
             slam_bonus: 0,
             points_to_win_game: 400,
-            // All cards from 4 -> Ace, plus one high Joker worth 0. 45 cards.
+            // All cards from 2 -> Ace, plus one low Joker worth 20. 53 cards.
             cards_in_deck: vec![
                 (Suit::Club, 2, 0),
                 (Suit::Club, 3, 0),

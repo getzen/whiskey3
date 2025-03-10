@@ -5,11 +5,9 @@ edition = "2024"
 
 [dependencies]
 combination = "0.2.2"
-dyn-fmt = "0.4.3"
 fastrand = "2.1.1"
 hashbrown = "0.15.2"
 macroquad = "0.4.13"
-#serde = "1.0.217"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_yaml = "0.9.34"
 web-time = "1.1.0"

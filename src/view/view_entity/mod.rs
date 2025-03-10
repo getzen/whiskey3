@@ -6,6 +6,7 @@ pub mod button_text;
 //pub mod button_textured;
 pub mod card_ent;
 pub mod circle;
+pub mod polygon;
 pub mod rectangle;
 //pub mod score_table;
 pub mod score_table;

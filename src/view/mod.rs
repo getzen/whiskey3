@@ -2,6 +2,7 @@ pub mod eventer;
 pub mod rotation_anim;
 pub mod transform;
 pub mod translation_anim;
+pub mod utility_graphics;
 pub mod view;
 pub mod view_entity;
 pub mod view_geom;

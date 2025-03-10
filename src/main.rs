@@ -28,11 +28,6 @@ async fn main() {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
 
-    use dyn_fmt::AsStrFormatExt;
-    let fs = "{}a{}b{}c";
-    let s = fs.format(&[1, 2, 3]);
-    println!("{s}");
-
     let mut controller = Controller::new().await;
     controller.go().await;
 }
