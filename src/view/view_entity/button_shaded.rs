@@ -1,5 +1,4 @@
 use macroquad::math::Vec2;
-use macroquad::math::vec2;
 use macroquad::prelude::Color;
 use macroquad::prelude::Texture2D;
 

@@ -7,7 +7,6 @@ use super::view_entity::ViewEntity;
 
 use macroquad::prelude::*;
 
-#[allow(unused)]
 pub struct Polygon {
     pub transform: Transform,
     pub vertices: Vec<Vec2>,
@@ -18,6 +17,7 @@ pub struct Polygon {
     pub stroke_width: f32,
 }
 
+#[allow(unused)]
 impl Polygon {
     pub fn new(vertices: Vec<Vec2>, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {

@@ -4,7 +4,6 @@ use crate::view::{transform::Transform, utility_graphics::circle_contains_point}
 
 use super::view_entity::ViewEntity;
 
-#[allow(unused)]
 pub struct Circle {
     pub transform: Transform,
     pub radius: f32,
@@ -13,8 +12,8 @@ pub struct Circle {
     pub stroke_width: f32,
 }
 
+#[allow(unused)]
 impl Circle {
-    #[allow(unused)]
     pub fn new(radius: f32, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {
             transform: Transform::new(),

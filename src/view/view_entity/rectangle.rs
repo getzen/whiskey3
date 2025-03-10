@@ -4,7 +4,7 @@ use crate::view::{transform::Transform, utility_graphics::rect_contains_point};
 
 use super::view_entity::ViewEntity;
 
-#[allow(unused)]
+
 pub struct Rectangle {
     pub transform: Transform,
     pub size: Vec2,
@@ -14,6 +14,7 @@ pub struct Rectangle {
     pub stroke_width: f32,
 }
 
+#[allow(unused)]
 impl Rectangle {
     pub fn new(size: Vec2, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {
