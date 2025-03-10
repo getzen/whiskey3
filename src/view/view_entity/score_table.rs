@@ -6,11 +6,8 @@ use macroquad::{
 use crate::{
     game::Game,
     view::{
-        eventer::{Eventer, HitDetector},
-        transform::Transform,
-        translation_anim::TranslationAnimator,
-        view::FONT,
-        view_geom::SCORE_TABLE_POS,
+        mouse_state::MouseState, transform::Transform, translation_anim::TranslationAnimator,
+        utility_graphics::rect_contains_point, view::FONT, view_geom::SCORE_TABLE_POS,
     },
 };
 
@@ -23,7 +20,7 @@ pub struct ScoreTable {
     pub visible: bool,
     rect_size: Vec2,
     transform: Transform,
-    eventer: Eventer,
+    mouse_state: MouseState,
     trans_anim: Option<TranslationAnimator>,
     texts: Vec<Text>,
 }
@@ -49,14 +46,11 @@ impl ScoreTable {
 
         let rect_size = vec2(555.0, 70.0);
 
-        let mut eventer = Eventer::new(HitDetector::Rect(rect_size, Vec2::ZERO));
-        eventer.enabled = false;
-
         Self {
             visible: false,
             rect_size,
             transform: Transform::from_translation(position),
-            eventer,
+            mouse_state: MouseState::new(),
             trans_anim: None,
             texts,
         }
@@ -110,31 +104,39 @@ impl ViewEntity for ScoreTable {
         }
     }
 
-    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        let transform = *parent_transform * self.transform;
+        let local_pt = transform.convert_point_to_local(point);
+        rect_contains_point(Vec2::ZERO, self.rect_size, local_pt)
+    }
+
+    fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
-        let transform = *parent_transform * self.transform;
 
-        self.eventer.process_mouse(mouse_pos, &transform);
+        let contains_pt = self.contains_point(point, parent_transform);
+        self.mouse_state.update(contains_pt, point);
 
-        if self.eventer.mouse_entered {
-            let drop_down_pos = SCORE_TABLE_POS + Vec2::new(0.0, -SCORE_TABLE_POS.y);
-            self.trans_anim = Some(TranslationAnimator::new(
-                self.transform.translation,
-                drop_down_pos,
-                400.0,
-            ));
-        }
+        /* ----- Disable score table animation for now ----- */
 
-        if self.eventer.mouse_exited {
-            self.trans_anim = Some(TranslationAnimator::new(
-                self.transform.translation,
-                SCORE_TABLE_POS,
-                400.0,
-            ));
-        }
-        false
+        // if self.mouse_state.mouse_entered {
+        //     let drop_down_pos = SCORE_TABLE_POS + Vec2::new(0.0, -SCORE_TABLE_POS.y);
+        //     self.trans_anim = Some(TranslationAnimator::new(
+        //         self.transform.translation,
+        //         drop_down_pos,
+        //         400.0,
+        //     ));
+        // }
+
+        // if self.mouse_state.mouse_exited {
+        //     self.trans_anim = Some(TranslationAnimator::new(
+        //         self.transform.translation,
+        //         SCORE_TABLE_POS,
+        //         400.0,
+        //     ));
+        // }
+        contains_pt
     }
 
     fn draw(&mut self, parent_transform: &Transform) {

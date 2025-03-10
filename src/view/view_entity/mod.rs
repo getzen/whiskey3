@@ -8,7 +8,6 @@ pub mod card_ent;
 pub mod circle;
 pub mod polygon;
 pub mod rectangle;
-//pub mod score_table;
 pub mod score_table;
 pub mod sprite;
 pub mod text;

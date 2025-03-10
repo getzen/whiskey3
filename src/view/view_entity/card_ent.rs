@@ -3,8 +3,9 @@ use macroquad::prelude::*;
 use crate::card::Points;
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
-use crate::view::eventer::{Eventer, HitDetector};
+use crate::view::mouse_state::MouseState;
 use crate::view::transform::Transform;
+use crate::view::utility_graphics::rect_contains_point;
 use crate::view::view::FONT;
 
 use super::sprite::Sprite;
@@ -13,6 +14,7 @@ use super::view_entity::ViewEntity;
 
 pub struct CardEnt {
     pub transform: Transform,
+
     pub sprite: Sprite,
     is_face_up: bool,
     pub face_texture: Texture2D,
@@ -22,15 +24,13 @@ pub struct CardEnt {
 
     pub point_text: Option<Text>,
 
-    pub eventer: Eventer,
+    pub mouse_state: MouseState,
     pub action: Option<PlayerAction>,
 }
 
 impl CardEnt {
     pub fn new(face: Texture2D, back: Texture2D, points: Points) -> Self {
         let size_mult = 0.3333;
-        let size = vec2(face.width() * size_mult, face.height() * size_mult);
-
         let font = FONT.get().unwrap();
 
         let mut point_text = None;
@@ -49,10 +49,10 @@ impl CardEnt {
             back_texture: back,
             dimmed: false,
             dimmed_color: Color::from_rgba(200, 200, 200, 255),
-            
+
             point_text,
 
-            eventer: Eventer::new(HitDetector::Rect(size, vec2(0.5, 0.5))),
+            mouse_state: MouseState::new(),
             action: None,
         }
     }
@@ -79,17 +79,25 @@ impl ViewEntity for CardEnt {
         self.transform.rotation = rotation;
     }
 
-    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
-        let mouse_over = self.eventer.process_mouse(&mouse_pos, &self.transform);
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        let transform = *parent_transform * self.transform;
+        let mut local_pt = transform.convert_point_to_local(point);
+        local_pt += self.sprite.anchor * self.sprite.size;
+        rect_contains_point(Vec2::ZERO, self.sprite.size, local_pt)
+    }
 
-        if self.eventer.left_mouse_released {
+    fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        let contains_pt = self.contains_point(point, parent_transform);
+        self.mouse_state.update(contains_pt, point);
+
+        if self.mouse_state.left_button_released {
             if let Some(sender) = SENDER.get() {
                 if let Some(action) = &self.action {
                     sender.send(action.clone()).expect("Send error");
                 }
             }
         }
-        mouse_over
+        contains_pt
     }
 
     fn draw(&mut self, _parent_transform: &Transform) {

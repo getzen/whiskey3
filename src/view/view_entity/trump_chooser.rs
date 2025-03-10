@@ -65,15 +65,15 @@ impl ViewEntity for TrumpChooser {
         self
     }
 
-    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
+    fn process_mouse(&mut self, point: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
-        let mut mouse_over = self.club_button.process_mouse(&mouse_pos, &self.transform);
-        mouse_over = mouse_over || self.diamond_button.process_mouse(&mouse_pos, &self.transform);
-        mouse_over = mouse_over || self.heart_button.process_mouse(&mouse_pos, &self.transform);
-        mouse_over = mouse_over || self.spade_button.process_mouse(&mouse_pos, &self.transform);
-        mouse_over
+        let mut contains_pt = self.club_button.process_mouse(&point, &self.transform);
+        contains_pt = contains_pt || self.diamond_button.process_mouse(&point, &self.transform);
+        contains_pt = contains_pt || self.heart_button.process_mouse(&point, &self.transform);
+        contains_pt = contains_pt || self.spade_button.process_mouse(&point, &self.transform);
+        contains_pt
     }
 
     fn draw(&mut self, _parent_transform: &Transform) {

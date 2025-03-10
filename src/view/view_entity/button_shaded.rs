@@ -5,9 +5,9 @@ use macroquad::prelude::Texture2D;
 
 use crate::controller::SENDER;
 use crate::game::PlayerAction;
-use crate::view::eventer::Eventer;
-use crate::view::eventer::HitDetector;
+use crate::view::mouse_state::MouseState;
 use crate::view::transform::Transform;
+use crate::view::utility_graphics::rect_contains_point;
 
 use super::button_state::ButtonState;
 use super::sprite::Sprite;
@@ -22,13 +22,12 @@ pub struct ButtonShaded {
     pub normal_color: Color,
     pub highlighted_color: Color,
     pub disabled_color: Color,
-    pub eventer: Eventer,
+    pub mouse_state: MouseState,
     pub click_action: Option<PlayerAction>,
 }
 
 impl ButtonShaded {
     pub fn new(position: Vec2, texture: Texture2D, size_mult: f32, click_action: Option<PlayerAction>) -> Self {
-        let size = texture.size() * size_mult;
         Self {
             visible: true,
             state: ButtonState::Normal,
@@ -37,7 +36,7 @@ impl ButtonShaded {
             normal_color: Color::from_rgba(230, 230, 230, 255),
             highlighted_color: Color::from_rgba(255, 255, 255, 255),
             disabled_color: Color::from_rgba(100, 100, 100, 255),
-            eventer: Eventer::new(HitDetector::Rect(size, vec2(0.5, 0.5))),
+            mouse_state: MouseState::new(),
             click_action,
         }
     }
@@ -48,31 +47,38 @@ impl ViewEntity for ButtonShaded {
         self
     }
 
-    fn process_mouse(&mut self, mouse_pos: &Vec2, parent_transform: &Transform) -> bool {
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        let transform = *parent_transform * self.transform;
+        let mut local_pt = transform.convert_point_to_local(point);
+        local_pt += self.sprite.anchor * self.sprite.size;
+        rect_contains_point(Vec2::ZERO, self.sprite.size, local_pt)
+    }
+
+    fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
 
-        let transform = *parent_transform * self.transform;
-        let mouse_over = self.eventer.process_mouse(mouse_pos, &transform);
+        let contains_pt = self.contains_point(point, parent_transform);
+        self.mouse_state.update(contains_pt, point);
 
         if self.state == ButtonState::Disabled {
-            return mouse_over;
+            return contains_pt;
         }
 
-        if self.eventer.mouse_entered {
+        if self.mouse_state.mouse_entered {
             self.state = ButtonState::Highlighted;
         }
 
-        if self.eventer.mouse_exited {
+        if self.mouse_state.mouse_exited {
             self.state = ButtonState::Normal;
         }
 
-        if self.eventer.left_mouse_pressed {
+        if self.mouse_state.left_button_pressed {
             self.state = ButtonState::Highlighted;
         }
 
-        if self.eventer.left_mouse_released {
+        if self.mouse_state.left_button_released {
             self.state = ButtonState::Normal;
             if let Some(sender) = SENDER.get() {
                 if let Some(action) = &self.click_action {
@@ -80,7 +86,7 @@ impl ViewEntity for ButtonShaded {
                 }
             }
         }
-        mouse_over
+        contains_pt
     }
 
     fn draw(&mut self, parent_transform: &Transform) {

@@ -1,4 +1,7 @@
-use crate::view::{transform::Transform, utility_graphics::{draw_polygon, draw_polygon_lines}};
+use crate::view::{
+    transform::Transform,
+    utility_graphics::{draw_polygon, draw_polygon_lines, polygon_contains_point},
+};
 
 use super::view_entity::ViewEntity;
 
@@ -16,12 +19,7 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn new(
-        vertices: Vec<Vec2>,
-        fill_color: Option<Color>,
-        stroke_color: Option<Color>,
-        stroke_width: f32,
-    ) -> Self {
+    pub fn new(vertices: Vec<Vec2>, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
         Self {
             transform: Transform::new(),
             vertices,
@@ -62,26 +60,16 @@ impl ViewEntity for Polygon {
         self.draw_vertices = None;
     }
 
-    // fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
-    //     if self.draw_vertices.is_none() {
-    //         self.update_draw_vertices(parent_transform);
-    //     }
-    //     let vertices = &self.draw_vertices.as_ref().unwrap();
-    //     polygon_contains_point(vertices, *point)
-    // }
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        if self.draw_vertices.is_none() {
+            self.update_draw_vertices(parent_transform);
+        }
+        let vertices = &self.draw_vertices.as_ref().unwrap();
+        polygon_contains_point(vertices, *point)
+    }
 
     fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
-        // let contains = self.contains_point(point, parent_transform);
-        // self.mouse_status.update(point, contains); // need point for dragging
-        // if self.mouse_status.left_mouse_released {
-        //     if let Some(sender) = SENDER.get() {
-        //         if let Some(action) = &self.action {
-        //             sender.send(action.clone()).expect("Send error");
-        //         }
-        //     }
-        // }
-        // contains
-        false
+        self.contains_point(point, parent_transform)
     }
 
     fn draw(&mut self, parent_transform: &Transform) {
@@ -93,12 +81,12 @@ impl ViewEntity for Polygon {
             if let Some(color) = self.fill_color {
                 draw_polygon(&vertices, color);
             }
-    
+
             if let Some(color) = self.stroke_color {
                 draw_polygon_lines(&vertices, self.stroke_width, color);
             }
         }
-       
+
         // let gl = unsafe { get_internal_gl().quad_gl };
         // gl.push_model_matrix(transform.matrix());
         // if let Some(color) = self.fill_color {

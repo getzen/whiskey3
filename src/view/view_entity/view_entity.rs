@@ -27,19 +27,30 @@ pub trait ViewEntity {
         //self.transform.rotation = rotation;
     }
 
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        false
+        /* Typical
+        let transform = *parent_transform * self.transform;
+        let mut local_pt = transform.convert_point_to_local(point);
+        local_pt += self.anchor * self.size;
+        rect_contains_point(Vec2::ZERO, self.size, local_pt)
+        */
+    }
+
     /// For top-level entities, pass in Transform::new().
-    fn process_mouse(&mut self, position: &Vec2, parent_transform: &Transform) -> bool {
+    fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
         false
         /* Typical:
-        let mouse_over = self.eventer.process_mouse(&_mouse_pos, &self.transform);
-        if self.eventer.left_mouse_released {
+        let contains_pt = self.contains_point(point, parent_transform);
+        self.mouse_state.update(contains_pt, point);
+        if self.mouse_state.left_mouse_released {
             if let Some(sender) = SENDER.get() {
                 if let Some(action) = &self.action {
                     sender.send(action.clone()).expect("Send error");
                 }
             }
         }
-        mouse_over
+        contains
         */
     }
 

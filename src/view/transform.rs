@@ -26,7 +26,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Create from translation x, y.
+    /// Convenience creator from translation x, y.
     pub fn from_x_y(x: f32, y: f32) -> Self {
         Self {
             translation: vec2(x, y),
@@ -35,7 +35,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Create from translation x, y, and rotation.
+    /// Convenience creator from translation x, y, and rotation.
     pub fn from_x_y_r(x: f32, y: f32, rotation: f32) -> Self {
         Self {
             translation: vec2(x, y),
@@ -45,7 +45,7 @@ impl Transform {
     }
 
     #[allow(unused)]
-    /// Create from translation x, y, rotation, and scale x, y.
+    /// Convenience creator from translation x, y, rotation, and scale x, y.
     pub fn from_x_y_r_scale(x: f32, y: f32, rotation: f32, scale_x: f32, scale_y: f32) -> Self {
         Self {
             translation: vec2(x, y),
@@ -97,6 +97,14 @@ impl Transform {
         let translation = Vec3::new(self.translation.x, self.translation.y, 0.0);
         let rotation = Quat::from_rotation_z(self.rotation);
         Mat4::from_scale_rotation_translation(scale, rotation, translation)
+    }
+
+    /// Converts a transformed point back to a local point associated
+    /// (for example) with an drawn object.
+    pub fn convert_point_to_local(&self, point: &Vec2) -> Vec2 {
+        let mut pt = *point - self.translation;
+        pt = pt.rotate(Vec2::from_angle(-self.rotation));
+        pt / self.scale
     }
 }
 

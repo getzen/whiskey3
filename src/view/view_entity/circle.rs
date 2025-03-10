@@ -1,7 +1,8 @@
 use macroquad::prelude::*;
 
+use crate::view::{transform::Transform, utility_graphics::circle_contains_point};
+
 use super::view_entity::ViewEntity;
-use crate::view::transform::Transform;
 
 #[allow(unused)]
 pub struct Circle {
@@ -28,6 +29,12 @@ impl Circle {
 impl ViewEntity for Circle {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
+    }
+
+    fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
+        let transform = *parent_transform * self.transform;
+        let local_pt = transform.convert_point_to_local(point);
+        circle_contains_point(Vec2::ZERO, self.radius, local_pt)
     }
 
     fn draw(&mut self, parent_transform: &Transform) {

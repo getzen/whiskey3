@@ -67,22 +67,22 @@ impl ViewEntity for BidPanel {
         self
     }
 
-    fn process_mouse(&mut self, mouse_pos: &Vec2, _parent_transform: &Transform) -> bool {
+    fn process_mouse(&mut self, point: &Vec2, _parent_transform: &Transform) -> bool {
         if !self.visible {
             return false;
         }
 
-        let mut mouse_over = self.bid_button.process_mouse(mouse_pos, &self.transform);
-        mouse_over = mouse_over || self.pass_button.process_mouse(mouse_pos, &self.transform);
+        let mut mouse_over = self.bid_button.process_mouse(point, &self.transform);
+        mouse_over = mouse_over || self.pass_button.process_mouse(point, &self.transform);
 
-        mouse_over = mouse_over || self.plus_button.process_mouse(&mouse_pos, &self.transform);
-        if self.plus_button.eventer.left_mouse_released {
+        mouse_over = mouse_over || self.plus_button.process_mouse(&point, &self.transform);
+        if self.plus_button.mouse_state.left_button_released {
             let new_amount = self.max_bid.min(self.current_bid + self.bid_increment);
             self.update_bid_amount(new_amount);
         }
 
-        mouse_over = mouse_over || self.minus_button.process_mouse(mouse_pos, &self.transform);
-        if self.minus_button.eventer.left_mouse_released {
+        mouse_over = mouse_over || self.minus_button.process_mouse(point, &self.transform);
+        if self.minus_button.mouse_state.left_button_released {
             let new_amount = self.min_bid.max(self.current_bid - self.bid_increment);
             self.update_bid_amount(new_amount);
         }
