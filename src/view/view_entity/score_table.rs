@@ -27,6 +27,9 @@ pub struct ScoreTable {
 
 impl ScoreTable {
     pub fn new(position: Vec2) -> Self {
+
+        //let position = vec2(-450.0, 10.0);
+
         let mut inset_position = Vec2::new(10.0, 10.0);
         let row_height = 20.0;
         let font = FONT.get().unwrap().clone();
@@ -121,21 +124,22 @@ impl ViewEntity for ScoreTable {
         /* ----- Disable score table animation for now ----- */
 
         // if self.mouse_state.mouse_entered {
-        //     let drop_down_pos = SCORE_TABLE_POS + Vec2::new(0.0, -SCORE_TABLE_POS.y);
+        //     let drop_down_pos = SCORE_TABLE_POS;
         //     self.trans_anim = Some(TranslationAnimator::new(
         //         self.transform.translation,
         //         drop_down_pos,
-        //         400.0,
+        //         600.0,
         //     ));
         // }
 
         // if self.mouse_state.mouse_exited {
         //     self.trans_anim = Some(TranslationAnimator::new(
         //         self.transform.translation,
-        //         SCORE_TABLE_POS,
-        //         400.0,
+        //         vec2(-450.0, 10.0),
+        //         600.0,
         //     ));
         // }
+
         contains_pt
     }
 

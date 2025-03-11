@@ -103,6 +103,7 @@ pub struct GameOptions {
 }
 
 impl GameOptions {
+    #[allow(unused)]
     pub fn whiskey_4() -> Self {
         Self {
             players: 4,
@@ -177,6 +178,7 @@ impl GameOptions {
         }
     }
 
+    #[allow(unused)]
     /// This is my custom take of the Dixie concept.
     pub fn dixie() -> Self {
         Self {
@@ -247,6 +249,7 @@ impl GameOptions {
         }
     }
 
+    #[allow(unused)]
     pub fn two_finger_whiskey() -> Self {
         Self {
             players: 4,
@@ -329,6 +332,7 @@ impl GameOptions {
         }
     }
 
+    #[allow(unused)]
     /// This version has the Joker as the low trump.
     pub fn kentucky_discard() -> Self {
         Self {

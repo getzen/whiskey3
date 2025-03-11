@@ -38,6 +38,7 @@ impl BotMonte {
         best_suit
     }
 
+    #[allow(unused)]
     fn lowest_non_trump_card(&self, cards: &[Card], trump: &Option<Suit>) -> Id {
         let mut lowest_rank = 99;
         // Just in case all cards are point cards and skipped below...
@@ -53,6 +54,7 @@ impl BotMonte {
         lowest_id
     }
 
+    #[allow(unused)]
     pub fn choose_discards_simple(&self, game: &Game, exchange_size: usize) {
         // Super basic: dump the three lowest non-trump cards.
 
