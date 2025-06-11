@@ -134,3 +134,18 @@ impl MulAssign for Transform {
         }
     }
 }
+
+    /* Keep this code somewhere? */
+    // pub fn update_draw_vertices(&mut self, parent_transform: &Transform) {
+    //     let transform = *parent_transform * self.transform;
+    //     let (pos, rot, scale) = transform.trans_rot_scale();
+    //     let mut verts = Vec::new();
+    //     for v in &self.vertices {
+    //         let rot_vec = Vec2::from_angle(rot);
+    //         let mut adj_v = *v * scale;
+    //         adj_v = adj_v.rotate(rot_vec);
+    //         adj_v = adj_v + pos;
+    //         verts.push(adj_v);
+    //     }
+    //     self.draw_vertices = Some(verts);
+    // }

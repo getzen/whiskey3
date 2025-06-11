@@ -210,7 +210,7 @@ impl BotMonte {
 
     // Use a MonteCarlo simulation to pick the best card.
     pub fn run_simulations(&self, game: &mut Game, simulations: usize) -> (Id, Points, Vec<Points>) {
-        //let start_time = web_time::Instant::now();
+        
 
         let monte_player = game.active;
         let team = game.team_index(game.active);
@@ -240,6 +240,8 @@ impl BotMonte {
                 hidden_cards.push(card);
             }
         }
+
+        let start_time = web_time::Instant::now();
 
         for card_id in &legal_card_ids {
             let mut sim_score = 0;
@@ -299,8 +301,8 @@ impl BotMonte {
             }
         }
 
-        // let delta = web_time::Instant::now() - start_time;
-        //println!("sims: {}, ms: {}", simulations, delta.as_millis());
+        let delta = web_time::Instant::now() - start_time;
+        println!("sims: {}, ms: {}", simulations, delta.as_millis());
 
         (*best_card_id, best_score, all_scores)
     }

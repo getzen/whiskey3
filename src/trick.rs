@@ -48,7 +48,9 @@ impl Trick {
             // Hand has a trump suit.
             if trump_suit.is_some() {
                 if winning_card.is_trump(trump_suit) && card.is_trump(trump_suit) {
-                    if card.rank > winning_card.rank {
+                    // !!! Note the >= sign below. It means that a second joker played
+                    // to a trick will beat the first one.
+                    if card.rank >= winning_card.rank {
                         self.winner = Some(player);
                     }
                 } else {

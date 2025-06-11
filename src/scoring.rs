@@ -9,7 +9,7 @@ pub struct Scoring {
     pub trick_count: [u8; 2],
     pub majority_bonus: [Points; 2],
     pub hand_subtotal: [Points; 2],
-    pub slam_bonus: [Points; 2],
+    pub bonus: [Points; 2],
     pub hand_final: [Points; 2],
     pub game: [Points; 2],
 }
@@ -25,7 +25,7 @@ impl Scoring {
             majority_bonus: [0, 0],
             hand_subtotal: [0, 0],
 
-            slam_bonus: [0, 0],
+            bonus: [0, 0],
             hand_final: [0, 0],
             game: [0, 0],
         }

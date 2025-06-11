@@ -1,17 +1,13 @@
-use crate::view::{
-    transform::Transform,
-    utility_graphics::{draw_polygon, draw_polygon_lines, polygon_contains_point},
-};
+use crate::view::{transform::Transform, utility_graphics::{draw_polygon, draw_polygon_lines, polygon_contains_point}};
 
 use super::view_entity::ViewEntity;
 
 use macroquad::prelude::*;
 
+#[allow(unused)]
 pub struct Polygon {
     pub transform: Transform,
     pub vertices: Vec<Vec2>,
-    /// When None, these vertices are calculate from 'vertices' and the transform.
-    pub draw_vertices: Option<Vec<Vec2>>,
     pub fill_color: Option<Color>,
     pub stroke_color: Option<Color>,
     pub stroke_width: f32,
@@ -19,30 +15,52 @@ pub struct Polygon {
 
 #[allow(unused)]
 impl Polygon {
-    pub fn new(vertices: Vec<Vec2>, fill_color: Option<Color>, stroke_color: Option<Color>, stroke_width: f32) -> Self {
+    pub fn new(
+        vertices: Vec<Vec2>,
+        fill_color: Option<Color>,
+        stroke_color: Option<Color>,
+        stroke_width: f32,
+    ) -> Self {
         Self {
             transform: Transform::new(),
             vertices,
-            draw_vertices: None,
             fill_color,
             stroke_color,
             stroke_width,
         }
     }
 
-    pub fn update_draw_vertices(&mut self, parent_transform: &Transform) {
-        let transform = *parent_transform * self.transform;
-        let (pos, rot, scale) = transform.trans_rot_scale();
-        let mut verts = Vec::new();
+    /*
+    For use with Rapier2D physics
+
+    /// Converts the polygon vertices to a vec of Points and creates
+    /// a Collider. The shape must be convex.
+    pub fn create_convex_collider(&self) -> Collider {
+        let mut points = Vec::new();
         for v in &self.vertices {
-            let rot_vec = Vec2::from_angle(rot);
-            let mut adj_v = *v * scale;
-            adj_v = adj_v.rotate(rot_vec);
-            adj_v = adj_v + pos;
-            verts.push(adj_v);
+            points.push(point!(v.x, v.y));
         }
-        self.draw_vertices = Some(verts);
+        ColliderBuilder::convex_hull(&points).unwrap().build()
     }
+
+    /// Converts the polygon vertices to a vec of vertex pairs and a vec
+    /// of matching indices, and feeds these to a convex decomposer to
+    /// create a compound shape collider from a possibly non-convex polygon.
+    pub fn create_compound_collider(&self) -> Collider {
+        let mut coll_verts = Vec::new();
+        let mut indices = Vec::new();
+        for (idx, v) in self.vertices.iter().enumerate() {
+            coll_verts.push(Point::new(v.x, v.y));
+            if idx == self.vertices.len() - 1 {
+                indices.push([idx as u32, 0]);
+            } else {
+                indices.push([idx as u32, idx as u32 + 1]);
+            }
+        }
+        // In case the vertices form a concave objext, we use this decomposer.
+        ColliderBuilder::convex_decomposition(&coll_verts, &indices).build()
+    }
+    */
 }
 
 impl ViewEntity for Polygon {
@@ -52,20 +70,16 @@ impl ViewEntity for Polygon {
 
     fn set_translation(&mut self, translation: Vec2) {
         self.transform.translation = translation;
-        self.draw_vertices = None;
     }
 
     fn set_rotation(&mut self, rotation: f32) {
         self.transform.rotation = rotation;
-        self.draw_vertices = None;
     }
 
     fn contains_point(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
-        if self.draw_vertices.is_none() {
-            self.update_draw_vertices(parent_transform);
-        }
-        let vertices = &self.draw_vertices.as_ref().unwrap();
-        polygon_contains_point(vertices, *point)
+        let transform = *parent_transform * self.transform;
+        let local_pt = transform.convert_point_to_local(point);
+        polygon_contains_point(&self.vertices, local_pt)
     }
 
     fn process_mouse(&mut self, point: &Vec2, parent_transform: &Transform) -> bool {
@@ -73,28 +87,17 @@ impl ViewEntity for Polygon {
     }
 
     fn draw(&mut self, parent_transform: &Transform) {
-        if self.draw_vertices.is_none() {
-            self.update_draw_vertices(parent_transform);
+        let transform = *parent_transform * self.transform;
+
+        let gl = unsafe { get_internal_gl().quad_gl };
+        gl.push_model_matrix(transform.matrix());
+    
+        if let Some(color) = self.fill_color {
+            draw_polygon(&self.vertices, color);
         }
-
-        if let Some(vertices) = &self.draw_vertices {
-            if let Some(color) = self.fill_color {
-                draw_polygon(&vertices, color);
-            }
-
-            if let Some(color) = self.stroke_color {
-                draw_polygon_lines(&vertices, self.stroke_width, color);
-            }
+        if let Some(color) = self.stroke_color {
+            draw_polygon_lines(&self.vertices, self.stroke_width, color);
         }
-
-        // let gl = unsafe { get_internal_gl().quad_gl };
-        // gl.push_model_matrix(transform.matrix());
-        // if let Some(color) = self.fill_color {
-        //     draw_polygon(&self.vertices, color);
-        // }
-        // if let Some(color) = self.stroke_color {
-        //     draw_polygon_lines(&self.vertices, self.stroke_width, color);
-        // }
-        // gl.pop_model_matrix();
+        gl.pop_model_matrix();
     }
 }

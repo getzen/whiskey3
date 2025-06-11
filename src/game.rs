@@ -65,10 +65,12 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
-        // let options = GameOptions::whiskey_4();
-        let options = GameOptions::dixie();
-        // let options = GameOptions::two_finger_whiskey();
+        let options = GameOptions::whiskey_4();
+        //let options = GameOptions::dixie();
+        // let options = GameOptions::whiskey_3_7();
         // let options = GameOptions::kentucky_discard();
+        //let options = GameOptions::two_hundred();
+
         options.write_to_yaml("default.txt");
 
         // Read as normal.
@@ -217,20 +219,22 @@ impl Game {
             for card in &mut self.hands[p] {
                 if card.is_joker {
                     card.suit = suit;
-                    return;
                 }
+            }
+        }
+        for card in &mut self.exchange {
+            if card.is_joker {
+                card.suit = suit;
             }
         }
         for card in &mut self.nest {
             if card.is_joker {
                 card.suit = suit;
-                return;
             }
         }
         for card in &mut self.deck {
             if card.is_joker {
                 card.suit = suit;
-                return;
             }
         }
     }
@@ -279,7 +283,7 @@ impl Game {
         if self.high_bid == 0 {
             self.options.min_bid
         } else {
-            self.high_bid + 5
+            self.high_bid + self.options.bid_increment
         }
     }
 
@@ -287,6 +291,17 @@ impl Game {
         if let Bid::Points(p) = bid {
             self.high_bid = p;
             self.maker = Some(self.active);
+
+            // If pass-then-bid is allowed.
+            if self.options.bid_after_passing {
+                for p in 0..self.bids.len()  {
+                    if p == self.active {
+                        continue;
+                    }
+                    self.bids[p] = None;
+                }
+            }
+
             self.scoring.update_bids(self.team_index(self.active), p);
         }
         self.bids[self.active] = Some(bid);
@@ -403,7 +418,7 @@ impl Game {
                 self.exchange.push(card);
             }
         }
-        // Check if nest card.
+        // Check if exchange card.
         else if let Some(idx) = self.exchange.iter().position(|c| c.id == id) {
             let card = self.exchange.remove(idx);
             self.hands[maker].push(card);
@@ -617,19 +632,19 @@ impl Game {
             // Success by makers
             match self.options.bidders_win {
                 BiddersWin::PointsBid => {
-                    // Note max bid by maker is required.
+                    // Note max bid by maker is not required.
                     if self.high_bid == self.options.max_bid && maker_subtotal == self.options.max_bid {
-                        self.scoring.slam_bonus[maker_team] = self.options.slam_bonus;
+                        self.scoring.bonus[maker_team] = self.options.slam_bonus;
                     }
                     self.scoring.hand_final[maker_team] =
-                        self.scoring.bid[maker_team] + self.scoring.slam_bonus[maker_team];
+                        self.scoring.bid[maker_team] + self.scoring.bonus[maker_team];
                 }
                 BiddersWin::PointsTaken => {
                     // Note max bid by maker is not required.
                     if maker_subtotal == self.options.max_bid {
-                        self.scoring.slam_bonus[maker_team] = self.options.slam_bonus;
+                        self.scoring.bonus[maker_team] = self.options.slam_bonus;
                     }
-                    self.scoring.hand_final[maker_team] = maker_subtotal + self.scoring.slam_bonus[maker_team];
+                    self.scoring.hand_final[maker_team] = maker_subtotal + self.scoring.bonus[maker_team];
                 }
             }
             match self.options.defenders_lose {
@@ -653,8 +668,9 @@ impl Game {
                 BiddersLose::MinusBid => self.scoring.hand_final[maker_team] = -self.scoring.bid[maker_team],
             }
             match self.options.defenders_win {
-                DefendersWin::PointsTaken => {
-                    self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team];
+                DefendersWin::PointsTaken(bonus) => {
+                    self.scoring.bonus[defen_team] = bonus;
+                    self.scoring.hand_final[defen_team] = self.scoring.hand_subtotal[defen_team] + bonus;
                 }
             }
         }
