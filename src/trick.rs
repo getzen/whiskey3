@@ -1,10 +1,12 @@
-use crate::card::{Card, Points, Suit};
+use crate::{card::{Card, Points, Rank, Suit}, game_options::JokerKind};
 
 #[derive(Clone)]
 pub struct Trick {
     pub cards: Vec<Option<Card>>,
-    pub lead_card: Option<Card>,
+    pub lead_suit: Option<Suit>,
     pub winner: Option<usize>,
+    pub winning_suit: Option<Suit>,
+    pub winning_rank: Rank,
     pub points: Points,
 }
 
@@ -17,8 +19,10 @@ impl Trick {
 
         Self {
             cards,
-            lead_card: None,
+            lead_suit: None,
             winner: None,
+            winning_suit: None,
+            winning_rank: 0,
             points: 0,
         }
     }
@@ -27,51 +31,76 @@ impl Trick {
         for card in &mut self.cards {
             *card = None;
         }
-        self.lead_card = None;
+        self.lead_suit = None;
+        self.winner = None;
+        self.winning_suit = None;
+        self.winning_rank = 0;
         self.points = 0;
     }
 
     pub fn is_empty(&self) -> bool {
-        self.lead_card.is_none()
+        self.winner.is_none()
     }
 
-    pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<Suit>) {
-        if self.lead_card.is_none() {
-            // this is the lead card
-            self.lead_card = Some(card.clone());
-            self.winner = Some(player);
-        } else {
-            // this is not the lead card
-            let winning_player = self.winner.unwrap();
-            let winning_card = self.cards[winning_player].as_ref().unwrap();
+    pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<Suit>, joker_kind: JokerKind) {
+        self.points += card.points;
+        let card_suit = card.suit;
+        let card_rank = card.rank;
+        self.cards[player] = Some(card);
 
-            // Hand has a trump suit.
-            if trump_suit.is_some() {
-                if winning_card.is_trump(trump_suit) && card.is_trump(trump_suit) {
-                    // !!! Note the >= sign below. It means that a second joker played
-                    // to a trick will beat the first one.
-                    if card.rank >= winning_card.rank {
-                        self.winner = Some(player);
-                    }
-                } else {
-                    // winning card is not trump
-                    if card.is_trump(trump_suit) {
-                        self.winner = Some(player);
-                    } else {
-                        if card.suit == winning_card.suit && card.rank > winning_card.rank {
-                            self.winner = Some(player);
-                        }
-                    }
+        if self.lead_suit.is_none() {
+            self.winner = Some(player);
+            if joker_kind == JokerKind::Phoenix && card_suit == Suit::Joker {
+                // Nothing left to do.
+                return;
+            }
+            self.lead_suit = Some(card_suit); // This should never be Suit::Joker.
+            self.winning_suit = Some(card_suit); // This should never be Suit::Joker.
+            self.winning_rank = card_rank;
+            // Nothing left to do.
+            return;
+        }
+        
+        // A winning suit has been set.
+        let winning_suit = self.winning_suit.unwrap();
+
+        // Special handling
+        if joker_kind == JokerKind::Phoenix && card_suit == Suit::Joker {
+            // Joker automatically takes the lead, but winning suit and rank do not change.
+            self.winner = Some(player);
+            return;
+        }
+
+        let mut new_winner = false;
+
+        if let Some(trump_suit) = trump_suit {
+            if winning_suit == *trump_suit && card_suit == *trump_suit {
+                // Note the >= sign below.
+                if card_rank >= self.winning_rank {
+                    new_winner = true;
                 }
             } else {
-                // Hand does not have a trump suit.
-                if card.suit == winning_card.suit && card.rank > winning_card.rank {
-                    self.winner = Some(player);
+                // winning card is not trump
+                if card_suit == *trump_suit {
+                    new_winner = true;
+                } else {
+                    if card_suit == winning_suit && card_rank > self.winning_rank {
+                        new_winner = true;
+                    }
                 }
             }
+        } else {
+            // Hand does not have a trump suit.
+            if card_suit == winning_suit && card_rank > self.winning_rank {
+               new_winner = true;
+            }
         }
-        self.points += card.points;
-        self.cards[player] = Some(card);
+
+        if new_winner {
+            self.winner = Some(player);
+            self.winning_suit = Some(card_suit);
+            self.winning_rank = card_rank;
+        }
     }
 
     pub fn completed(&self) -> bool {

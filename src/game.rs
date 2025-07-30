@@ -1,8 +1,7 @@
 use crate::{
     card::{Card, Id, Points, Rank, Suit},
     game_options::{
-        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer, GameOptions,
-        MajorityTricksTie, NestAwarded,
+        BiddersLose, BiddersWin, DefendersLose, DefendersWin, DiscardedPointCards, FirstPlayer, GameOptions, JokerKind, MajorityTricksTie, NestAwarded
     },
     scoring::Scoring,
     trick::Trick,
@@ -463,7 +462,11 @@ impl Game {
 
     pub fn set_trump_suit(&mut self, suit: Suit) {
         self.trump_suit = Some(suit);
-        self.set_joker_suit(suit);
+
+        if self.options.joker_kind == JokerKind::Trump {
+            self.set_joker_suit(suit);
+        }
+        
         self.sort_hand(0);
     }
 
@@ -484,11 +487,11 @@ impl Game {
         }
     }
 
-    fn has_card_in_lead_suit(&self) -> bool {
-        if let Some(lead_card) = &self.trick.lead_card {
+    fn player_has_card_in_lead_suit(&self) -> bool {
+        if let Some(lead_suit) = &self.trick.lead_suit {
             let hand = self.active_hand();
             for card in hand {
-                if card.suit == lead_card.suit {
+                if card.suit == *lead_suit {
                     return true;
                 }
             }
@@ -498,27 +501,26 @@ impl Game {
 
     pub fn get_playable_card_ids(&mut self) -> Vec<Id> {
         let mut eligible_ids = Vec::new();
-        let has_card_in_lead_suit = self.has_card_in_lead_suit();
 
-        let trick_is_empty = self.trick.is_empty();
+        // There is some code duplication here, but it's in the interest of speed.
 
-        let lead_card = self.trick.lead_card.clone();
-
-        for card in self.active_hand_mut() {
-            let mut eligible = false;
-
-            // Is this the first card to play or there are no matching cards in hand?
-            if trick_is_empty || !has_card_in_lead_suit {
-                eligible = true;
-            }
-            // Not the first card in play.
-            else if card.suit == lead_card.as_ref().unwrap().suit {
-                eligible = true;
-            }
-            if eligible {
+        if self.trick.lead_suit.is_none() || !self.player_has_card_in_lead_suit() {
+            for card in self.active_hand_mut() {
+                card.eligible = true;
                 eligible_ids.push(card.id);
             }
-            card.eligible = eligible;
+            return eligible_ids;
+        }
+
+        let lead_suit = self.trick.lead_suit.unwrap();
+
+        for card in self.active_hand_mut() {
+            if card.suit == lead_suit {
+                 card.eligible = true;
+                 eligible_ids.push(card.id);
+            } else {
+                card.eligible = false;
+            }
         }
         eligible_ids
     }
@@ -534,7 +536,7 @@ impl Game {
         }
         let mut card = hand.remove(index);
         card.face_up = true;
-        self.trick.add(self.active, card, &self.trump_suit);
+        self.trick.add(self.active, card, &self.trump_suit, self.options.joker_kind);
 
         self.next_player();
     }
