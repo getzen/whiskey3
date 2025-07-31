@@ -252,6 +252,7 @@ impl Controller {
                                 self.view.update_hand(&self.game, maker);
                                 self.view.update_exchange(&self.game);
                             }
+                            self.view.end_bot_discards();
                             self.delay_before_game_action = 1.5;
                             self.game_action = Some(GameAction::EndExchanging);
                         }

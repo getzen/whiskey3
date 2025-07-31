@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Receiver, mpsc::{self, Sender}};
 
 use hashbrown::HashMap;
 use macroquad::{
@@ -32,6 +32,11 @@ use super::{
 
 use std::sync::OnceLock;
 pub static FONT: OnceLock<Font> = OnceLock::new();
+pub static VIEW_MESSAGE_SENDER: OnceLock<Sender<ViewMessage>> = OnceLock::new();
+
+pub enum ViewMessage {
+    BotThinkingProgress(f32),
+}
 
 /// ZOrder can be put into a Vec and sorted by z to provide a drawing
 /// and event-checking order for the ids.
@@ -68,13 +73,17 @@ pub struct View {
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
 
-    sender: Sender<PlayerAction>,
+    player_action_sender: Sender<PlayerAction>,
+    view_message_receiver: Receiver<ViewMessage>,
 }
 
 impl View {
-    pub async fn new(players: usize, sender: Sender<PlayerAction>) -> Self {
+    pub async fn new(players: usize, player_action_sender: Sender<PlayerAction>) -> Self {
         let font = load_ttf_font("./src/assets/Menlo-Bold.ttf").await.unwrap();
         FONT.set(font.clone()).expect("Error setting FONT.");
+
+        let (sender, view_message_receiver) = mpsc::channel();
+        VIEW_MESSAGE_SENDER.set(sender.clone()).expect("Error setting SENDER.");
 
         let mut id = 100; // above cards
         let mut view_entities = HashMap::<Id, Box<dyn ViewEntity>>::new();
@@ -161,7 +170,8 @@ impl View {
             translation_anims: HashMap::new(),
             rotation_anims: HashMap::new(),
 
-            sender,
+            player_action_sender,
+            view_message_receiver,
         }
     }
 
@@ -255,7 +265,7 @@ impl View {
     pub fn check_events(&mut self) {
         // Key presses
         if is_key_released(KeyCode::Escape) {
-            self.sender.send(PlayerAction::ShouldExit).expect("Send error");
+            self.player_action_sender.send(PlayerAction::ShouldExit).expect("Send error");
         }
 
         let mouse_pos: Vec2 = mouse_position().into();
@@ -266,6 +276,18 @@ impl View {
             let done = entity.process_mouse(&mouse_pos, &transform);
             if done {
                 break;
+            }
+        }
+
+        // Check for ViewMessages
+        if let Ok(received) = self.view_message_receiver.try_recv() {
+            match received {
+                ViewMessage::BotThinkingProgress(progress) => {
+                    let entity = self.view_entities.get_mut(&self.progress_bar).unwrap();
+                    if let Some(progress_bar) = entity.as_any_mut().downcast_mut::<ProgressBar>() {
+                        progress_bar.progress = progress;
+                    }
+                }
             }
         }
     }
@@ -538,7 +560,19 @@ impl View {
     }
 
     pub fn get_bot_discards(&mut self, _game: &Game) {
+        let entity = self.view_entities.get_mut(&self.progress_bar).unwrap();
+        if let Some(progress_bar) = entity.as_any_mut().downcast_mut::<ProgressBar>() {
+            progress_bar.progress = 0.0;
+            progress_bar.visible = true;
+        }
         self.update_message(&["Bot thinking."]);
+    }
+
+    pub fn end_bot_discards(&mut self) {
+        let entity = self.view_entities.get_mut(&self.progress_bar).unwrap();
+        if let Some(progress_bar) = entity.as_any_mut().downcast_mut::<ProgressBar>() {
+            progress_bar.visible = false;
+        }
     }
 
     pub fn get_bot_trump(&mut self, _game: &Game) {

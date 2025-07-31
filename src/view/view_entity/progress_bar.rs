@@ -6,6 +6,7 @@ use super::view_entity::ViewEntity;
 
 
 pub struct ProgressBar {
+    pub visible: bool,
     pub transform: Transform,
     pub size: Vec2,
     pub centered: bool,
@@ -18,11 +19,12 @@ pub struct ProgressBar {
 impl ProgressBar {
     pub fn new(position: Vec2, size: Vec2, progress: f32) -> Self {
         Self {
+            visible: false,
             transform: Transform::from_translation(position),
             size,
             centered: true,
             outline_color: Color::from_rgba(130, 130, 130, 255),
-            fill_color: Color::from_rgba(0, 255, 0, 255),
+            fill_color: Color::from_rgba(150, 150, 255, 255),
             progress,
         }
     }
@@ -34,6 +36,9 @@ impl ViewEntity for ProgressBar {
     }
 
     fn draw(&mut self, parent_transform: &Transform) {
+        if !self.visible {
+            return;
+        }
         let transform = *parent_transform * self.transform;
         let (mut pos, rot, scale) = transform.trans_rot_scale();
         let size = self.size * scale;

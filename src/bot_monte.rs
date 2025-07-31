@@ -6,7 +6,7 @@ use crate::{
     card::{Card, Id, Points, Suit},
     controller::SENDER,
     game::{Bid, Game, PlayerAction},
-    game_options::BiddersWin,
+    game_options::BiddersWin, view::view::{ViewMessage, VIEW_MESSAGE_SENDER},
 };
 
 #[derive(Clone)]
@@ -115,7 +115,16 @@ impl BotMonte {
 
         // Remove the card associated with each combo and find the best score
         // and combo to remove.
-        for combo in &idx_combos {
+        for (i, combo) in idx_combos.iter().enumerate() {
+
+            // Send thinking progress message.
+            let progress = i as f32 / idx_combos.len() as f32;
+            VIEW_MESSAGE_SENDER
+            .get()
+            .unwrap()
+            .send(ViewMessage::BotThinkingProgress(progress))
+            .expect("send error");
+
             let mut sim_game = game.clone();
             // Must iterate the combo indices in reverse, otherwise removing an index
             // will foul up the correctness of the others.
