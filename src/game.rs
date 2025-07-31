@@ -64,7 +64,8 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         // Write over the defaults, if needed.
-        let options = GameOptions::whiskey_4();
+        //let options = GameOptions::whiskey_4();
+        let options = GameOptions::whiskey_4_plus();
         //let options = GameOptions::dixie();
         // let options = GameOptions::whiskey_3_7();
         // let options = GameOptions::kentucky_discard();

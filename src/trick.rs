@@ -38,10 +38,6 @@ impl Trick {
         self.points = 0;
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.winner.is_none()
-    }
-
     pub fn add(&mut self, player: usize, card: Card, trump_suit: &Option<Suit>, joker_kind: JokerKind) {
         self.points += card.points;
         let card_suit = card.suit;
