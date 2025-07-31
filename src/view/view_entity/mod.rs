@@ -7,6 +7,7 @@ pub mod button_text;
 pub mod card_ent;
 pub mod circle;
 pub mod polygon;
+pub mod progress_bar;
 pub mod rectangle;
 pub mod score_table;
 pub mod sprite;

@@ -60,7 +60,7 @@ impl Trick {
         // A winning suit has been set.
         let winning_suit = self.winning_suit.unwrap();
 
-        // Special handling
+        // Special handling for Phoenix Joker.
         if joker_kind == JokerKind::Phoenix && card_suit == Suit::Joker {
             // Joker automatically takes the lead, but winning suit and rank do not change.
             self.winner = Some(player);

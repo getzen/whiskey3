@@ -12,7 +12,7 @@ use macroquad::{
 
 use crate::{
     card::{Card, Id, Suit},
-    game::{Game, PlayerAction},
+    game::{Game, PlayerAction}, view::view_entity::progress_bar::ProgressBar,
 };
 
 use super::{
@@ -63,6 +63,7 @@ pub struct View {
     next_hand_button: Id,
     message: Id,
     score_table: Id,
+    progress_bar: Id,
 
     translation_anims: HashMap<Id, TranslationAnimator>,
     rotation_anims: HashMap<Id, RotationAnimator>,
@@ -134,7 +135,12 @@ impl View {
         let entity = View::create_score_table();
         view_entities.insert(id, entity);
         z_orders.push(ZOrder { id, z: 255 });
-        //id += 1;
+        id += 1;
+
+        let progress_bar = id;
+        let entity = View::create_progress_bar();
+        view_entities.insert(id, entity);
+        z_orders.push(ZOrder { id, z: 255 });
 
         Self {
             view_entities,
@@ -150,6 +156,7 @@ impl View {
             next_hand_button,
             message,
             score_table,
+            progress_bar,
 
             translation_anims: HashMap::new(),
             rotation_anims: HashMap::new(),
@@ -209,6 +216,11 @@ impl View {
 
     fn create_score_table() -> Box<dyn ViewEntity> {
         let entity = ScoreTable::new(SCORE_TABLE_POS);
+        Box::new(entity)
+    }
+
+     fn create_progress_bar() -> Box<dyn ViewEntity> {
+        let entity = ProgressBar::new(Vec2::new(500., 700.), Vec2::new(100.0, 10.0), 0.0);
         Box::new(entity)
     }
 
